@@ -74,6 +74,9 @@ python3 evaluator/calibrate.py --require-browser
 
 ## OpenCode V2 Subagent 最小 PoC
 
+- 实际本机 Build → Explore 委派及独立子会话只读工具关联已得到用户提供的检查器结构化结果：`invocation_verdict=PASS`、`child_execution_verdict=PASS`；工作区全程只读及完整恢复仍为 `NOT_VERIFIED`，不等同独立可信 CI。
+- v0.5.5 为证据检查器新增 `--gate child`、`--gate overall` 等明确的严格门禁；默认退出 0 只表示诊断执行完成。
+
 - v0.5.4 的 `poc/check_opencode_session.py` 支持 `--child` 输入独立 Explore 会话导出，关联父工具元数据的 `sessionID`，检测凭据泄露但不输出明文；执行证据与工作区只读证明仍分开。
 
 - 新增 `python3 poc/check_opencode_session.py <export.json>`：本机只读分析真实工具事件，仅输出低敏证据摘要；`v0.5.3` 仍不会把父会话成功自动等同于子代理执行证明。

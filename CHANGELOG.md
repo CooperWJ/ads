@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.5 — OpenCode Session 严格证据门禁
+
+- 记录用户提供的 v2.2.3 Build → Explore 本机实测摘要：独立委派及子会话只读工具事件 PASS，工作区全程只读和整体可靠性交付 NOT_VERIFIED。
+- 修复诊断脚本可能被 CI 误用的退出码歧义：新增 `--gate invocation|child|overall`，要求证据缺失时退出 3、明确失败时退出 1，输入无效退出 2；默认 report 维持诊断兼容。
+- 补充 5 项关于报告与严格门禁区分、失败目标、缺失证据和 CLI 退出码的测试。
+- 仅发布脱敏摘要，不提交原始 Session 或含凭据的证据文件；提醒撤销此前检测到的疑似 GitHub Token。
+
+
 ## v0.5.4 — OpenCode 父子会话关联与凭据风险提示
 
 - 检查器支持只读加载独立的子会话 JSON，通过父 `subagent` 工具元数据和子 `info.id` 精确关联。

@@ -131,10 +131,29 @@ def inspect_session(data, child_data=None):
     }
 
 
+def gate_exit_code(report, gate):
+    """诊断模式不充当验收门禁；严格模式缺证据必须非零退出。"""
+    if gate == "report":
+        return 1 if report["overall_verdict"] == "FAIL" else 0
+    if gate == "invocation":
+        verdicts = [report["invocation_verdict"]]
+    elif gate == "child":
+        verdicts = [report["invocation_verdict"], report["child_execution_verdict"]]
+    else:
+        verdicts = [report["overall_verdict"]]
+    if "FAIL" in verdicts:
+        return 1
+    if all(v == "PASS" for v in verdicts):
+        return 0
+    return 3
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="输出 OpenCode 委派事件的低敏证据摘要")
     parser.add_argument("session_json", type=Path, help="父会话导出")
     parser.add_argument("--child", type=Path, help="独立 Explore 子会话导出（仅本机使用）")
+    parser.add_argument("--gate", choices=("report", "invocation", "child", "overall"),
+                        default="report", help="report 为诊断；其余为严格门禁，NOT_VERIFIED 退出 3")
     args = parser.parse_args(argv)
     try:
         parent = json.loads(args.session_json.read_text(encoding="utf-8-sig"))
@@ -143,8 +162,15 @@ def main(argv=None):
     except (OSError, ValueError, UnicodeError) as exc:
         print(json.dumps({"status": "INVALID_INPUT", "reason": type(exc).__name__}, ensure_ascii=False))
         return 2
+    code = gate_exit_code(report, args.gate)
+    report["check_mode"] = args.gate
+    report["check_exit"] = code
+    report["check_exit_semantics"] = (
+        "0=report-generated-not-overall-pass" if args.gate == "report" and code == 0
+        else "0=required-verdicts-PASS;1=FAIL;2=INVALID_INPUT;3=NOT_VERIFIED"
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 1 if report["overall_verdict"] == "FAIL" else 0
+    return code
 
 
 if __name__ == "__main__":

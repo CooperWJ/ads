@@ -81,6 +81,41 @@ python3 poc/check_opencode_session.py /tmp/ads-parent-private.json --child /tmp/
 
 检查器输出仅包含白名单工具名称/次数、是否出现疑似 GitHub Token 的布尔提醒，以及父子关联判定，不打印参数或结果。若子会话内部实际完成 `read`/`grep`/`glob`，且与父工具中的子会话 ID 一致，`child_execution_verdict` 才为 PASS。完整只读声明还需要独立的工作区证据，因此 `overall_verdict` 仍为 NOT_VERIFIED。
 
+## 本机实测结果（仅保存脱敏结论）
+
+2026-10-31 用户本机 OpenCode v2.2.3 证据检查器返回：
+
+| 分项 | 实测结果 |
+|---|---|
+| 父 Agent / Session 完成 | `build` / `succeeded` |
+| 已完成的 `subagent` 事件 | 1 次，指向 `explore` |
+| 父子独立 Session ID 关联 | PASS |
+| Explore 独立会话只读工具执行 | PASS |
+| 工作区全程没有写入 | NOT_VERIFIED |
+| 完整可靠性验收 | NOT_VERIFIED |
+| 凭据暴露警告 | 检测到疑似凭据，需撤销并检查 |
+
+这是一份**用户提供的本机检查器结果**，不是 CI 自行运行 OpenCode 得到的结果；未将原始会话、提示词、ID、访问凭据或工具输出提交到仓库。
+
+## 严格退出码（v0.5.5）
+
+此前默认报告检查器在 `overall_verdict=NOT_VERIFIED` 时可能返回 `CHECK_EXIT=0`，这仅代表诊断成功，绝不代表完整验收通过。现区分诊断与严格门禁：
+
+```bash
+# 诊断模式：打印低敏证据摘要；不用于完整交付阻断
+python3 poc/check_opencode_session.py /tmp/ads-parent-private.json --child /tmp/ads-child-sanitized.json
+
+# 严格验证 Build → Explore 已执行工具及独立子会话
+python3 poc/check_opencode_session.py /tmp/ads-parent-private.json --child /tmp/ads-child-sanitized.json --gate child
+
+# 完整可靠性验证：工作区只读状态仍未证实，预期非零
+python3 poc/check_opencode_session.py /tmp/ads-parent-private.json --child /tmp/ads-child-sanitized.json --gate overall
+```
+
+`--gate` 支持 `report`（默认）、`invocation`、`child`、`overall`。严格门禁返回 **0=要求的所有判定均 PASS，1=明确 FAIL，2=输入无效，3=NOT_VERIFIED**。默认 report 模式返回 0 只说明生成了诊断报告；严禁把默认模式作为完整验收门禁。
+
+`potential_credential_exposure=true` 是独立安全风险，无论工具退出码如何都必须处置。检查器不回传密钥，也不证明历史 Token 已撤销。
+
 ## 证据与判定
 
 | 证据 | PASS 条件 |

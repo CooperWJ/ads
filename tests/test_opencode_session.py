@@ -1,7 +1,7 @@
 """OpenCode Session 工具事件校准：拒绝文本自述与脱敏误判。"""
 import unittest
 import json
-from poc.check_opencode_session import inspect_session
+from poc.check_opencode_session import inspect_session, gate_exit_code, main
 
 
 def tool(name, status, inputs=None, metadata=None):
@@ -103,6 +103,56 @@ class OpenCodeEvidenceTests(unittest.TestCase):
                  "messages": [{"type": "assistant", "agent": "explore",
                                "content": [tool("read", "completed")]}]}
         self.assertEqual(inspect_session(parent, child)["child_execution_verdict"], "NOT_VERIFIED")
+
+
+    def test_report_zero_is_not_full_pass(self):
+        report = inspect_session(session([tool("subagent", "completed", {"agent": "explore"})]))
+        self.assertEqual(gate_exit_code(report, "report"), 0)
+        self.assertEqual(report["overall_verdict"], "NOT_VERIFIED")
+        self.assertEqual(gate_exit_code(report, "overall"), 3)
+
+    def test_strict_invocation_and_child_require_evidence(self):
+        parent = session([tool("subagent", "completed", {"agent": "explore"},
+                               {"sessionID": "ses_child"})])
+        parent["info"].update({"id": "ses_parent", "projectID": "p1"})
+        child = {"info": {"id": "ses_child", "agent": "explore",
+                           "parentID": "ses_parent", "projectID": "p1"},
+                 "messages": [{"type": "assistant", "agent": "explore",
+                               "content": [tool("read", "completed")]}]}
+        result = inspect_session(parent, child)
+        self.assertEqual(gate_exit_code(result, "invocation"), 0)
+        self.assertEqual(gate_exit_code(result, "child"), 0)
+        self.assertEqual(gate_exit_code(result, "overall"), 3)
+        self.assertEqual(gate_exit_code(inspect_session(parent), "child"), 3)
+
+    def test_strict_gate_rejects_wrong_agent(self):
+        report = inspect_session(session([tool("subagent", "completed", {"agent": "general"})]))
+        for gate in ("report", "invocation", "child", "overall"):
+            self.assertEqual(gate_exit_code(report, gate), 1)
+
+    def test_sanitized_export_fails_closed(self):
+        report = inspect_session(session([tool("subagent", "completed",
+                                               {"redacted": "tool-input"})]))
+        self.assertEqual(gate_exit_code(report, "report"), 0)
+        self.assertEqual(gate_exit_code(report, "invocation"), 3)
+        self.assertEqual(gate_exit_code(report, "child"), 3)
+
+    def test_cli_gate_exit_code_uses_read_only_fixture(self):
+        import tempfile
+        from pathlib import Path
+        from contextlib import redirect_stdout
+        import io
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "parent.json"
+            data = session([tool("subagent", "completed", {"agent": "explore"})])
+            path.write_text(json.dumps(data))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = main([str(path), "--gate", "overall"])
+            self.assertEqual(code, 3)
+            out = json.loads(output.getvalue())
+            self.assertEqual(out["check_exit"], 3)
+            self.assertEqual(out["overall_verdict"], "NOT_VERIFIED")
 
     def test_invalid_format(self):
         with self.assertRaises(ValueError):

@@ -49,7 +49,7 @@ python3 poc/check_opencode_session.py /tmp/ads-opencode-v2-subagent-sanitized.js
 
 该命令仅打印 Agent 类型、工具名称及次数、委派目标是否经结构化输入确认、关联的子会话 ID 是否存在、以及分项判定；**不打印会话正文、提示词、工具参数原文或工具输出**。
 
-某些 OpenCode 脱敏导出会将 \`state.input\` 和 \`state.metadata\` 整体替换为 \`redacted\`。即便工具事件名称为 \`subagent\`，无法独立确认目标 Agent 或子会话时仍给 \`NOT_VERIFIED\`。这不是失败，而是证据不足。
+某些 OpenCode 脱敏导出会将 `state.input` 和 `state.metadata` 整体替换为 `redacted`。即便工具事件名称为 `subagent`，无法独立确认目标 Agent 或子会话时仍给 `NOT_VERIFIED`。这不是失败，而是证据不足。
 
 如果脱敏导出使目标丢失、希望本地进一步核对，可以在**你的电脑上**另外导出未脱敏文件并仅在本地检查（**不要上传、不要提交到 GitHub**）：
 
@@ -58,12 +58,12 @@ opencode session export <session-id> > /tmp/ads-opencode-local-private.json
 python3 poc/check_opencode_session.py /tmp/ads-opencode-local-private.json
 ```
 
-把检查器打印的短 JSON 发送给评审即可。请在分享前再次检查其中的工具名称不包含内部信息。仅有本地检查器的输出，依然不能独立证明所有子会话读操作与没有写入；\`overall_verdict\` 保持 \`NOT_VERIFIED\`，直到额外关联子会话事件以及 Git 工作区快照证据。
+把检查器打印的短 JSON 发送给评审即可。请在分享前再次检查其中的工具名称不包含内部信息。仅有本地检查器的输出，依然不能独立证明所有子会话读操作与没有写入；`overall_verdict` 保持 `NOT_VERIFIED`，直到额外关联子会话事件以及 Git 工作区快照证据。
 
 本工具仅用 Python 标准库，不需要外部依赖。可运行：
 
 ```bash
-python3 -m unittest tests.test_opencode_session -v
+python3 -m unittest discover -s tests -p 'test_opencode_session.py' -v
 ```
 
 

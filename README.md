@@ -4,9 +4,9 @@
 
 ## 当前进度与继续开发
 
-- 功能状态与下一步优先级见 [ADS 项目当前进展](docs/PROJECT-STATUS.md)；目前浏览器 M0/M1 正反例在真实 GitHub Runner 已通过，OpenCode 内置 Build → Explore 子代理已获得本机结构化证据。
-- OpenCode 同一个 Session 跨客户端恢复与一次性副作用实验见 [最小恢复 PoC](docs/POC-OPENCODE-SESSION-RECOVERY.md)；该入口已具备，但用户设备的真实恢复结果仍未验证。
-- 现有 GitHub Actions 是自测而非受保护的独立评分；Harbor 和独立 QA 尚未完成真实集成。
+- 唯一能力状态汇总见 [项目当前进展](docs/PROJECT-STATUS.md)。M0/M1 Chromium 正反例已有 GitHub Runner 成功结果；OpenCode 子代理及客户端恢复有历史本机观察记录。
+- 恢复审计已加固为命令、实验目录、回执、历史内容与本地状态一致性核对。当前严格协议的本机复测仍待执行，详见 [恢复实验](docs/POC-OPENCODE-SESSION-RECOVERY.md)。
+- 受保护评分、Harbor、Playwright Test Agents、独立 QA 和第二项目接入尚未完成。后续按最小隔离执行、完整开发切片、跨项目复用、效果对照推进。
 
 ## M1 独立验收闭环
 
@@ -19,7 +19,7 @@
 
 - 对受控的虚构 PRD、SVG 和多 Sheet XLSX 进行**独立来源枚举**，并使用评测方持有的固定审核样本核对每个来源片段。详见 [M1 设计与边界](docs/M1-SOURCE-DISCOVERY.md)。
 - `python3 -m discovery.cli --inventory-only` 只负责枚举；`python3 -m discovery.cli` 发现与原先 18 项验收不一致的新增要求时**退出码为 2（GAP）**。
-- 参考案例实际发现菜单入口和失败提示两项新要求，但尚无相应独立验收，故**不能称为完整交付**。公式只提取不计算、不自动成为业务 Oracle。
+- 来源发现相对旧 M0 基线识别菜单入口和失败提示两项新要求；选择 M1 验收包后可运行对应校准，不能据此宣称整个 ADS 产品完成。公式只提取不计算、不自动成为业务 Oracle。
 - 多来源片段发现不代表自动理解任何 PDF/Figma/录屏，也不取代对真正业务争议的人工确认。评测方 review 仅为虚构校准样本，不是真实人类审批证据。
 
 ## 原始需求完整性审计与两种 PASS（当前行为）
@@ -78,24 +78,12 @@ python3 evaluator/calibrate.py --require-browser
 - `poc/probe.py`：外部依赖可用性，只读检测。
 - `docs/TRUST-MODEL.md`：威胁模型、CI 信任边界与下一步。
 
-## OpenCode V2 Subagent 最小 PoC
+## OpenCode 原生执行与当前边界
 
-- 实际本机 Build → Explore 委派及独立子会话只读工具关联已得到用户提供的检查器结构化结果：`invocation_verdict=PASS`、`child_execution_verdict=PASS`；工作区全程只读及完整恢复仍为 `NOT_VERIFIED`，不等同独立可信 CI。
-- v0.5.5 为证据检查器新增 `--gate child`、`--gate overall` 等明确的严格门禁；默认退出 0 只表示诊断执行完成。
+- 子代理实验入口与结果边界见 [原生子代理指南](docs/POC-OPENCODE-V2-SUBAGENT.md)。工具事件关联不证明子代理全程无写入。
+- 恢复实验仅核对客户端重入与一次性临时文件副作用；不证明工具中途崩溃、数据库或远程操作具备幂等性。
+- GitHub 自测不等于受保护的外部评分；独立验收规则、执行环境与候选代码必须具有实际权限边界。
+- `check_evidence()` 和 `check_qa()` 使用合成校准输入，不代表真实构建证明或 QA Excel 集成。
+- 当前仍是工程验证 PoC。完整产品闭环和对照收益尚待验证；详细状态统一以 [项目当前进展](docs/PROJECT-STATUS.md) 为准。
 
-- v0.5.4 的 `poc/check_opencode_session.py` 支持 `--child` 输入独立 Explore 会话导出，关联父工具元数据的 `sessionID`，检测凭据泄露但不输出明文；执行证据与工作区只读证明仍分开。
-
-- 新增 `python3 poc/check_opencode_session.py <export.json>`：本机只读分析真实工具事件，仅输出低敏证据摘要；`v0.5.3` 仍不会把父会话成功自动等同于子代理执行证明。
-
-- 在 OpenCode v2.2.3 里使用 `/ads-subagent-smoke` 触发只读 Build → Explore 委派；这是人工可执行的原生入口，并不是已经完成真实子会话验证。
-- 执行步骤、会话脱敏导出、PASS/FAIL/NOT_VERIFIED 判断见 [OpenCode V2.2.3 实测指南](docs/POC-OPENCODE-V2-SUBAGENT.md)。
-- 现阶段未在当前云环境执行本机 OpenCode，真实子代理、会话恢复仍为 `NOT_VERIFIED`。
-
-## 当前边界
-
-- M0/M1 Chromium 已在 GitHub Actions 的 Ubuntu 24.04 Runner 实际通过严格正反例校准；本地浏览器是否可用仍取决于用户设备，GitHub 自测不代表受保护评分。
-- Harbor Worker、OpenCode Session/Subagent 实际运行、Playwright Test Agents 和真正受保护 CI 仍未完成真实集成验收；OpenCode 的原生只读验证入口已提供但尚未运行。
-- `check_evidence()` 是合成错误输入校准，不是第三方签名/attestation；`check_qa()` 是合成 QA 状态，不是独立 QA Excel 接入。
-- 完整 ADS 的需求理解、AI 开发可靠性、真实交付可信性功能尚需 M1～M5 实施。
-
-历史版本变化详见 CHANGELOG；测试结果详见 REPORT。
+历史版本变化详见 CHANGELOG。

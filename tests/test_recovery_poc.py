@@ -1,5 +1,6 @@
 """Disposable process/session recovery experiment: no business logic or credentials."""
 import json
+import copy
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +24,17 @@ class RecoveryPoCTests(unittest.TestCase):
             messages += [{"id": "m3", "type": "user", "text": "phase2"},
                          {"id": "m4", "type": "assistant", "content": [
                              {"type": "tool", "name": "shell", "state": {"status": "completed", "input": {"command": "python3 poc/recovery_poc.py verify /tmp/fictional"}}}]}]
+        run_id = json.loads((Path(self.run) / "manifest.json").read_text())["run_id"]
+        for message in messages:
+            for event in message.get("content", []):
+                state = event["state"]
+                action = "apply" if " apply " in state["input"]["command"] else "verify"
+                state["input"]["command"] = f"python3 poc/recovery_poc.py {action} {self.run}"
+                receipt = {"status": "APPLIED" if action == "apply" else "PASS",
+                           "run_id": run_id, "attempts": 1}
+                if action == "verify":
+                    receipt.update(marker_valid=True, baseline_drift=False)
+                state["output"] = json.dumps(receipt)
         return {"info": {"id": session_id, "projectID": project}, "messages": messages}
 
     def test_disposable_effect_once(self):
@@ -83,6 +95,88 @@ class RecoveryPoCTests(unittest.TestCase):
         before["messages"][0]["text"] = "confidential_example_DO_NOT_ECHO"
         out = json.dumps(P.audit(before, after, self.run))
         self.assertNotIn("confidential_example_DO_NOT_ECHO", out)
+
+    def test_shell_spoofing_and_wrong_experiment_are_rejected(self):
+        P.apply(self.run)
+        commands = [
+            "echo recovery_poc.py verify /wrong-experiment",
+            f"echo python3 poc/recovery_poc.py verify {self.run}",
+            "python3 poc/recovery_poc.py verify /wrong-experiment",
+            f"python3 /tmp/recovery_poc.py verify {self.run}",
+            f"python3 poc/recovery_poc.py verify {self.run}; echo ok",
+            f"python3 poc/recovery_poc.py verify {self.run} > /tmp/fake",
+            f"python3 poc/recovery_poc.py verify {self.run}\necho ok",
+        ]
+        for command in commands:
+            with self.subTest(command=command):
+                before, after = self.export(), self.export(tail=True)
+                after["messages"][-1]["content"][0]["state"]["input"]["command"] = command
+                self.assertEqual(P.audit(before, after, self.run)["verdict"], "NOT_VERIFIED")
+
+    def test_historical_message_content_change_is_rejected(self):
+        P.apply(self.run)
+        before, after = self.export(), self.export(tail=True)
+        after["messages"][0]["text"] = "tampered"
+        self.assertFalse(P.audit(before, after, self.run)["checks"]["original_messages_preserved"])
+
+    def test_duplicate_or_missing_message_ids_are_rejected(self):
+        P.apply(self.run)
+        for value in ("m1", "", None):
+            after = self.export(tail=True)
+            after["messages"][-1]["id"] = value
+            self.assertEqual(P.audit(self.export(), after, self.run)["verdict"], "NOT_VERIFIED")
+
+    def test_missing_mismatched_or_failed_receipt_is_rejected(self):
+        P.apply(self.run)
+        for receipt in (None, "redacted", "{}", json.dumps({"status": "PASS", "attempts": 1, "run_id": "other"})):
+            after = self.export(tail=True)
+            after["messages"][-1]["content"][0]["state"]["output"] = receipt
+            self.assertEqual(P.audit(self.export(), after, self.run)["verdict"], "NOT_VERIFIED")
+        after = self.export(tail=True)
+        after["messages"][-1]["content"][0]["state"]["status"] = "failed"
+        self.assertEqual(P.audit(self.export(), after, self.run)["verdict"], "NOT_VERIFIED")
+
+    def test_additional_shell_command_cannot_hide_replay(self):
+        P.apply(self.run)
+        after = self.export(tail=True)
+        event = copy.deepcopy(after["messages"][-1]["content"][0])
+        event["state"]["input"]["command"] = "python3 -c 'print(1)'"
+        after["messages"][-1]["content"].append(event)
+        self.assertEqual(P.audit(self.export(), after, self.run)["verdict"], "NOT_VERIFIED")
+
+
+    def test_phase1_spoof_is_rejected(self):
+        P.apply(self.run)
+        before, after = self.export(), self.export(tail=True)
+        for export in (before, after):
+            export["messages"][1]["content"][0]["state"]["input"]["command"] = "echo recovery_poc.py apply /wrong-experiment"
+        self.assertEqual(P.audit(before, after, self.run)["verdict"], "NOT_VERIFIED")
+
+    def test_receipt_does_not_accept_false_success_or_bool_count(self):
+        P.apply(self.run)
+        for field, value in (("attempts", True), ("status", "FAIL"), ("marker_valid", False), ("baseline_drift", True)):
+            after = self.export(tail=True)
+            state = after["messages"][-1]["content"][0]["state"]
+            receipt = json.loads(state["output"])
+            receipt[field] = value
+            state["output"] = json.dumps(receipt)
+            self.assertEqual(P.audit(self.export(), after, self.run)["verdict"], "NOT_VERIFIED")
+
+    def test_corrupt_attempt_log_is_invalid(self):
+        P.apply(self.run)
+        (Path(self.run) / "attempts.log").write_text("junkapply\n")
+        with self.assertRaises(ValueError):
+            P.verify(self.run)
+
+    def test_symlinked_effect_is_invalid(self):
+        P.apply(self.run)
+        marker = Path(self.run) / "applied.json"
+        original = Path(self.run) / "original.json"
+        marker.rename(original)
+        marker.symlink_to(original)
+        with self.assertRaises(ValueError):
+            P.verify(self.run)
+
 
 
 

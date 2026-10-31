@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1 — Chromium Runner 环境修复
+
+- 将 `.github/workflows/m0-selftest.yml` 的 Runner 固定为 `ubuntu-24.04`，避免 `ubuntu-latest` 升级到当前 Playwright 不兼容的系统版本。
+- 保留原有 M0/M1 严格浏览器校准和验收要求，不修改评分或放行条件。
+- GitHub Actions 实际执行结果以本版本修复分支的 CI 日志为准；不得把修复提交当作浏览器验收通过。
+
 ## v0.5.0 — M1 来源缺口到可执行验收闭环
 
 - 新增评测方持有的独立 M1 验收契约，不覆盖 M0 冻结审查与 18 项基准。

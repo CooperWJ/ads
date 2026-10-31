@@ -195,7 +195,8 @@ def check_menu_route(base):
     require(status==200,'home not reachable')
     p=MenuParser();p.feed(home.decode())
     require(p.links==['/board'],'navigation menu does not link to /board')
-    status,body,_=http(base,'/board')
+    status,body,headers=http(base,'/board')
+    require(headers.get('Content-Type','').lower().startswith('text/html'), 'board navigation must serve HTML content type')
     require(status==200 and b'id="project-select"' in body and b'/app.js' in body,
             'navigation destination does not load the actual board')
     return 'live HTTP navigation target and menu entry verified'

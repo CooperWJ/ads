@@ -29,6 +29,15 @@ class M1AcceptanceTests(unittest.TestCase):
                               ['menu-route-accessible','page-error-state'])
         self.assertEqual(result['delivery_verdict']['total'],20)
 
+    def test_board_route_must_be_served_as_html(self):
+        def fake_http(base, route):
+            if route == '/':
+                return 200, b'<a id="menu-project-board" href="/board">Project board</a>', {'Content-Type':'text/html'}
+            return 200, b'<select id="project-select"></select><script src="/app.js"></script>', {'Content-Type':'application/javascript; charset=utf-8'}
+        with patch.object(G, 'http', side_effect=fake_http):
+            with self.assertRaisesRegex(G.CheckFailure, 'HTML content type'):
+                G.check_menu_route('http://localhost')
+
     def test_deleted_menu_detected(self):
         result=self.evaluate('m1_missing_menu')
         self.assertEqual(result['status'],'FAIL')

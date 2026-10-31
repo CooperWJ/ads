@@ -13,7 +13,8 @@
 | Harbor 独立导出 verifier | PASS（导出产物边界） | Harbor 0.25.0 / Docker 三例校准通过；运行 41208957430，原生摘要见 docs/evidence/harbor-v0.5.8-calibration.json；不代表完整交付 |
 | Playwright Test Agents | NOT_TESTED | 尚无真实集成结果 |
 | 多来源需求发现 | PARTIAL | 受控虚构 MD/SVG/XLSX；固定审查样本不证明陌生需求语义召回率 |
-| 原始需求到 OpenCode 实现切片 | NOT_VERIFIED | 参考补丁通过不等于 Agent 实际完成开发 |
+| 原始需求到 OpenCode 实现切片 | BLOCKED（模型额度） | 已实际启动 @opencode/cli 2.2.3，匿名模型返回 provider.free-limit/429；未生成候选 |
+| 容器外 UI/API/DB 旅程验收 | 待本候选 CI 校准 | 新增候选容器服务入口，保持原有 Oracle；不计作 OpenCode 开发通过 |
 | 独立 QA / 发布部署身份 | NOT_IMPLEMENTED | 合成 QA 输入不等于原始多 Sheet QA 独立执行 |
 | 第二项目接入与效果对照 | NOT_STARTED | 未证明跨项目接入成本和 ADS 相对基线的收益 |
 

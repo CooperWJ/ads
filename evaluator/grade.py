@@ -398,7 +398,7 @@ def check_evidence(case, current_hash):
     return 'evidence source identity matches independently computed candidate digest'
 
 
-def evaluate(patch, profile, qa_case, evidence_case, outdir, m1_enabled=False):
+def evaluate(patch, profile, qa_case, evidence_case, outdir, m1_enabled=False, service_factory=None):
     base=CASE/'base'
     manifest=json.loads((CASE/'case.json').read_text())
     require(tree_digest(base)==manifest['base_tree_sha256'], 'frozen baseline checksum changed')
@@ -426,7 +426,7 @@ def evaluate(patch, profile, qa_case, evidence_case, outdir, m1_enabled=False):
         def record(name, call):
             try:results.append({'check':name,'status':'PASS','detail':call()})
             except Exception as err:results.append({'check':name,'status':'FAIL','detail':str(err)[:500]})
-        with service(workdir,outdir) as baseurl:
+        with (service_factory or service)(workdir,outdir) as baseurl:
             record('ui_structure',lambda: check_ui_structure(workdir,baseurl))
             if m1_enabled:
                 record('menu_route_accessible',lambda: check_menu_route(baseurl))

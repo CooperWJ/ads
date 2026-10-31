@@ -1,0 +1,14 @@
+{
+  "schema": "ads-opencode-model-probe/v1",
+  "package": "@opencode/cli",
+  "version": "2.2.3",
+  "model": "opencode/glm-5.3-flash-free",
+  "auth_mode": "anonymous; isolated XDG configuration; no provider credentials inherited",
+  "cli_exit_code": 1,
+  "error_type": "provider.free-limit",
+  "http_status": 429,
+  "status": "BLOCKED",
+  "candidate_generated": false,
+  "development_slice_verdict": "NOT_VERIFIED",
+  "note": "真实进程返回的低敏摘要；不发布原始 Session，不用参考补丁替代开发"
+}

@@ -1,0 +1,51 @@
+name: Candidate Docker external journey calibration (self-test)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'poc/development_slice/**'
+      - 'tests/test_development_slice.py'
+      - 'evaluator/**'
+      - 'fixtures/project_board/**'
+      - '.github/workflows/development-slice.yml'
+      - 'VERSION'
+  push:
+    branches: [main]
+    paths:
+      - 'poc/development_slice/**'
+      - '.github/workflows/development-slice.yml'
+      - 'VERSION'
+permissions:
+  contents: read
+jobs:
+  external-journey:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser and verify native CLI package
+        run: |
+          python -m pip install 'playwright==1.57.0'
+          python -m playwright install --with-deps chromium
+          npm install --prefix "$RUNNER_TEMP/opencode" '@opencode/cli@2.2.3'
+          "$RUNNER_TEMP/opencode/node_modules/.bin/opencode" --version
+      - name: Require full evaluator regression
+        run: python -m unittest discover -s tests -p 'test*.py' -v
+      - name: Run full browser against isolated candidate services
+        run: |
+          docker pull python:3.12.12-slim-bookworm
+          image_ref=$(docker image inspect python:3.12.12-slim-bookworm --format '{{index .RepoDigests 0}}')
+          python poc/development_slice/calibrate.py --image "$image_ref" --out "$RUNNER_TEMP/container-journey"
+      - name: Retain reports, topology and browser traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ads-container-journey
+          path: ${{ runner.temp }}/container-journey/
+          if-no-files-found: error

@@ -2,6 +2,24 @@
 from discovery.sources import md_units, svg_units, xlsx_units
 from .source_adapters import pdf_units, json_units
 from .project import path_in, digest
+from io import BytesIO
+import re
+from zipfile import ZipFile
+from xml.etree import ElementTree as ET
+
+
+def unread_components(suffix, data):
+    """正文可提取不等于附件、图形或批注已经读懂。"""
+    if suffix == '.md':
+        return ['MARKDOWN_MEDIA_OR_HTML_UNREVIEWED'] if re.search(r'!\[[^\]]*\]\(|<\s*(?:img|iframe|video|audio|object)\b', data.decode('utf-8-sig'), re.I) else []
+    if suffix == '.svg':
+        allowed = {'svg', 'g', 'text', 'tspan', 'title', 'desc', 'defs', 'style'}
+        return ['SVG_NON_TEXT_COMPONENTS_UNREVIEWED'] if any(n.tag.split('}')[-1] not in allowed for n in ET.fromstring(data).iter()) else []
+    if suffix == '.xlsx':
+        with ZipFile(BytesIO(data)) as archive:
+            prefixes = ('xl/media/', 'xl/embeddings/', 'xl/drawings/', 'xl/charts/', 'xl/comments', 'xl/threadedComments/')
+            return ['XLSX_COMPONENT_UNREVIEWED:' + name for name in archive.namelist() if name.startswith(prefixes)]
+    return []
 
 
 def discover(project):
@@ -30,6 +48,8 @@ def discover(project):
                 if decoder is None:
                     raise ValueError('UNSUPPORTED_FORMAT')
                 found, meta = decoder(label, data)
+                meta = dict(meta)
+                meta['unknown'] = list(meta.get('unknown', [])) + unread_components(path.suffix.lower(), data)
                 units.extend(found)
                 extracted.append({'path': label, 'units': len(found), 'meta': meta})
                 for reason in meta.get('unknown', []):
@@ -39,5 +59,11 @@ def discover(project):
         sources.append({'root': name, 'inventory': inventory, 'extraction': {'units': units, 'files': extracted}})
         if unread or not inventory:
             unknown.append({'root': name, 'reason': 'PARTIAL_OR_EMPTY_SOURCE', 'inventory': inventory, 'unread': unread})
+    files = [entry for source in sources for entry in source['inventory']]
+    extracted = [entry for source in sources for entry in source['extraction']['files']]
     return {'schema': 'ads-project-discovery/v1', 'status': 'INVENTORIED' if sources and not unknown else 'UNKNOWN',
+            'coverage': {'enumerated_files': len(files), 'text_extracted_files': len(extracted),
+                         'fully_readable_files': sum(not x['meta'].get('unknown') for x in extracted),
+                         'extracted_units': sum(len(s['extraction']['units']) for s in sources),
+                         'semantic_coverage': 'NOT_VERIFIED'},
             'sources': sources, 'unknown': unknown, 'semantic_completeness': 'NOT_VERIFIED'}

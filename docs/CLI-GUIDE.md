@@ -121,3 +121,11 @@ ads reconcile
 编译器读取标准 `**/spec.md` 的 Requirement/Scenario（或中文“需求/场景”）标题，保留需求规则和场景原文。它不替代 OpenSpec 原生校验；项目应继续运行其标准验证。无场景需求、无测试场景、重复身份和新增未登记规格均不能静默丢弃。派生文件只写到 `.ads`，可删除重建，不维护第二份人工规格。
 
 `source_review` 可指定项目既有来源语义决策导出的 `ads-source-alignment-review/v1`：`decisions` 每项含 unit_id、text_sha256、reviewer、decision_ref、disposition 和 obligations；CONTEXT/EXCLUDED 还需理由。预览提供稳定单元 ID 和交付义务 ID，供既有评审工具生成机械关联。必需片段遗漏、未知义务或 UNRESOLVED 会阻断。本机能核对版本和差集，不能证明审查者独立或绝对语义完备。
+
+## 来源覆盖、缺陷回流和交付包
+
+`discover.coverage` 分别给出枚举文件、正文提取文件、完整可读文件和片段数；均不等于语义需求覆盖率。正文可读但图片、图表、嵌入附件或批注未读时仍为 UNKNOWN。
+
+`ads qa defects` 只读导出当前 QA 失败/未执行差集，包含原始预期、定位、运行/源码身份及原始报告哈希。整项检查失败时，其中的单个 PASS 不能单独放行。输出可进入项目既有缺陷工具；命令不会创建外部 Issue、改变预期或判定根因。旧证据已漂移时拒绝导出。
+
+核心 CI 同时保存 wheel、完整源码 ZIP、精确二进制 patch、变更统计、VERSION、源码提交和 SHA256SUMS。PR 的源码包对应测试合并提交；主分支包对应合并后的实际提交。哈希提供一致性核对；wheel 的主分支标准出处另行验证，不等于生产发布。

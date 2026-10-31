@@ -164,6 +164,36 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(result['status'], 'UNKNOWN')
         self.assertTrue(result['unknown'][0]['inventory'])
 
+    def test_text_extraction_does_not_hide_unread_media(self):
+        source = self.root/'sources/diagram.svg'
+        source.write_text('<svg xmlns="http://www.w3.org/2000/svg"><text>保存</text><image href="screen.png"/></svg>')
+        result = sources.discover(self.project)
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertEqual(result['coverage']['enumerated_files'], 2)
+        self.assertEqual(result['coverage']['text_extracted_files'], 2)
+        self.assertEqual(result['coverage']['fully_readable_files'], 1)
+        self.assertEqual(result['coverage']['semantic_coverage'], 'NOT_VERIFIED')
+        source.unlink()
+        (self.root/'sources/brief.md').write_text('正文可读，但示意图未读：![原型](screen.png)')
+        self.assertEqual(sources.discover(self.project)['status'], 'UNKNOWN')
+
+    def test_xlsx_embedded_attachment_is_not_silently_ignored(self):
+        try:
+            import openpyxl
+        except ImportError:
+            self.skipTest('requires optional openpyxl')
+        from zipfile import ZipFile
+        source = self.root/'sources/attached.xlsx'
+        book = openpyxl.Workbook()
+        book.active.append(['字段', '规则'])
+        book.active.append(['标签', '非空'])
+        book.save(source)
+        with ZipFile(source, 'a') as archive:
+            archive.writestr('xl/embeddings/oleObject1.bin', b'unread embedded document')
+        result = sources.discover(self.project)
+        self.assertEqual(result['status'], 'UNKNOWN')
+        self.assertTrue(any('oleObject1.bin' in str(x) for x in result['unknown']))
+
     def test_paths_and_automatic_irreversible_actions_are_rejected(self):
         config = copy.deepcopy(self.project.config)
         config['checks'][0]['effect'] = 'REQUIRES_HUMAN'
@@ -305,6 +335,22 @@ class QATests(unittest.TestCase):
         write_json(self.root/'qa-review.json', review)
         with self.assertRaises(Blocked):
             qa.evaluate(Project(self.root))
+
+    def test_defect_projection_keeps_expected_and_original_failure_evidence(self):
+        project, _ = self.configure_qa()
+        (self.root/'pending.flag').touch()
+        evidence.run_checks(project, 'qa')
+        result = qa.defects(project)
+        self.assertEqual(result['status'], 'BLOCKED')
+        finding = next(f for f in result['findings'] if f['expected'] == '结果非空')
+        self.assertEqual(finding['expected'], '结果非空')
+        self.assertEqual(finding['observations'][0]['test_statuses'], ['NOT_RUN'])
+        self.assertTrue(finding['observations'][0]['report_sha256'])
+        self.assertFalse(result['external_issues_created'])
+        self.assertEqual(result['qa_acceptance'], 'NOT_GRANTED')
+        (self.root/'app.py').write_text('def normalize(value):\n    return value\n')
+        with self.assertRaises(Blocked):
+            qa.defects(project)
 
     def test_missing_expected_result_is_quality_defect(self):
         file = self.root/'qa.csv'

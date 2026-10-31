@@ -144,3 +144,35 @@ def evaluate(project):
             'cases': cases, 'source_sha256': imported['source_sha256'],
             'independence': 'NOT_VERIFIED', 'qa_acceptance': 'NOT_GRANTED',
             'note': '复用外部评审决定；本机执行不提供独立 QA 身份或验收授权'}
+
+
+def defects(project):
+    """只读导出失败/未执行差集，供既有缺陷流程消费，不新建缺陷状态。"""
+    result = evaluate(project)
+    imported, decisions = reviewed_baseline(project)
+    run = load_current(project, 'qa')
+    originals = {case['id']: case for case in imported['cases']}
+    findings = []
+    for case in result['cases']:
+        if case['status'] in ('PASS', 'EXCLUDED'):
+            continue
+        original = originals[case['id']]
+        observations = []
+        for target in decisions[case['id']]['tests']:
+            checks = [c for c in run['checks'] if c['check_id'] == target['check']]
+            for check in checks:
+                statuses = [c['status'] for c in check['cases'] if c['id'] == target['case']]
+                observations.append({**target, 'check_status': check['status'],
+                                     'test_statuses': statuses or ['MISSING'],
+                                     'execution_failure': check['failure'],
+                                     'report': check['report'], 'report_sha256': check['report_sha256']})
+            if not checks:
+                observations.append({**target, 'check_status': 'MISSING', 'test_statuses': ['NOT_RUN']})
+        findings.append({'case_id': case['id'], 'source_locator': original['source_locator'],
+                         'expected': original['fields']['expected'], 'observations': observations,
+                         'route': 'bug-fix', 'cause': 'NOT_DIAGNOSED',
+                         'next': '复现并区分产品缺陷、环境故障和规格冲突；保留独立预期'})
+    return {'schema': 'ads-qa-defect-projection/v1', 'run_id': run['run_id'],
+            'subject_sha256': run['subject']['sha256'], 'findings': findings,
+            'status': 'BLOCKED' if findings else 'NO_EXECUTION_GAPS_LOCAL',
+            'qa_acceptance': 'NOT_GRANTED', 'external_issues_created': False}

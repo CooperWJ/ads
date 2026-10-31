@@ -55,7 +55,7 @@ def main(argv=None):
     sub.add_parser('gate')
     sub.add_parser('doctor')
     intake = sub.add_parser('qa')
-    intake.add_argument('action', choices=('import', 'evaluate'))
+    intake.add_argument('action', choices=('import', 'evaluate', 'defects'))
     intake.add_argument('--gate', choices=('execution', 'independent'), default='execution')
     develop = sub.add_parser('develop')
     develop.add_argument('--model', required=True)
@@ -105,7 +105,9 @@ def main(argv=None):
                 if args.gate == 'release':
                     result['status'] = 'NOT_VERIFIED'
             elif args.command == 'qa':
-                if args.action == 'evaluate':
+                if args.action == 'defects':
+                    result = qa.defects(project)
+                elif args.action == 'evaluate':
                     result = qa.evaluate(project)
                     result['selected_gate'] = args.gate
                     if args.gate == 'independent':

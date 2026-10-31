@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -41,10 +43,30 @@ jobs:
           "$RUNNER_TEMP/ads-cold/bin/pip" install --no-deps dist/*.whl
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/ads-cold/bin/ads" --help
+      - name: Package source, exact change and reproducible checksums
+        run: |
+          git archive --format=zip --prefix=ads/ HEAD -o dist/ads-source.zip
+          git diff --binary HEAD^ HEAD > dist/ads-change.patch
+          git diff --stat HEAD^ HEAD > dist/ads-change-stat.txt
+          git rev-parse HEAD > dist/source-commit.txt
+          cp VERSION dist/VERSION
+          cd dist
+          sha256sum *.whl *.zip *.patch *.txt VERSION > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: ads-wheel
           path: dist/*.whl
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ads-source-and-change
+          path: |
+            dist/ads-source.zip
+            dist/ads-change.patch
+            dist/ads-change-stat.txt
+            dist/source-commit.txt
+            dist/VERSION
+            dist/SHA256SUMS
           if-no-files-found: error
   provenance:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

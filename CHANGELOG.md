@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.4 — OpenCode 父子会话关联与凭据风险提示
+
+- 检查器支持只读加载独立的子会话 JSON，通过父 `subagent` 工具元数据和子 `info.id` 精确关联。
+- 子会话执行 PASS 还要求 Agent 为 Explore、存在已完成的只读工具事件；错误 ID、错误 Agent、错误父级引用按 FAIL 处理。
+- 检出会话中疑似 GitHub Token 仅输出布尔风险与撤销提示，不输出凭据值；不收集、提交任何原始会话数据。
+- 新增独立子会话、脱敏输入和凭据泄露反例；不将未验证的工作区只读声明包装为整体 PASS。
+
+
 ## v0.5.3 — OpenCode V2 会话证据检查器
 
 - 增加只读、标准库实现的 `poc/check_opencode_session.py`，分析父 Session 中的结构化工具记录，不读取或输出提示词和工具结果。

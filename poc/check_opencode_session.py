@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -12,7 +13,12 @@ AGENT_KEYS = ("agent", "agent_id", "agentId", "subagent", "subagent_type", "suba
 CHILD_KEYS = ("childSessionId", "child_session_id", "sessionID", "sessionId", "session_id")
 
 
-def inspect_session(data):
+TOKEN_PATTERN = re.compile(r'(?<![A-Za-z0-9_])(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})')
+SAFE_TOOLS = {"subagent", "read", "grep", "glob", "shell", "question", "websearch", "webfetch"}
+def _secret_seen(data):
+    return bool(TOKEN_PATTERN.search(json.dumps(data, ensure_ascii=False)))
+
+def inspect_session(data, child_data=None):
     if not isinstance(data, dict) or not isinstance(data.get("info"), dict) or not isinstance(data.get("messages"), list):
         raise ValueError("导出格式无效：缺少 info 对象或 messages 数组")
     info = data["info"]
@@ -70,33 +76,75 @@ def inspect_session(data):
         invocation, reason = "PASS", "父会话的已完成 subagent 工具事件明确指向 explore"
     else:
         invocation, reason = "NOT_VERIFIED", "委派目标、执行状态或父 Agent 未能独立证实"
-    child_verified = invocation == "PASS" and bool(child_ids.intersection(child_events))
+    child_verdict = "PASS" if invocation == "PASS" and bool(child_ids.intersection(child_events)) else "NOT_VERIFIED"
+    child_reason = "父会话中存在可关联的已完成只读工具事件" if child_verdict == "PASS" else "需要可关联的 Explore 子会话执行证据"
+    if child_data is not None:
+        if not isinstance(child_data, dict) or not isinstance(child_data.get("info"), dict) or not isinstance(child_data.get("messages"), list):
+            raise ValueError("独立子会话导出格式无效")
+        child_info = child_data["info"]
+        child_id = child_info.get("id")
+        child_agent = child_info.get("agent")
+        linked_parent_id = child_info.get("parentID") or child_info.get("parentId") or child_info.get("parent_id")
+        if not child_ids:
+            child_verdict, child_reason = "NOT_VERIFIED", "父会话元数据未包含可关联的子会话 ID"
+        elif not isinstance(child_id, str) or child_id not in child_ids:
+            child_verdict, child_reason = "FAIL", "子会话 ID 与父工具元数据不一致"
+        elif child_agent != "explore":
+            child_verdict, child_reason = "FAIL", "独立子会话的 Agent 不是 explore"
+        elif linked_parent_id and info.get("id") and linked_parent_id != info["id"]:
+            child_verdict, child_reason = "FAIL", "子会话记录的父级 ID 不一致"
+        elif child_info.get("projectID") and info.get("projectID") and child_info["projectID"] != info["projectID"]:
+            child_verdict, child_reason = "FAIL", "子会话项目 ID 与父会话不一致"
+        else:
+            completed_read = any(
+                isinstance(message, dict) and message.get("type") == "assistant" and message.get("agent") == "explore"
+                and any(
+                    isinstance(part, dict) and part.get("type") == "tool"
+                    and part.get("name") in {"read", "grep", "glob"}
+                    and isinstance(part.get("state"), dict) and part["state"].get("status") in SUCCESS
+                    for part in message.get("content", [])
+                )
+                for message in child_data["messages"]
+            )
+            if invocation == "PASS" and completed_read:
+                child_verdict, child_reason = "PASS", "独立 Explore 子会话 ID 关联成功，观察到已完成的只读工具事件"
+            else:
+                child_verdict, child_reason = "NOT_VERIFIED", "无法同时确认父委派和 Explore 已完成只读工具调用"
+    possible_secret = _secret_seen(data) or (child_data is not None and _secret_seen(child_data))
     return {
         "schema": "ads-opencode-subagent-evidence/v1",
         "parent_agent": info.get("agent") if info.get("agent") in {"build", "plan"} else "unknown",
         "session_outcome": info.get("outcome") if info.get("outcome") in {"succeeded", "failed", "cancelled"} else "unknown",
-        "tool_counts": {k: counts[k] for k in sorted(counts)},
+        "tool_counts": {k: counts[k] for k in sorted(counts) if k in SAFE_TOOLS},
+        "other_tool_count": sum(count for name, count in counts.items() if name not in SAFE_TOOLS),
         "subagent_calls": calls,
         "invocation_verdict": invocation,
         "invocation_reason": reason,
-        "child_execution_verdict": "PASS" if child_verified else "NOT_VERIFIED",
+        "child_execution_verdict": child_verdict,
+        "child_execution_reason": child_reason,
+        "linked_child_session_id_present": bool(child_ids),
         "worktree_readonly_verdict": "NOT_VERIFIED",
-        "overall_verdict": "FAIL" if invocation == "FAIL" else "NOT_VERIFIED",
-        "next_evidence": "仍需独立子会话执行记录和运行前后 Git 工作区差异；本工具不审阅私有输入/输出。",
+        "potential_credential_exposure": possible_secret,
+        "security_warning": "POTENTIAL_GITHUB_TOKEN_IN_EXPORT_REVOKE_AND_DO_NOT_SHARE" if possible_secret else "NONE_DETECTED",
+        "overall_verdict": "FAIL" if "FAIL" in {invocation, child_verdict} else "NOT_VERIFIED",
+        "next_evidence": "仅本地核验独立子会话与工作区差异；未脱敏导出不得上传。",
     }
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="输出 OpenCode 委派事件的低敏证据摘要")
-    parser.add_argument("session_json", type=Path)
+    parser.add_argument("session_json", type=Path, help="父会话导出")
+    parser.add_argument("--child", type=Path, help="独立 Explore 子会话导出（仅本机使用）")
     args = parser.parse_args(argv)
     try:
-        report = inspect_session(json.loads(args.session_json.read_text(encoding="utf-8-sig")))
+        parent = json.loads(args.session_json.read_text(encoding="utf-8-sig"))
+        child = json.loads(args.child.read_text(encoding="utf-8-sig")) if args.child else None
+        report = inspect_session(parent, child)
     except (OSError, ValueError, UnicodeError) as exc:
         print(json.dumps({"status": "INVALID_INPUT", "reason": type(exc).__name__}, ensure_ascii=False))
         return 2
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 1 if report["invocation_verdict"] == "FAIL" else 0
+    return 1 if report["overall_verdict"] == "FAIL" else 0
 
 
 if __name__ == "__main__":

@@ -74,6 +74,8 @@ python3 evaluator/calibrate.py --require-browser
 
 ## OpenCode V2 Subagent 最小 PoC
 
+- v0.5.4 的 `poc/check_opencode_session.py` 支持 `--child` 输入独立 Explore 会话导出，关联父工具元数据的 `sessionID`，检测凭据泄露但不输出明文；执行证据与工作区只读证明仍分开。
+
 - 新增 `python3 poc/check_opencode_session.py <export.json>`：本机只读分析真实工具事件，仅输出低敏证据摘要；`v0.5.3` 仍不会把父会话成功自动等同于子代理执行证明。
 
 - 在 OpenCode v2.2.3 里使用 `/ads-subagent-smoke` 触发只读 Build → Explore 委派；这是人工可执行的原生入口，并不是已经完成真实子会话验证。

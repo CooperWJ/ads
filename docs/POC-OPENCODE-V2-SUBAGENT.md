@@ -67,6 +67,20 @@ python3 -m unittest discover -s tests -p 'test_opencode_session.py' -v
 ```
 
 
+## 父子会话独立关联（v0.5.4）
+
+你已完成 Build → Explore 实测，**不需要重新运行 Smoke**。为验证子代理内部的实际只读工具调用，请只在 Mac Mini 本地操作：
+
+```bash
+opencode session export ses_e6e351ca8ffeOVSeKanLezp9nT > /tmp/ads-parent-private.json
+opencode session export ses_e6e0627a9ffezGQeXubDDMd204 --sanitize > /tmp/ads-child-sanitized.json
+python3 poc/check_opencode_session.py /tmp/ads-parent-private.json --child /tmp/ads-child-sanitized.json
+```
+
+父会话采用本地未脱敏导出，是为了确认真实 `state.input.agent` 与 `state.metadata.sessionID`；子会话可以优先使用脱敏导出（只要保留 `info.id`、`info.agent` 和已完成工具事件即可）。**这些导出文件都不要上传到聊天或 GitHub**。之前父会话内容曾出现 GitHub Token，必须先撤销暴露的凭据，再执行本地证据核验。
+
+检查器输出仅包含白名单工具名称/次数、是否出现疑似 GitHub Token 的布尔提醒，以及父子关联判定，不打印参数或结果。若子会话内部实际完成 `read`/`grep`/`glob`，且与父工具中的子会话 ID 一致，`child_execution_verdict` 才为 PASS。完整只读声明还需要独立的工作区证据，因此 `overall_verdict` 仍为 NOT_VERIFIED。
+
 ## 证据与判定
 
 | 证据 | PASS 条件 |

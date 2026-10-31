@@ -1,8 +1,8 @@
 # M0b｜真实 OpenCode、Playwright、Harbor 实测手册
 
-> 下列命令是进入**已授权的独立执行环境**之后的实测步骤，不表示本发布已经运行过这些外部工具。先记录软件版本和身份信息；不得上传用户项目真实凭据或业务数据。
+> 本文同时说明已验证的外部能力与仍待实测的任务；OpenCode v2.2.3 子代理已在用户本机验证，Chromium 在 GitHub Actions 验证，Harbor 与 OpenCode Session 恢复仍待实测。先记录软件版本和身份信息；不得上传用户项目真实凭据或业务数据。
 
-## 1. Playwright（首要阻断项）
+## 1. Playwright（GitHub Actions 已通过，部署隔离仍缺）
 
 ```bash
 python3 -m pip install 'playwright==1.57.0'
@@ -19,12 +19,12 @@ Playwright Test Agents 官方建议：在隔离项目执行 `npx playwright init
 先安装获准的 OpenCode 版本，执行 `opencode --version` 并记录版本、模型和权限配置。测试只面向虚构工程。
 
 ```bash
-opencode agent list
+opencode debug agents
 opencode run --format json --agent build "仅阅读虚构工程，解释 app.py 中的入口与用户旅程，不修改文件。"
 opencode session list --format json
 ```
 
-会话中断恢复和子代理还需另行验证：实际保存/恢复同一 Session、进行任务型调用、核对工具调用证据和最终 Git diff；不能以命令返回 0 代替这些场景的验收。API 密钥通过组织规定的安全方式配置，不写入脚手架。依赖当前具体版本的 CLI `--help` 实测结果。
+子代理 Build → Explore 的委派与独立子会话只读事件已在 OpenCode v2.2.3 本机得到可复核证据；跨客户端恢复与重复副作用的下一阶段实验见 `docs/POC-OPENCODE-SESSION-RECOVERY.md`。工具执行中途崩溃、漂移和全程只读尚未实测；不能以命令返回 0 代替验收。API 密钥通过组织规定的安全方式配置，不写入脚手架。依赖当前具体版本的 CLI `--help` 实测结果。
 
 参考：https://docs.opencode.ai/docs/cli/
 

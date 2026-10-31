@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.3 — OpenCode V2 会话证据检查器
+
+- 增加只读、标准库实现的 `poc/check_opencode_session.py`，分析父 Session 中的结构化工具记录，不读取或输出提示词和工具结果。
+- 严格区分真实 `subagent` 调用、目标 Agent、关联子会话及工作区只读证明；参数脱敏或仅有 Build 文本时维持 NOT_VERIFIED。
+- 增加 7 项专项反例测试，覆盖 shell 误判、脱敏、错误目标、失败状态、父角色及子会话关联。
+- 保留 `v0.5.2` 原生命令和独立版本记录；本版本不宣称已经拿到可复核的真实子代理执行证据。
+
+
 ## v0.5.2 — OpenCode V2 原生 Subagent 实测入口
 
 - 基于本机 v2.2.3 `debug agents` 真实输出，确认 Build/Plan 为 Primary、Explore/General 为 Subagent；隐藏维护 Agent 不作为任务执行目标。

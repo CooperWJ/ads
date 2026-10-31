@@ -74,6 +74,8 @@ python3 evaluator/calibrate.py --require-browser
 
 ## OpenCode V2 Subagent 最小 PoC
 
+- 新增 `python3 poc/check_opencode_session.py <export.json>`：本机只读分析真实工具事件，仅输出低敏证据摘要；`v0.5.3` 仍不会把父会话成功自动等同于子代理执行证明。
+
 - 在 OpenCode v2.2.3 里使用 `/ads-subagent-smoke` 触发只读 Build → Explore 委派；这是人工可执行的原生入口，并不是已经完成真实子会话验证。
 - 执行步骤、会话脱敏导出、PASS/FAIL/NOT_VERIFIED 判断见 [OpenCode V2.2.3 实测指南](docs/POC-OPENCODE-V2-SUBAGENT.md)。
 - 现阶段未在当前云环境执行本机 OpenCode，真实子代理、会话恢复仍为 `NOT_VERIFIED`。

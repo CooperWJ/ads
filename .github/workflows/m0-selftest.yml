@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   calibrate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -29,12 +29,38 @@ jobs:
         run: python -m unittest discover -s tests -p 'test*.py' -v
       - name: Require real browser calibration, including bad variant
         run: python evaluator/calibrate.py --require-browser
+      - name: Print M0 browser failure details
+        if: failure()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for candidate in ("reference", "ui_crash"):
+              p = Path(f"artifacts/calibration/{candidate}-full-pass-current/grade.json")
+              if not p.is_file():
+                  print(f"{candidate}: grade report missing")
+                  continue
+              data = json.loads(p.read_text())
+              print(json.dumps({
+                  "case": candidate,
+                  "status": data.get("status"),
+                  "failed_checks": [c for c in data.get("checks", []) if c.get("status") != "PASS"],
+                  "delivery_verdict": data.get("delivery_verdict", {}).get("status"),
+              }, ensure_ascii=False, indent=2))
+          PY
+      - name: Require real M1 menu and error-state browser calibration
+        if: ${{ success() || failure() }}
+        run: python evaluator/calibrate_m1.py --require-browser
       - name: Publish calibration evidence for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ads-m0-calibration
-          path: artifacts/calibration-summary.json
+          name: ads-m0-m1-calibration
+          path: |
+            artifacts/calibration-summary.json
+            artifacts/m1-calibration-summary.json
+            artifacts/calibration/*-full-*/grade.json
+            artifacts/calibration/*-full-*/browser-trace.zip
+            artifacts/m1-calibration/*-full/grade.json
+            artifacts/m1-calibration/*-full/browser-trace.zip
           if-no-files-found: warn
-      - name: Require real M1 menu and error-state browser calibration
-        run: python evaluator/calibrate_m1.py --require-browser

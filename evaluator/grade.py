@@ -195,7 +195,8 @@ def check_menu_route(base):
     require(status==200,'home not reachable')
     p=MenuParser();p.feed(home.decode())
     require(p.links==['/board'],'navigation menu does not link to /board')
-    status,body,_=http(base,'/board')
+    status,body,headers=http(base,'/board')
+    require(headers.get('Content-Type','').lower().startswith('text/html'), 'board navigation must serve HTML content type')
     require(status==200 and b'id="project-select"' in body and b'/app.js' in body,
             'navigation destination does not load the actual board')
     return 'live HTTP navigation target and menu entry verified'
@@ -319,7 +320,7 @@ def check_js_runtime(workdir, base, check_error=False):
 
 def check_browser(base, logdir, m1_enabled=False):
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, expect
     except ImportError as err:
         return 'BLOCKED', 'Playwright package unavailable: '+str(err)
     try:
@@ -342,11 +343,15 @@ def check_browser(base, logdir, m1_enabled=False):
                 for key, value in EXPECTED.items():
                     actual=page.locator(f'[data-field="{key}"]').inner_text()
                     require(actual == value, f'browser field {key!r} incorrect: {actual!r}')
-                    require(not page.locator(f'[data-field="{key}"]').is_editable(), f'browser field {key!r} must be read-only')
+                    editable = page.locator(f'[data-field="{key}"]').evaluate("""el => {
+                        const selector = 'input,textarea,select,[contenteditable="true"],[contenteditable=""],[role="textbox"],[role="combobox"]';
+                        return el.isContentEditable || el.matches(selector) || Boolean(el.querySelector(selector));
+                    }""")
+                    require(not editable, f'browser field {key!r} must be read-only')
                 require(page.locator('#export').is_disabled(), 'export enabled before save')
                 page.locator('#notes').fill('Browser verified')
                 page.locator('#save').click()
-                require(page.locator('#export').is_enabled(), 'export still disabled after successful save')
+                expect(page.locator('#export')).to_be_enabled(timeout=10000)
                 with page.expect_download(timeout=10000) as download_info:
                     page.locator('#export').click()
                 download=download_info.value

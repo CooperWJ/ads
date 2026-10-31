@@ -46,6 +46,7 @@ def main():
     m1 = dict(target)
     m1['app.py'] = substitute(target['app.py'], "if path in ('/', '/app.js'):", "if path in ('/', '/board', '/app.js'):")
     m1['app.py'] = substitute(m1['app.py'], "('index.html' if path == '/' else 'app.js')", "('index.html' if path in ('/','/board') else 'app.js')")
+    m1['app.py'] = substitute(m1['app.py'], "'text/html; charset=utf-8' if path == '/' else 'application/javascript; charset=utf-8'", "'text/html; charset=utf-8' if path in ('/','/board') else 'application/javascript; charset=utf-8'")
     m1['web/index.html'] = substitute(target['web/index.html'],
         '<body><main><h1>Fictional Project Board</h1>',
         '<body><nav aria-label="Main menu"><a id="menu-project-board" href="/board">Project board</a></nav><main><h1>Fictional Project Board</h1>')

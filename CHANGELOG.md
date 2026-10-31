@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.1 — Chromium Runner 与 M0/M1 浏览器校准修复
+
+- 将 `.github/workflows/m0-selftest.yml` 的 Runner 固定为 `ubuntu-24.04`，避免 `ubuntu-latest` 升级到当前 Playwright 不兼容的系统版本。
+- 修复真实浏览器对只读 `<dd>` 错用 `is_editable()` 的断言；仍检查不可编辑语义，保存后等待导出按钮真正可用。
+- 修复 M1 参考实现 `/board` 返回错误 Content-Type 导致真实浏览器无法加载；增强 HTTP 菜单检查并新增回归测试。
+- M0/M1 不论彼此成功或失败都单独运行严格校准；失败时保留详细评分与 Trace 供复核。
+- 保留原有 M0/M1 严格浏览器校准和验收要求，不修改评分或放行条件。
+- GitHub Actions 实际执行结果以本版本修复分支的 CI 日志为准；不得把修复提交当作浏览器验收通过。
+
 ## v0.5.0 — M1 来源缺口到可执行验收闭环
 
 - 新增评测方持有的独立 M1 验收契约，不覆盖 M0 冻结审查与 18 项基准。

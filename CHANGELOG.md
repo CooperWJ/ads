@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.5.5 — OpenCode Session 严格证据门禁
+
+- 记录用户提供的 v2.2.3 Build → Explore 本机实测摘要：独立委派及子会话只读工具事件 PASS，工作区全程只读和整体可靠性交付 NOT_VERIFIED。
+- 修复诊断脚本可能被 CI 误用的退出码歧义：新增 `--gate invocation|child|overall`，要求证据缺失时退出 3、明确失败时退出 1，输入无效退出 2；默认 report 维持诊断兼容。
+- 补充 5 项关于报告与严格门禁区分、失败目标、缺失证据和 CLI 退出码的测试。
+- 仅发布脱敏摘要，不提交原始 Session 或含凭据的证据文件；提醒撤销此前检测到的疑似 GitHub Token。
+
+
+## v0.5.4 — OpenCode 父子会话关联与凭据风险提示
+
+- 检查器支持只读加载独立的子会话 JSON，通过父 `subagent` 工具元数据和子 `info.id` 精确关联。
+- 子会话执行 PASS 还要求 Agent 为 Explore、存在已完成的只读工具事件；错误 ID、错误 Agent、错误父级引用按 FAIL 处理。
+- 检出会话中疑似 GitHub Token 仅输出布尔风险与撤销提示，不输出凭据值；不收集、提交任何原始会话数据。
+- 新增独立子会话、脱敏输入和凭据泄露反例；不将未验证的工作区只读声明包装为整体 PASS。
+
+
+## v0.5.3 — OpenCode V2 会话证据检查器
+
+- 增加只读、标准库实现的 `poc/check_opencode_session.py`，分析父 Session 中的结构化工具记录，不读取或输出提示词和工具结果。
+- 严格区分真实 `subagent` 调用、目标 Agent、关联子会话及工作区只读证明；参数脱敏或仅有 Build 文本时维持 NOT_VERIFIED。
+- 增加 7 项专项反例测试，覆盖 shell 误判、脱敏、错误目标、失败状态、父角色及子会话关联。
+- 保留 `v0.5.2` 原生命令和独立版本记录；本版本不宣称已经拿到可复核的真实子代理执行证据。
+
+
+## v0.5.2 — OpenCode V2 原生 Subagent 实测入口
+
+- 基于本机 v2.2.3 `debug agents` 真实输出，确认 Build/Plan 为 Primary、Explore/General 为 Subagent；隐藏维护 Agent 不作为任务执行目标。
+- 新增原生命令 `/ads-subagent-smoke`：只读 Build → Explore 委派，不增加自定义 Agent，也不修改 OpenSpec 既有工作流。
+- 新增中文实测指南：说明真实子代理调用、子会话证据、脱敏导出与严格判定方法；没有运行证据时标为 NOT_VERIFIED。
+- 同步 README 中 Chromium CI 实测已通过的现状；本版本未声称本机 OpenCode、Harbor 或受保护 CI 已验证。
+
+
 ## v0.5.1 — Chromium Runner 与 M0/M1 浏览器校准修复
 
 - 将 `.github/workflows/m0-selftest.yml` 的 Runner 固定为 `ubuntu-24.04`，避免 `ubuntu-latest` 升级到当前 Playwright 不兼容的系统版本。

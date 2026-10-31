@@ -72,10 +72,23 @@ python3 evaluator/calibrate.py --require-browser
 - `poc/probe.py`：外部依赖可用性，只读检测。
 - `docs/TRUST-MODEL.md`：威胁模型、CI 信任边界与下一步。
 
+## OpenCode V2 Subagent 最小 PoC
+
+- 实际本机 Build → Explore 委派及独立子会话只读工具关联已得到用户提供的检查器结构化结果：`invocation_verdict=PASS`、`child_execution_verdict=PASS`；工作区全程只读及完整恢复仍为 `NOT_VERIFIED`，不等同独立可信 CI。
+- v0.5.5 为证据检查器新增 `--gate child`、`--gate overall` 等明确的严格门禁；默认退出 0 只表示诊断执行完成。
+
+- v0.5.4 的 `poc/check_opencode_session.py` 支持 `--child` 输入独立 Explore 会话导出，关联父工具元数据的 `sessionID`，检测凭据泄露但不输出明文；执行证据与工作区只读证明仍分开。
+
+- 新增 `python3 poc/check_opencode_session.py <export.json>`：本机只读分析真实工具事件，仅输出低敏证据摘要；`v0.5.3` 仍不会把父会话成功自动等同于子代理执行证明。
+
+- 在 OpenCode v2.2.3 里使用 `/ads-subagent-smoke` 触发只读 Build → Explore 委派；这是人工可执行的原生入口，并不是已经完成真实子会话验证。
+- 执行步骤、会话脱敏导出、PASS/FAIL/NOT_VERIFIED 判断见 [OpenCode V2.2.3 实测指南](docs/POC-OPENCODE-V2-SUBAGENT.md)。
+- 现阶段未在当前云环境执行本机 OpenCode，真实子代理、会话恢复仍为 `NOT_VERIFIED`。
+
 ## 当前边界
 
-- 本机真实浏览器全链路尚未通过，工具/管理策略限制是 `BLOCKED`，不是 PASS。
-- Harbor Worker、OpenCode Session/Subagent、Playwright Test Agents、真正受保护 CI 仍未进行本机真实集成验收。
+- M0/M1 Chromium 已在 GitHub Actions 的 Ubuntu 24.04 Runner 实际通过严格正反例校准；本地浏览器是否可用仍取决于用户设备，GitHub 自测不代表受保护评分。
+- Harbor Worker、OpenCode Session/Subagent 实际运行、Playwright Test Agents 和真正受保护 CI 仍未完成真实集成验收；OpenCode 的原生只读验证入口已提供但尚未运行。
 - `check_evidence()` 是合成错误输入校准，不是第三方签名/attestation；`check_qa()` 是合成 QA 状态，不是独立 QA Excel 接入。
 - 完整 ADS 的需求理解、AI 开发可靠性、真实交付可信性功能尚需 M1～M5 实施。
 

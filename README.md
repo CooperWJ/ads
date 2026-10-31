@@ -2,6 +2,12 @@
 
 这是面向完全虚构项目的 **AI 软件工程评测基准**，不是实际业务代码，也不是新开发完成的全部 ADS 平台。根据 ADS-ARCH-003 的 M0a/M0b 计划构建，旧 ai-dev-template 保持独立。
 
+## 当前进度与继续开发
+
+- 功能状态与下一步优先级见 [ADS 项目当前进展](docs/PROJECT-STATUS.md)；目前浏览器 M0/M1 正反例在真实 GitHub Runner 已通过，OpenCode 内置 Build → Explore 子代理已获得本机结构化证据。
+- OpenCode 同一个 Session 跨客户端恢复与一次性副作用实验见 [最小恢复 PoC](docs/POC-OPENCODE-SESSION-RECOVERY.md)；该入口已具备，但用户设备的真实恢复结果仍未验证。
+- 现有 GitHub Actions 是自测而非受保护的独立评分；Harbor 和独立 QA 尚未完成真实集成。
+
 ## M1 独立验收闭环
 
 - 可选择 `--acceptance-bundle m1`：在旧 18 项冻结义务之外，单独验证来自虚构 PRD 的菜单入口和 HTTP 失败提示。

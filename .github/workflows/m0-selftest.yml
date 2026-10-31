@@ -2,10 +2,28 @@ name: ADS M0 calibration self-test (not a protected external grader)
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - 'evaluator/**'
       - 'fixtures/**'
       - 'tests/**'
+      - 'poc/**'
+      - '.opencode/**'
+      - 'VERSION'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/m0-selftest.yml'
+  pull_request:
+    paths:
+      - 'evaluator/**'
+      - 'fixtures/**'
+      - 'tests/**'
+      - 'poc/**'
+      - '.opencode/**'
+      - 'docs/**'
+      - 'VERSION'
+      - 'README.md'
+      - 'CHANGELOG.md'
       - '.github/workflows/m0-selftest.yml'
 permissions:
   contents: read

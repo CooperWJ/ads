@@ -9,7 +9,7 @@ def execute(argv, *, cwd, stdout, stderr, timeout):
                                stdin=subprocess.DEVNULL, start_new_session=os.name == 'posix')
     try:
         return process.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
+    except (subprocess.TimeoutExpired, KeyboardInterrupt):
         try:
             if os.name == 'posix':
                 os.killpg(process.pid, signal.SIGTERM)

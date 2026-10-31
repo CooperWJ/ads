@@ -412,6 +412,22 @@ class AssuranceTests(unittest.TestCase):
         time.sleep(2)
         self.assertFalse(marker.exists())
 
+    @unittest.skipUnless(sys.platform != 'win32', 'POSIX interrupt experiment')
+    def test_user_interrupt_stops_detached_test_process_group(self):
+        import os
+        import signal
+        marker = self.root/'interrupted-child-ran'
+        child = "import time;from pathlib import Path;time.sleep(2);Path("+repr(str(marker))+").write_text('unexpected')"
+        parent = "import subprocess,sys,time;subprocess.Popen([sys.executable,'-c',"+repr(child)+"]);time.sleep(5)"
+        timer = threading.Timer(.3, lambda: os.kill(os.getpid(), signal.SIGINT))
+        timer.start()
+        self.addCleanup(timer.cancel)
+        with open(self.root/'interrupt.log','wb') as stream:
+            with self.assertRaises(KeyboardInterrupt):
+                execute([sys.executable,'-c',parent],cwd=self.root,stdout=stream,stderr=stream,timeout=10)
+        time.sleep(2)
+        self.assertFalse(marker.exists())
+
 
 
 class ComparisonTests(unittest.TestCase):

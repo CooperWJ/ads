@@ -22,10 +22,18 @@ def inspect_session(data):
         if not isinstance(message, dict):
             continue
         if message.get("type") == "assistant" and message.get("agent") == "explore":
-            for key in CHILD_KEYS:
-                cid = message.get(key)
-                if isinstance(cid, str) and cid.startswith("ses_"):
-                    child_events.add(cid)
+            has_completed_read = any(
+                isinstance(part, dict) and part.get("type") == "tool"
+                and part.get("name") in {"read", "grep", "glob"}
+                and isinstance(part.get("state"), dict)
+                and part["state"].get("status") in SUCCESS
+                for part in message.get("content", [])
+            )
+            if has_completed_read:
+                for key in CHILD_KEYS:
+                    cid = message.get(key)
+                    if isinstance(cid, str) and cid.startswith("ses_"):
+                        child_events.add(cid)
         for event in message.get("content", []):
             if not isinstance(event, dict) or event.get("type") != "tool":
                 continue

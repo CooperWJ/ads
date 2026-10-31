@@ -81,6 +81,9 @@ python3 -m unittest discover -s tests -p 'test_opencode_session.py' -v
 
 判定 `PASS` 表示上述真实调用已被证据证实；`FAIL` 表示发生了确定的权限、路由、结果或写入违例；`NOT_VERIFIED` 表示没有足够结构化会话证据；`BLOCKED` 表示本机模型、服务或权限无法运行。若脱敏导出移除了必要证据，应标为 `NOT_VERIFIED`，而非推定通过。
 
+
+**子会话判定额外要求**：即使父工具元数据包含子会话 ID，而且导出中存在同 ID 的 Explore 消息，如果没有实际完成的 `read`/`grep`/`glob` 工具事件，子会话执行仍然是 `NOT_VERIFIED`。
+
 ## 下一轮，不属于本次 PASS
 
 本次不验证 `general` 并行执行、父子任务隔离、会话中断续跑、幂等副作用或 OpenCode SDK/服务 API 真实集成。这些需要单独的任务与负例；不可使用本次 `explore` 只读验证代替。

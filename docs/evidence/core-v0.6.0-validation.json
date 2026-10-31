@@ -1,0 +1,47 @@
+{
+  "schema": "ads-core-validation/v1",
+  "version": "v0.6.0",
+  "tested_pr_head": "3183bc3031ea332fb48ac99ae2786c427bcac1bd",
+  "main_source_commit": "d6971135869204a60e3291c00d9a2a0043f22959",
+  "local_regression": {
+    "tests": 171,
+    "failures": 0,
+    "skipped": 0
+  },
+  "pr_runs": {
+    "core": 41215040576,
+    "m0_m1_browser": 41215040505,
+    "harbor_export": 41215040577,
+    "candidate_external_journey": 41215040467,
+    "all_conclusions": "success"
+  },
+  "main_core_run": 41215258915,
+  "main_core_job": 124578342137,
+  "main_provenance_job": 124578493674,
+  "cold_wheel_install": "PASS",
+  "source_zip_binary_patch_statistics_checksums": "GENERATED",
+  "wheel": {
+    "filename": "ads_delivery_system-0.6.0-py3-none-any.whl",
+    "sha256": "dc73c49169e1872ded12f0bdd25d4dd82e75acbf35c66aa693743c919b291caa",
+    "artifact_id": 13046789895
+  },
+  "source_and_change_artifact_id": 13046734997,
+  "provenance": {
+    "status": "STANDARD_CLI_VERIFIED",
+    "attestation_url": "https://github.com/CooperWJ/ads/attestations/62137361",
+    "verification_artifact_id": 13047454834,
+    "signer_identity": "https://github.com/CooperWJ/ads/.github/workflows/core.yml@refs/heads/main",
+    "source_ref": "refs/heads/main",
+    "source_digest": "d6971135869204a60e3291c00d9a2a0043f22959",
+    "deny_self_hosted_runners": true,
+    "signing": "GitHub OIDC / Public Good Sigstore / Rekor"
+  },
+  "external_blockers": [
+    "OpenCode model quota",
+    "Playwright MCP transport and native model execution",
+    "branch-protection administration access",
+    "independent QA and blind/fresh experiments",
+    "production target and authorization"
+  ],
+  "scope": "Derived factual index to original GitHub job logs and artifacts, not a replacement signature, independent QA acceptance or release authorization."
+}

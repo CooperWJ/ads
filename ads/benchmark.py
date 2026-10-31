@@ -14,10 +14,18 @@ def wilson(successes, count):
 
 def compare(base, candidate):
     require(base.get('schema') == candidate.get('schema') == 'ads-benchmark-observations/v1', '未知对照输入')
-    require(base.get('model') == candidate.get('model') and base.get('budget') == candidate.get('budget')
-            and bool(base.get('model')) and bool(base.get('budget')), '模型/预算不一致，不能归因于框架')
-    require(isinstance(base['budget'], dict) and all(type(x) in (int, float) and math.isfinite(x) and x > 0 for x in base['budget'].values()), '预算必须有明确正值')
+    for group in (base, candidate):
+        require(isinstance(group.get('model'), str) and bool(group['model'].strip()), '必须明确模型')
+        budget = group.get('budget')
+        require(isinstance(budget, dict) and bool(budget)
+                and all(isinstance(k, str) and k and type(v) in (int, float)
+                        and math.isfinite(v) and v > 0 for k, v in budget.items()), '双方预算必须有明确有限正值，布尔值不是预算')
+    require(base['model'] == candidate['model'] and base['budget'] == candidate['budget'], '模型/预算不一致，不能归因于框架')
     left, right = base['runs'], candidate['runs']
+    require(isinstance(left, list) and isinstance(right, list), '对照运行必须是列表')
+    for row in left + right:
+        require(isinstance(row.get('case_id'), str) and bool(row['case_id'].strip()), '案例身份不能为空')
+        require(type(row.get('seed')) is int, '随机种子必须是整数，布尔值和浮点值不是种子')
     key = lambda row: (row['case_id'], row['seed'], row['split'])
     lmap, rmap = {key(r): r for r in left}, {key(r): r for r in right}
     require(len(lmap) == len(left) and len(rmap) == len(right) and set(lmap) == set(rmap) and bool(left), '案例、种子、拆分遗漏或重复')

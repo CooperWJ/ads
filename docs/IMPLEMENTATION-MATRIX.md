@@ -21,10 +21,10 @@
 | C05 | 缺陷路由、执行错误与报告分类 | 真实断言失败、缺报告、超时、skipped/flaky 拒绝 | 因果调试由原生 Agent 和项目测试负责；没有第二个修复循环 |
 | D01 | 容器外 Chromium 旅程 | 参考实际通过；菜单和错误状态故障被检出 | 虚构已确认范围，不推广为所有 UI 正确 |
 | D02 | JUnit/Playwright 标准报告、真实 SQLite/API | 两栈和多仓进程、原基准 DB 写入/权限/API 测试 | Java/Testcontainers 由项目 Profile 接入，未声称已测试所有技术栈 |
-| D03 | `ads qa import/evaluate`、QA 独立 role | 多 Sheet/隐藏 Sheet、无 Requirement ID、缺预期、DEV 不能替代 QA、PASS+PENDING 阻断 | 只消费外部决策，不自签 QA_ACCEPTED；真实 QA 身份未提供 |
+| D03 | `ads qa import/evaluate/defects`、QA 独立 role | 多 Sheet/隐藏 Sheet、无 Requirement ID、缺预期、DEV 不能替代 QA、PASS+PENDING 阻断 | 只消费外部决策，不自签 QA_ACCEPTED；真实 QA 身份未提供 |
 | D04 | 新运行目录、源码/输入/报告/日志绑定 | 旧报告、报告篡改、输入漂移、数量不符被拒绝 | 本地记录不是签名证明 |
 | E01 | `ads gate` 与受信执行边界 | 配置缺权限不放行、真实保护设置适配测试 | 当前连接读取保护接口 403；未证明保护策略已启用 |
-| E02 | `ads attest`、构建 provenance 工作流、`ads smoke` | 冷安装、真实 HTTP 版本一致/不一致探测测试 | 主分支标准 attestation 待工作流实测；无生产部署目标或发布授权 |
+| E02 | `ads attest`、构建 provenance 工作流、`ads smoke` | 冷安装、真实 HTTP 身份反例、主分支标准 attestation 签署及精确来源/摘要验证（41215258915） | 无生产部署目标或发布授权 |
 | E03 | 来源作为数据、路径/权限边界、独立评分容器 | 来源指令不执行、越界/符号链接/报告污染拒绝 | 原生模型提示注入红队与完整凭据审计未验证 |
 | F01 | 三轴对照结果投影 | 相同模型/预算/案例/种子要求、Wilson 区间和成本保留 | 缺实际 holdout/fresh 盲测与独立效果结论 |
 | F02 | 单一 CLI、只读派生视图、既有 QA 决策适配 | 不新建 OpenSpec/QA 状态机；原生路由保留测试 | 不自动删除外部项目的历史资料或签署迁移验收 |
@@ -37,3 +37,7 @@
 4. **生产目标与发布授权**：已有只读探测和标准出处校验入口；不假设生产地址，不自动发布或部署。
 
 当前不是“全部 ADS 验收完成”。本矩阵避免将安装、代码存在、合成测试和实际集成混为一谈。
+
+## 已验证构建
+
+核心源码提交 `d6971135869204a60e3291c00d9a2a0043f22959` 对应 171 项测试、四条 PR CI、主分支冷安装和标准 Sigstore 出处验证。完整索引见 [core-v0.6.0-validation.json](evidence/core-v0.6.0-validation.json)。wheel/源码 ZIP/patch/统计/哈希保存在运行 41215258915；验证只适用于记录中的准确产物和源码提交，后续文档提交不自动继承同一签名。

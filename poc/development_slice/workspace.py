@@ -19,7 +19,7 @@ PROMPT = '''请从 raw/ 全部原始资料独立核对要求，修复虚构项�
 
 
 def git(root, *args):
-    return subprocess.run(['git', *args], cwd=root, check=True, capture_output=True).stdout
+    return subprocess.run(['git', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', *args], cwd=root, check=True, capture_output=True).stdout
 
 
 def sha(path):
@@ -73,7 +73,7 @@ def export(run, out):
         if path.is_symlink() or not path.is_file() or sha(path) != digest:
             raise ValueError('原始资料或开发协议被修改')
     # 提交后的修改同样从最初基线取差异，不能只看 staged/unstaged。
-    changed = git(workspace, 'diff', '--name-only', manifest['base_commit']).decode().splitlines()
+    changed = git(workspace, 'diff', '--no-ext-diff', '--no-textconv', '--name-only', manifest['base_commit']).decode().splitlines()
     if any(name not in SOURCE and not name.startswith('dev_tests/') for name in changed):
         raise ValueError('候选修改了交付白名单之外的文件')
     for path in workspace.rglob('*'):
@@ -88,7 +88,7 @@ def export(run, out):
     for name in SOURCE:
         if not (workspace / name).is_file():
             raise ValueError('候选删除交付文件')
-    patch = git(workspace, 'diff', '--binary', manifest['base_commit'], '--', *SOURCE)
+    patch = git(workspace, 'diff', '--no-ext-diff', '--no-textconv', '--binary', manifest['base_commit'], '--', *SOURCE)
     if not patch:
         raise ValueError('没有实际候选改动')
     out.mkdir(parents=True, exist_ok=False)

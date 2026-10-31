@@ -43,7 +43,7 @@ if __name__ == '__main__':
     try:
         result = calibrate(args.image, args.out)
     except Exception as exc:
-        result = {'status': 'INFRA_ERROR', 'error_type': type(exc).__name__,
+        result = {'status': 'INFRA_ERROR', 'error_type': type(exc).__name__, 'detail': str(exc)[:200],
                   'opencode_development': 'NOT_VERIFIED'}
     (args.out / 'summary.json').write_text(json.dumps(result, ensure_ascii=False, indent=2))
     print(json.dumps(result, ensure_ascii=False, indent=2))

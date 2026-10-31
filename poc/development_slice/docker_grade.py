@@ -48,9 +48,6 @@ with app.database():
 ThreadingHTTPServer(('0.0.0.0', 8000), app.Handler).serve_forever()
 ''')
         (context / 'Dockerfile').write_text(f'FROM {image}\nWORKDIR /work\nCOPY . /work/\nCMD ["python", "-B", "launcher.py"]\n')
-        with socket.socket() as sock:
-            sock.bind(('127.0.0.1', 0))
-            port = sock.getsockname()[1]
         db = workdir / 'runtime.sqlite'
         # 只挂载一个空数据库文件，候选不能用替换目录项让宿主跟随任意符号链接。
         sqlite3.connect(db).close()
@@ -61,7 +58,7 @@ ThreadingHTTPServer(('0.0.0.0', 8000), app.Handler).serve_forever()
             network_created = True
             with (outdir / 'app.log').open('w') as log:
                 command = ['docker', 'run', '--name', name, '--network', network,
-                           '--publish', f'127.0.0.1:{port}:8000', '--read-only',
+                           '--read-only',
                            '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
                            '--pids-limit', '128', '--memory', '512m', '--cpus', '1',
                            '--user', f'{os.getuid()}:{os.getgid()}',
@@ -70,12 +67,17 @@ ThreadingHTTPServer(('0.0.0.0', 8000), app.Handler).serve_forever()
                            '--mount', f'type=bind,src={db.resolve()},dst=/data/runtime.sqlite',
                            '--env', 'ADS_DB_PATH=/data/runtime.sqlite', name]
                 proc = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, text=True)
-                base = f'http://127.0.0.1:{port}'
+                base = None
                 deadline = time.monotonic() + 15
                 while time.monotonic() < deadline:
                     if proc.poll() is not None:
                         raise RuntimeError('候选容器提前退出；参见 app.log')
                     try:
+                        network_state = json.loads(docker('inspect', name, timeout=5).stdout)[0]['NetworkSettings']['Networks'][network]
+                        address = network_state.get('IPAddress')
+                        if not address:
+                            raise RuntimeError('候选内部地址尚未就绪')
+                        base = f'http://{address}:8000'
                         status, data, _ = G.http(base, '/health')
                         if status == 200 and json.loads(data).get('ok') is True:
                             break
@@ -83,7 +85,7 @@ ThreadingHTTPServer(('0.0.0.0', 8000), app.Handler).serve_forever()
                         pass
                     time.sleep(.05)
                 else:
-                    raise RuntimeError('容器服务启动超时')
+                    raise RuntimeError('容器内部 HTTP 地址未在 15 秒内就绪')
                 inspected = json.loads(docker('inspect', name).stdout)[0]
                 network_info = json.loads(docker('network', 'inspect', network).stdout)[0]
                 host = inspected['HostConfig']
@@ -145,7 +147,7 @@ def main():
     try:
         report = evaluate(args.candidate, args.image, args.out, args.profile)
     except Exception as exc:
-        report = {'status': 'INFRA_ERROR', 'error_type': type(exc).__name__}
+        report = {'status': 'INFRA_ERROR', 'error_type': type(exc).__name__, 'detail': str(exc)[:200]}
         args.out.mkdir(parents=True, exist_ok=True)
         (args.out / 'grade.json').write_text(json.dumps(report))
     print(json.dumps(report, ensure_ascii=False, indent=2))

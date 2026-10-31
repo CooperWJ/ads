@@ -36,6 +36,14 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(result['opencode_execution'], 'NOT_VERIFIED')
         self.assertTrue((Path(self.tmp.name) / 'export/candidate.patch').is_file())
 
+    def test_candidate_git_helper_cannot_run_during_export(self):
+        source = self.work / 'app.py'
+        source.write_text(source.read_text() + '\n# harmless fixture edit\n')
+        marker = Path(self.tmp.name) / 'external-helper-ran'
+        subprocess.run(['git', 'config', 'diff.external', f'touch {marker}'], cwd=self.work, check=True)
+        W.export(self.run, Path(self.tmp.name) / 'export')
+        self.assertFalse(marker.exists())
+
     def test_raw_modification_cannot_be_exported(self):
         (self.work / 'raw/brief.md').write_text('changed expectation')
         with self.assertRaises(ValueError):

@@ -48,6 +48,8 @@ class OpenCodeEvidenceTests(unittest.TestCase):
                                  "sessionId": "ses_unrelated", "content": []})
         self.assertEqual(inspect_session(data)["child_execution_verdict"], "NOT_VERIFIED")
         data["messages"][-1]["sessionId"] = "ses_child"
+        self.assertEqual(inspect_session(data)["child_execution_verdict"], "NOT_VERIFIED")
+        data["messages"][-1]["content"] = [tool("read", "completed")]
         self.assertEqual(inspect_session(data)["child_execution_verdict"], "PASS")
 
     def test_invalid_format(self):

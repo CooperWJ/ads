@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.2 — OpenCode V2 原生 Subagent 实测入口
+
+- 基于本机 v2.2.3 `debug agents` 真实输出，确认 Build/Plan 为 Primary、Explore/General 为 Subagent；隐藏维护 Agent 不作为任务执行目标。
+- 新增原生命令 `/ads-subagent-smoke`：只读 Build → Explore 委派，不增加自定义 Agent，也不修改 OpenSpec 既有工作流。
+- 新增中文实测指南：说明真实子代理调用、子会话证据、脱敏导出与严格判定方法；没有运行证据时标为 NOT_VERIFIED。
+- 同步 README 中 Chromium CI 实测已通过的现状；本版本未声称本机 OpenCode、Harbor 或受保护 CI 已验证。
+
+
 ## v0.5.1 — Chromium Runner 与 M0/M1 浏览器校准修复
 
 - 将 `.github/workflows/m0-selftest.yml` 的 Runner 固定为 `ubuntu-24.04`，避免 `ubuntu-latest` 升级到当前 Playwright 不兼容的系统版本。

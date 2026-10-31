@@ -6,7 +6,8 @@
 - 新增 `poc/recovery_poc.py`：在系统临时目录建立虚构实验，记录唯一副作用尝试、Git HEAD + AGENTS 基线指纹；重复执行与基线漂移不能通过。
 - 新增两个 OpenCode 原生命令 `/ads-recovery-phase1`、`/ads-recovery-phase2`，分两次进入同一个 Session 运行，禁止恢复后重新执行 apply。
 - 新增父 Session 两时点导出审计：验证相同 Session/项目 ID、消息延续、真实工具执行、恢复阶段不重复 apply、临时副作用只执行一次；仅输出低敏摘要。
-- 新增 10 项合成正反例；文档明确客户端重启实验 **不等于**执行中途崩溃恢复，后者仍为 NOT_VERIFIED。
+- 新增 10 项合成正反例及 1 项真实跨 Python 进程持久化/重复执行反例；文档明确客户端重启实验 **不等于**执行中途崩溃恢复，后者仍为 NOT_VERIFIED。
+- 修补 CI 触发范围：PR 上的 OpenCode 原生命令、PoC、文档、版本变更须重新跑测试；这仍属于自测，不等于分支保护或独立评分。
 - 修复 VERSION 与 CHANGELOG 不一致，以及旧手册残留的 OpenCode `agent list` 和 Chromium 未测描述；未新增第二套 Agent Loop、真实业务数据或外部凭据。
 
 

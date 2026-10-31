@@ -85,5 +85,41 @@ class RecoveryPoCTests(unittest.TestCase):
         self.assertNotIn("confidential_example_DO_NOT_ECHO", out)
 
 
+
+
+class RealCLIProcessTests(unittest.TestCase):
+    """跨真实 Python 进程验证副作用记录持久化；不假装运行了 OpenCode。"""
+
+    def test_cli_persists_once_and_rejects_replay_across_processes(self):
+        import shutil
+        import subprocess
+        import sys
+
+        script = str(Path(P.__file__).resolve())
+
+        def invoke(*args):
+            result = subprocess.run(
+                [sys.executable, script, *args],
+                cwd=P.ROOT, capture_output=True, text=True, timeout=15,
+            )
+            self.assertTrue(result.stdout, result.stderr)
+            return result.returncode, json.loads(result.stdout)
+
+        code, created = invoke("init")
+        self.assertEqual(code, 0)
+        run_dir = created["run_dir"]
+        self.addCleanup(lambda: shutil.rmtree(run_dir, ignore_errors=True))
+        code, first = invoke("apply", run_dir)
+        self.assertEqual((code, first["status"], first["attempts"]), (0, "APPLIED", 1))
+        code, verified = invoke("verify", run_dir)
+        self.assertEqual((code, verified["status"], verified["attempts"]), (0, "PASS", 1))
+        code, replay = invoke("apply", run_dir)
+        self.assertEqual((code, replay["status"], replay["attempts"]),
+                         (3, "REPEATED_APPLY", 2))
+        code, failed = invoke("verify", run_dir)
+        self.assertEqual((code, failed["status"], failed["attempts"]),
+                         (3, "FAIL", 2))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,23 @@ on:
       - 'evaluator/**'
       - 'fixtures/**'
       - 'tests/**'
+      - 'poc/**'
+      - '.opencode/**'
+      - 'VERSION'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/m0-selftest.yml'
+  pull_request:
+    paths:
+      - 'evaluator/**'
+      - 'fixtures/**'
+      - 'tests/**'
+      - 'poc/**'
+      - '.opencode/**'
+      - 'docs/**'
+      - 'VERSION'
+      - 'README.md'
+      - 'CHANGELOG.md'
       - '.github/workflows/m0-selftest.yml'
 permissions:
   contents: read

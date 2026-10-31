@@ -6,7 +6,7 @@
 
 ## 1. 准备
 
-在 ADS 仓库的 `feat/m2-opencode-session-resume-v0.5.6` 分支下（本实验前不要再修改/提交文件）：
+在待验证提交的 ADS 仓库根目录下（实验期间不要修改或提交文件；审计器也必须来自同一提交）：
 
 ```bash
 python3 poc/recovery_poc.py init
@@ -53,7 +53,7 @@ opencode --session <SESSION_ID>
 opencode session export <SESSION_ID> > /tmp/ads-recovery-after-private.json
 ```
 
-## 4. 独立证据审计
+## 4. 本地导出一致性审计
 
 ```bash
 python3 poc/recovery_poc.py audit \
@@ -62,13 +62,17 @@ python3 poc/recovery_poc.py audit \
   <RUN_DIR>
 ```
 
-严格要求：两次导出 Session ID 一致；Project ID 一致；旧消息 ID 保持；有新增用户/Agent 消息；第一阶段工具调用确实包含 `apply`；恢复后的新事件包含 `verify` 而不再包含 `apply`；临时目录真实计数等于 1 且基线未漂移。任何证据不足都返回 `NOT_VERIFIED` 和非零退出码，不能冒充 PASS。
+严格要求：两次导出 Session/Project ID 一致；每份导出的消息 ID 唯一且非空，旧消息完整内容作为前缀保留；有新增用户/Agent 消息。第一阶段恰好一个直接 Python apply shell 调用，恢复阶段恰好一个直接 Python verify shell 调用。脚本必须是当前探针，实验目录必须精确匹配；工具 state.output 必须是原始 JSON 回执，run_id、status、attempts 与实验一致。verify 回执还要求 marker_valid=true、baseline_drift=false。本地副作用计数必须为 1，提交、AGENTS、已跟踪未提交差异及探针指纹均未漂移。
+
+不接受 echo、shell 包装器、复合命令、其他路径脚本、额外 shell 调用或脱敏后丢失的回执。未知导出格式不推断成功；返回 NOT_VERIFIED 或输入错误及非零退出码。已跟踪差异指纹不代表所有外部/未跟踪输入均被覆盖。
+
+审计 schema 为 `ads-opencode-recovery-audit/v2`，信任级别固定为 `LOCAL_EXPORT_CONSISTENCY_ONLY`。它核对本机材料的一致性，不能证明导出未被整体伪造。旧 v1 实测是历史观察，必须重新实验才能获得当前协议的结果。
 
 只把该脚本输出的**简短审计 JSON**发给审查方。原始两个 Session 文件保留本机，不上传 GitHub；审计器不会输出原始提示词、shell 命令、Session ID 或工具内容。
 
 ## 5. 核验边界与清理
 
-- `PASS` 只说明**同一个 OpenCode Session 的客户端退出后恢复，并保持受控一次性副作用不重复**。
+- `PASS` 只表示所提供的本地材料支持同一 Session 重入和受控副作用不重复；客户端是否真实退出仍依赖实验操作记录，不是独立签名证明。
 - 它不证明“执行到一半断电后也不会重复”；不证明其他副作用（数据库、远程调用）存在幂等保护；不证明全程无工作区写入。
 - 检测到 `BASELINE_DRIFT` 时停止，不应修改基线来得到 PASS。
 - 实验结束且保留审计输出后，可以人工删除对应 `<RUN_DIR>` 临时目录；脚本不会自动删除。

@@ -1,44 +1,31 @@
-# ADS 当前进展与下一阶段任务（2026-10-31）
+# ADS 当前能力与下一步
 
-**基线：**以 GitHub `CooperWJ/ads` 当前主分支为事实源；本文的 v0.5.6 内容为功能分支候选，不得在实际 Mac Mini 运行之前宣称恢复 PASS。
+事实源：当前源码、实际执行记录与明确的验证范围。历史单项成功不代表整个 ADS 已完成。
 
-## 已获得可复核的结果
-
-| 能力 | 状态 | 证据或边界 |
+| 能力 | 当前判定 | 证据与限制 |
 |---|---|---|
-| M0a 虚构基准正反例校准 | PASS（已测范围） | 真实 HTTP/SQLite/XLSX/Node、故障变异 |
-| M0/M1 真实 Chromium | PASS（已测范围） | GitHub Ubuntu 24.04 Runner；M0/M1 严格参考+坏变异测试 |
-| OpenCode 2.2.3 Build → Explore 原生调用 | PASS | 用户本机独立父子 Session JSON 分析；工具和目标结构化核对 |
-| Explore 子会话真实只读工具事件 | PASS | 用户本机检查器报告，已与父会话 ID 关联 |
-| OpenCode 跨客户端会话恢复 | NOT_VERIFIED | v0.5.6 新增可执行 PoC；本机真实运行尚未完成 |
-| 工具执行中途崩溃恢复 / 幂等 | NOT_VERIFIED | 与客户端重启分开验证；不得混同 |
-| 子代理全过程无工作区写入 | NOT_VERIFIED | 已有只读操作事件，不代表完整安全审计 |
-| 受保护独立评分 CI | NOT_IMPLEMENTED | 现有仓库 Action 是自测；主分支尚未启用保护 |
-| Harbor 隔离 Worker | NOT_TESTED | 未在具备 Harbor/容器权限的环境运行 |
-| Playwright Test Agents → OpenCode | NOT_TESTED | 仅浏览器原生 E2E 校准通过，不代表 agents 通过 |
-| M1 多源真实需求发现 | PARTIAL | 虚构 MD/SVG/多 Sheet XLSX；未覆盖通用 PDF/Figma/视频 |
-| M3 独立 QA | NOT_IMPLEMENTED | 尚无真实多 Sheet QA 独立执行与缺陷回流 |
-| M4 发布/部署身份 | NOT_IMPLEMENTED | 无生产环境发布/冒烟 |
-| M5 三轴对照 | NOT_STARTED | 缺盲测和新鲜案例 |
+| M0/M1 参考与故障变体校准 | 已验证范围通过 | HTTP/SQLite/XLSX/Node；主分支提交 fc9098f 的 GitHub 运行 41207288124 已成功，包括 Chromium |
+| OpenCode Build → Explore | 历史本机观察通过 | 用户提供父子 Session 检查结果；不证明全过程无写入 |
+| 客户端重入恢复 | 历史现象已观察；当前严格审计待复测 | 旧审计可误认 echo、错误目录和被修改的历史消息，旧 PASS 不自动升级为当前协议 PASS |
+| 恢复审计器 | 本地一致性检查 | 命令、run_id、回执、历史内容、本地计数相互绑定；导出仍不是独立可信证明 |
+| 工具中途崩溃、远程副作用幂等 | NOT_VERIFIED | 暂缓通用故障编排器，先验证具体原生执行旅程 |
+| 最小受信执行与受保护评分 | NOT_VERIFIED | 当前工作流为自测；本轮读取分支保护被连接权限拒绝，不能据此认定配置存在或不存在 |
+| Harbor / Playwright Test Agents | NOT_TESTED | 无固定版本的本项目真实集成结果 |
+| 多来源需求发现 | PARTIAL | 受控虚构 MD/SVG/XLSX；固定审查样本不证明陌生需求语义召回率 |
+| 原始需求到 OpenCode 实现切片 | NOT_VERIFIED | 参考补丁通过不等于 Agent 实际完成开发 |
+| 独立 QA / 发布部署身份 | NOT_IMPLEMENTED | 合成 QA 输入不等于原始多 Sheet QA 独立执行 |
+| 第二项目接入与效果对照 | NOT_STARTED | 未证明跨项目接入成本和 ADS 相对基线的收益 |
 
-## 下一阶段执行优先级
+## 当前迭代
 
-| 优先级 | 任务 ID | 下一个可独立验收的最小结果 | 依赖 |
-|---|---|---|---|
-| P0 | A06 / C04-a | OpenCode 同一 Session 客户端退出→恢复、单次副作用不重复 | v0.5.6 PoC、用户本机执行 |
-| P0 | E01-a | `main` 的受保护分支规则、必需 CI 检查、未授权自改检查失败 | GitHub 管理权限 |
-| P0 | A04 | Harbor 真实 Docker Worker 运行参考/坏变异、证据与资源报告 | Linux Runner + 容器许可 |
-| P1 | C04-b | 工具中途终止/重试/输入基线漂移，负例 fail-closed | C04-a PASS 后 |
-| P1 | A05 | Playwright Test Agents 在 OpenCode 生成/修复测试，外部 Oracle 不可更改 | 真实受信评分边界 |
-| P1 | D03 | QA 多 Sheet 输入→质量校验→差异→自动化执行→结果回填 | M1 收敛与测试 Adapter |
-| P1 | B01–B05 | 多源提取能力、真实遗漏与人工争议闭环 | 素材解析器 PoC |
-| P2 | A07/A08 | GSD/HelixHarness/Open SWE 对照、复用 ADR | 基础恢复与隔离 |
-| P2 | D02/D04/E02/E03/F01/F02 | API/DB、证据身份、部署、注入、盲测与迁移 | 上述核心闭环 |
+先修复已有证据的误判和文档事实漂移。保留正常通过、故障拒绝和原有评分范围；不因当前检查变严而声称获得新的 OpenCode 实测证据。
 
-## 研发边界
+## 后续按可交付结果推进
 
-1. 先证明现有 OpenCode 原生能力，缺口再用极少量确定性脚本补充；不建第二套 Agent Loop。
-2. Browser PASS 不等于 Harbor PASS；普通 GitHub CI PASS 不等于受保护外部评分 PASS。
-3. README/AGENTS 只陈述当前能力，新增版本记录仅进 CHANGELOG。
-4. 每次新迭代递增版本，以最新主分支增量开发，旧发布可追溯。
-5. 无真实业务代码、业务 SQL、凭据、真实验收输入进入公共模板。
+1. 最小隔离执行：固定工具版本，参考与坏变体在干净环境重评；候选不能修改验收方。优先实测 Harbor 的独立 verifier，记录可用性、限制与退出决策。分支保护与隔离执行分别验收。
+2. 完整开发切片：固定原始输入、模型、预算和起始代码；OpenCode 实际完成发现、实现、启动、调试、提交，外部验收运行真实 UI/API/DB 旅程。必须记录失败、人工介入和成本。
+3. 独立 QA：多 Sheet 原始输入、独立预期、必验集合及缺陷回流；不强制人工 requirementID。Playwright Agents 负责生成/修复开发测试，不能跳过必验断言换取通过。
+4. 第二个结构不同的虚构项目：主要以配置和 Adapter 接入，不把项目语义写入核心。
+5. 小规模同条件对照：原生 OpenCode、冻结旧脚手架、ADS；报告遗漏、首次可用、人工介入、成本和时延。小样本只给探索性结论。
+
+每轮只发布已实际完成的范围。完整产品收益尚未验证，不以版本数、脚本数和测试数替代效果。

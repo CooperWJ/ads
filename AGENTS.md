@@ -44,5 +44,6 @@ python3 tools/build_variants.py                           # regenerate patch fil
 - **Do not hand-edit `patches/*.patch`** — they are generated deterministically by `tools/build_variants.py` from the frozen `base/` seed; regenerate instead.
 - Only these paths are editable for a candidate (see `ALLOWED_PATHS` in `evaluator/grade.py`): `app.py`, `web/index.html`, `web/app.js`. Anything else is rejected.
 - Evaluator-owned acceptance data: `evaluator/raw_obligations.json` (18 obligations) and `evaluator/source_review.json` (independent per-fragment review of 4 sources / 44 units). `evaluator/requirements.py` enforces they are fully audited and cross-referenced.
-- Version is single-sourced in `VERSION` (currently `0.4.0`); M1 discovery lives in `discovery/`, M0 grading in `evaluator/`.
+- Version is single-sourced in `VERSION`; M1 discovery lives in `discovery/`, M0 grading in `evaluator/`.
+- Current capability status is maintained in `docs/PROJECT-STATUS.md`. Recovery audit checks local export consistency only; synthetic fixtures and prior-schema PASS do not prove a current native OpenCode run.
 - OpenSpec-driven changes: see `.opencode/commands/opsx-*.md` and `openspec/config.yaml` (schema `spec-driven`); change artifacts live under `openspec/`.

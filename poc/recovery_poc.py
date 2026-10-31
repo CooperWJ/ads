@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -21,19 +22,26 @@ def _baseline():
     rev = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
                          capture_output=True, timeout=5, check=True).stdout.strip()
     digest = hashlib.sha256((ROOT / "AGENTS.md").read_bytes()).hexdigest()
-    return {"commit": rev, "agents_sha256": digest}
+    diff = subprocess.run(["git", "diff", "HEAD", "--binary", "--no-ext-diff"], cwd=ROOT,
+                          capture_output=True, timeout=5, check=True).stdout
+    return {"commit": rev, "agents_sha256": digest,
+            "tracked_diff_sha256": hashlib.sha256(diff).hexdigest(),
+            "probe_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
 
 
 def _load(run):
-    run = Path(run).resolve(strict=True)
+    original = Path(run)
+    if original.is_symlink():
+        raise ValueError("实验目录不得为符号链接")
+    run = original.resolve(strict=True)
     temp = Path(tempfile.gettempdir()).resolve()
     if run.parent != temp or not run.name.startswith(PREFIX) or run.is_symlink():
         raise ValueError("只允许操作当前系统临时目录下的 ADS PoC 实验目录")
     manifest = run / "manifest.json"
-    if manifest.is_symlink():
-        raise ValueError("manifest 不得为符号链接")
+    if any((run / name).is_symlink() for name in ("manifest.json", "attempts.log", "applied.json")):
+        raise ValueError("实验文件不得为符号链接")
     data = json.loads(manifest.read_text())
-    if data.get("schema") != "ads-opencode-recovery/v1" or not isinstance(data.get("run_id"), str):
+    if data.get("schema") != "ads-opencode-recovery/v1" or not isinstance(data.get("run_id"), str) or not isinstance(data.get("baseline"), dict):
         raise ValueError("无效实验目录")
     return run, data
 
@@ -67,7 +75,10 @@ def apply(run):
 
 def _count(run):
     file = run / "attempts.log"
-    return file.read_text().count("apply\n") if file.exists() else 0
+    lines = file.read_text().splitlines() if file.exists() else []
+    if any(line != "apply" for line in lines):
+        raise ValueError("副作用尝试记录损坏")
+    return len(lines)
 
 
 def verify(run):
@@ -85,50 +96,89 @@ def verify(run):
             "baseline_drift": drift, "run_id": data["run_id"]}
 
 
-def _tools(data):
-    for m in data.get("messages", []):
-        if not isinstance(m, dict) or m.get("type") != "assistant":
+def _messages_valid(messages):
+    ids = [m.get("id") for m in messages if isinstance(m, dict)]
+    return (len(ids) == len(messages) and all(isinstance(x, str) and x for x in ids)
+            and len(ids) == len(set(ids)))
+
+
+def _tools(messages):
+    for message in messages:
+        if not isinstance(message, dict) or message.get("type") != "assistant":
             continue
-        for item in m.get("content", []):
-            if not isinstance(item, dict) or item.get("type") != "tool" or item.get("name") != "shell":
-                continue
-            state = item.get("state") or {}
-            inputs = state.get("input") or {}
-            command = inputs.get("command") if isinstance(inputs, dict) else None
-            if isinstance(command, str) and state.get("status") == "completed":
-                yield command
+        content = message.get("content", [])
+        if not isinstance(content, list):
+            raise ValueError("无效消息内容")
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "tool" and item.get("name") == "shell":
+                yield item
+
+
+def _bound_call(item, action, run, run_id):
+    # 仅接受直接 Python 调用；包装器、复合 shell、重定向均不能作为证明。
+    state = item.get("state")
+    if not isinstance(state, dict) or state.get("status") != "completed":
+        return False
+    inputs = state.get("input")
+    command = inputs.get("command") if isinstance(inputs, dict) else None
+    if not isinstance(command, str) or any(c in command for c in "\n\r;&|<>`$"):
+        return False
+    try:
+        tokens = shlex.split(command)
+        if len(tokens) != 4 or tokens[0] not in {"python", "python3", sys.executable}:
+            return False
+        script = Path(tokens[1])
+        script = script if script.is_absolute() else ROOT / script
+        if script.resolve() != Path(__file__).resolve() or tokens[2] != action:
+            return False
+        if not Path(tokens[3]).is_absolute() or Path(tokens[3]).resolve() != run:
+            return False
+        # 缺 stdout、脱敏 stdout、其他实验回执均不能升级为已执行证据。
+        output = state.get("output")
+        receipt = json.loads(output) if isinstance(output, str) else None
+        if not isinstance(receipt, dict) or receipt.get("run_id") != run_id:
+            return False
+        if type(receipt.get("attempts")) is not int or receipt["attempts"] != 1:
+            return False
+        if action == "apply":
+            return receipt.get("status") == "APPLIED"
+        return (receipt.get("status") == "PASS" and receipt.get("marker_valid") is True
+                and receipt.get("baseline_drift") is False)
+    except (OSError, ValueError):
+        return False
 
 
 def audit(before, after, run):
     for export in (before, after):
         if not isinstance(export, dict) or not isinstance(export.get("info"), dict) or not isinstance(export.get("messages"), list):
             raise ValueError("会话导出不是 OpenCode Session JSON")
+    run, manifest = _load(run)
     before_info, after_info = before["info"], after["info"]
     same_id = (isinstance(before_info.get("id"), str) and
                before_info["id"].startswith("ses_") and before_info["id"] == after_info.get("id"))
     same_project = bool(before_info.get("projectID") and before_info["projectID"] == after_info.get("projectID"))
-    old_ids = [m.get("id") for m in before["messages"] if isinstance(m, dict) and m.get("id")]
-    new_ids = [m.get("id") for m in after["messages"] if isinstance(m, dict) and m.get("id")]
-    preserved = bool(old_ids) and new_ids[:len(old_ids)] == old_ids
-    additional = new_ids[len(old_ids):] if preserved else []
-    new_message_types = [m.get("type") for m in after["messages"] if isinstance(m, dict) and m.get("id") in additional]
+    old, current = before["messages"], after["messages"]
+    valid = _messages_valid(old) and _messages_valid(current)
+    preserved = valid and bool(old) and current[:len(old)] == old
+    new = current[len(old):] if preserved else []
+    new_types = [m.get("type") for m in new]
+    first_calls, new_calls = list(_tools(old)), list(_tools(new))
+    first_apply = (len(first_calls) == 1 and
+                   _bound_call(first_calls[0], "apply", run, manifest["run_id"]))
+    resumed_verify = (len(new_calls) == 1 and
+                      _bound_call(new_calls[0], "verify", run, manifest["run_id"]))
     evidence = verify(run)
-    first_calls = list(_tools(before))
-    after_calls = list(_tools(after))
-    new_calls = after_calls[len(first_calls):] if after_calls[:len(first_calls)] == first_calls else []
-    # Only inspect command tokens, never print commands or transcript text.
-    first_apply = any("recovery_poc.py" in c and " apply " in f" {c} " for c in first_calls)
-    resumed_verify = any("recovery_poc.py" in c and " verify " in f" {c} " for c in new_calls)
-    repeated_apply = any("recovery_poc.py" in c and " apply " in f" {c} " for c in new_calls)
     checks = {"same_session_id": same_id, "same_project_id": same_project,
+              "unique_message_ids": valid,
               "original_messages_preserved": preserved,
-              "new_user_and_assistant_messages": "user" in new_message_types and "assistant" in new_message_types,
+              "new_user_and_assistant_messages": "user" in new_types and "assistant" in new_types,
               "phase1_apply_tool_observed": first_apply,
               "phase2_verify_tool_observed": resumed_verify,
-              "no_repeated_apply_tool": not repeated_apply,
+              "resume_shell_scope_verified": resumed_verify,
               "disposable_effect_exactly_once": evidence["status"] == "PASS"}
-    return {"schema": "ads-opencode-recovery-audit/v1", "verdict": "PASS" if all(checks.values()) else "NOT_VERIFIED",
+    return {"schema": "ads-opencode-recovery-audit/v2", "verdict": "PASS" if all(checks.values()) else "NOT_VERIFIED",
             "checks": checks, "effect_attempts": evidence["attempts"],
+            "evidence_trust": "LOCAL_EXPORT_CONSISTENCY_ONLY",
             "scope": "CLI/TUI client re-entry for same session, NOT mid-tool crash recovery"}
 
 

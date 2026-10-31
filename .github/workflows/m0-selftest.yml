@@ -2,6 +2,7 @@ name: ADS M0 calibration self-test (not a protected external grader)
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - 'evaluator/**'
       - 'fixtures/**'

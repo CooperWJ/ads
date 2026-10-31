@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ads-delivery-system"
+dynamic = ["version"]
+description = "OpenCode-first project evidence and delivery adapters"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+sheets = ["openpyxl==3.1.5"]
+pdf = ["pypdf==6.10.0"]
+
+[project.scripts]
+ads = "ads.cli:main"
+
+[tool.setuptools]
+packages = ["ads", "discovery"]
+
+[tool.setuptools.dynamic]
+version = {file = ["VERSION"]}

@@ -1,0 +1,76 @@
+name: ADS reusable core and build provenance
+on:
+  pull_request:
+    paths:
+      - 'ads/**'
+      - 'discovery/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'VERSION'
+      - '.github/workflows/core.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ads/**'
+      - 'discovery/**'
+      - 'pyproject.toml'
+      - 'VERSION'
+      - '.github/workflows/core.yml'
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build and optional sheet adapter
+        run: python -m pip install 'setuptools==80.9.0' 'wheel==0.45.1' 'openpyxl==3.1.5' 'pypdf==6.10.0' 'reportlab==4.4.9'
+      - name: Require real core and benchmark regression
+        run: python -m unittest discover -s tests -p 'test*.py' -v
+      - name: Build and cold-install the actual package
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation . --wheel-dir dist
+          python -m venv "$RUNNER_TEMP/ads-cold"
+          "$RUNNER_TEMP/ads-cold/bin/pip" install --no-deps dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/ads-cold/bin/ads" --help
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ads-wheel
+          path: dist/*.whl
+          if-no-files-found: error
+  provenance:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ads-wheel
+          path: dist
+      - name: Attest development build origin, not release authorization
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*.whl
+      - name: Verify exact artifact, source commit and main workflow identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh attestation verify dist/*.whl --repo "$GITHUB_REPOSITORY" --cert-identity "https://github.com/$GITHUB_REPOSITORY/.github/workflows/core.yml@refs/heads/main" --source-ref refs/heads/main --source-digest "$GITHUB_SHA" --deny-self-hosted-runners --format json > dist/provenance-verification.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ads-build-provenance-verification
+          path: dist/provenance-verification.json
+          if-no-files-found: error

@@ -11,16 +11,18 @@
 | 工具中途崩溃、远程副作用幂等 | NOT_VERIFIED | 暂缓通用故障编排器，先验证具体原生执行旅程 |
 | 最小受信执行与受保护评分 | NOT_VERIFIED | 当前工作流为自测；本轮读取分支保护被连接权限拒绝，不能据此认定配置存在或不存在 |
 | Harbor 独立导出 verifier | PASS（导出产物边界） | Harbor 0.25.0 / Docker 三例校准通过；运行 41208957430，原生摘要见 docs/evidence/harbor-v0.5.8-calibration.json；不代表完整交付 |
-| Playwright Test Agents | NOT_TESTED | 尚无真实集成结果 |
+| Playwright Test Agents | PARTIAL | 原生识别三个子 Agent；MCP 状态未显示已配置服务器，模型执行未验证 |
 | 多来源需求发现 | PARTIAL | 受控虚构 MD/SVG/XLSX；固定审查样本不证明陌生需求语义召回率 |
 | 原始需求到 OpenCode 实现切片 | BLOCKED（模型额度） | 已实际启动 @opencode/cli 2.2.3，匿名模型返回 provider.free-limit/429；未生成候选 |
-| 容器外 UI/API/DB 旅程验收 | 待本候选 CI 校准 | 新增候选容器服务入口，保持原有 Oracle；不计作 OpenCode 开发通过 |
-| 独立 QA / 发布部署身份 | NOT_IMPLEMENTED | 合成 QA 输入不等于原始多 Sheet QA 独立执行 |
-| 第二项目接入与效果对照 | NOT_STARTED | 未证明跨项目接入成本和 ADS 相对基线的收益 |
+| 容器外 UI/API/DB 旅程验收 | PASS（虚构契约范围） | 运行 41210486664 的参考/故障变体及实际 Docker 边界核对通过；不计作 OpenCode 开发通过 |
+| QA 多 Sheet 与标准执行适配 | 本地适配已测 | 不签署独立身份或 QA_ACCEPTED；真实责任主体与独立验收仍未提供 |
+| 发布/部署证据适配 | 已实现，外部集成分开验收 | GH attestation 标准校验和只读身份探测；无生产发布授权 |
+| 第二项目与多仓接入 | 本地虚构配置已测 | Python 与 Node 两栈真实进程；尚无新鲜真实项目效果结论 |
+| 框架效果对照 | 报告适配已测；实际实验未完成 | 缺模型额度、holdout/fresh 独立样本与因果结论 |
 
 ## 当前迭代
 
-先修复已有证据的误判和文档事实漂移。保留正常通过、故障拒绝和原有评分范围；不因当前检查变严而声称获得新的 OpenCode 实测证据。
+当前提供可安装项目 CLI、来源差集、OpenSpec 只读派生、标准测试器和 QA/出处适配。完整任务逐项状态见 [能力矩阵](IMPLEMENTATION-MATRIX.md)。代码、合成测试、实际集成与最终授权分别验收。
 
 ## 后续按可交付结果推进
 

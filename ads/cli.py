@@ -1,0 +1,134 @@
+"""ADS 统一薄入口：复用宿主、项目审批与专业测试器。"""
+import argparse
+import json
+from pathlib import Path
+import sys
+import subprocess
+
+from .project import Project, require, path_in, write_json
+from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment
+
+
+def init(root):
+    root = Path(root).resolve()
+    root.mkdir(parents=True, exist_ok=True)
+    target = path_in(root, 'ads.project.json')
+    require(not target.exists(), '已有 Profile 不可覆盖，请增量修改')
+    write_json(target, {'schema': 'ads-project/v1', 'repositories': [{'name': 'main', 'path': '.'}],
+                        'source_dirs': ['docs/project/sources'], 'contract': '.ads/contract.json',
+                        'spec_root': 'openspec/specs', 'verification_map': 'docs/project/verification-map.json',
+                        'knowledge_files': [], 'checks': []})
+    path_in(root, 'docs/project/sources').mkdir(parents=True, exist_ok=True)
+    # 原生入口只委托同一 CLI，不复制 OpenSpec/QA 生命周期，不覆盖任何已有路由。
+    commands = path_in(root, '.opencode/commands')
+    commands.mkdir(parents=True, exist_ok=True)
+    for name, body in {
+        'ads-status': '先运行 `ads status`，只读报告实际阻断和未验证项，不补造 PASS。',
+        'ads-develop': '先运行 `ads context check`。漂移时重新读取来源并规划，禁止回放旧副作用。读取项目原始来源与已确认规格，按用户切片实际开发和自测；疑似缺陷先复现并走 systematic-debugging。禁止改变验收预期换 PASS。完成后运行 `ads verify`，开发结果不能替代 QA 或发布授权。',
+        'ads-qa': '先运行 `ads qa import`，分别核对用例质量与需求一致性。只消费既有 QA 决策投影，不自行批准。运行 `ads verify --role qa` 和 `ads qa evaluate`；DEV 结果不能替代 QA 执行。',
+    }.items():
+        path = commands / (name + '.md')
+        if not path.exists():
+            path.write_text('---\ndescription: "ADS 项目原生薄入口"\nagent: build\n---\n\n' + body + '\n')
+    return {'status': 'INITIALIZED', 'next': '提供已确认规格派生的只读契约和项目测试命令；空配置不放行',
+            'contract_created_or_approved': False}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='ADS 项目工程与证据薄适配 CLI')
+    parser.add_argument('--root', default='.')
+    sub = parser.add_subparsers(dest='command', required=True)
+    sub.add_parser('init')
+    route = sub.add_parser('route')
+    route.add_argument('description')
+    sub.add_parser('discover')
+    align = sub.add_parser('reconcile')
+    align.add_argument('--preview', action='store_true')
+    compiler = sub.add_parser('compile')
+    compiler.add_argument('--preview', action='store_true')
+    context = sub.add_parser('context')
+    context.add_argument('action', choices=('freeze', 'check'))
+    verify = sub.add_parser('verify')
+    verify.add_argument('--role', choices=('dev', 'qa'), default='dev')
+    state = sub.add_parser('status')
+    state.add_argument('--gate', choices=('development', 'release'), default='development')
+    sub.add_parser('gate')
+    sub.add_parser('doctor')
+    intake = sub.add_parser('qa')
+    intake.add_argument('action', choices=('import', 'evaluate'))
+    intake.add_argument('--gate', choices=('execution', 'independent'), default='execution')
+    develop = sub.add_parser('develop')
+    develop.add_argument('--model', required=True)
+    develop.add_argument('--execute', action='store_true')
+    trust = sub.add_parser('attest')
+    trust.add_argument('artifact')
+    sub.add_parser('smoke')
+    compare = sub.add_parser('benchmark')
+    compare.add_argument('base')
+    compare.add_argument('candidate')
+    args = parser.parse_args(argv)
+    try:
+        if args.command == 'init':
+            result = init(args.root)
+        elif args.command == 'doctor':
+            result = gates.doctor()
+        elif args.command == 'route':
+            result = engineering.route(args.description)
+        elif args.command == 'benchmark':
+            root = Path(args.root).resolve()
+            result = benchmark.compare(json.loads(path_in(root, args.base, exists=True).read_text()),
+                                       json.loads(path_in(root, args.candidate, exists=True).read_text()))
+        else:
+            project = Project(args.root)
+            if args.command == 'reconcile':
+                result = alignment.reconcile(project, args.preview)
+            elif args.command == 'compile':
+                result = ({'status':'PREVIEW_ONLY','spec_inventory':openspec.inventory(project),
+                           'scenarios':openspec.scenarios(project),'approval_created':False}
+                          if args.preview else openspec.compile_contract(project))
+            elif args.command == 'discover':
+                result = sources.discover(project)
+                write_json(path_in(project.root, '.ads/discovery.json'), result)
+            elif args.command == 'context':
+                result = engineering.context(project, args.action == 'freeze')
+            elif args.command == 'verify':
+                run = evidence.run_checks(project, args.role)
+                result = {'status': run['status'], 'run_id': run['run_id'], 'role': run['role'],
+                          'subject_sha256': run['subject']['sha256'], 'subject_unchanged': run['subject_unchanged'],
+                          'checks': [{'id': c['check_id'], 'status': c['status'], 'failure': c['failure']} for c in run['checks']],
+                          'trust': run['trust']}
+            elif args.command == 'gate':
+                result = gates.audit(project)
+            elif args.command == 'status':
+                result = evidence.decide(project)
+                result['selected_gate'] = args.gate
+                if args.gate == 'release':
+                    result['status'] = 'NOT_VERIFIED'
+            elif args.command == 'qa':
+                if args.action == 'evaluate':
+                    result = qa.evaluate(project)
+                    result['selected_gate'] = args.gate
+                    if args.gate == 'independent':
+                        result['status'] = 'NOT_VERIFIED'
+                else:
+                    config = project.config.get('qa', {})
+                    result = qa.intake(path_in(project.root, config['source'], exists=True))
+                    result['mapping'] = qa.candidates(result, project.contract())
+                    write_json(path_in(project.root, '.ads/qa-intake.json'), result)
+            elif args.command == 'develop':
+                result = engineering.develop(project, args.model, args.execute)
+            elif args.command == 'attest':
+                result = assurance.attest(project, args.artifact)
+            elif args.command == 'smoke':
+                result = assurance.smoke(project)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        values = (result.get('status'), result.get('development'), result.get('case_execution'), result.get('quality'))
+        blocked = any(value in ('FAIL', 'BLOCKED', 'NOT_VERIFIED', 'REPLAN_REQUIRED', 'UNKNOWN', 'REVISION_REQUIRED') for value in values)
+        return 3 if blocked else 0
+    except (OSError, ValueError, KeyError, TypeError, ImportError, subprocess.SubprocessError) as exc:
+        print(json.dumps({'status': 'BLOCKED', 'error_type': type(exc).__name__, 'reason': str(exc)}, ensure_ascii=False))
+        return 3
+
+
+if __name__ == '__main__':
+    sys.exit(main())

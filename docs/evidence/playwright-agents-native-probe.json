@@ -1,0 +1,13 @@
+{
+  "schema": "ads-playwright-native-probe/v1",
+  "playwright": "1.57.0",
+  "opencode": "2.2.3",
+  "initializer": {"command": "npx --yes playwright@1.57.0 init-agents --loop=opencode", "exit_code": 0},
+  "native_debug_agents": {"exit_code": 0, "recognized_subagents": ["playwright-test-generator", "playwright-test-healer", "playwright-test-planner"]},
+  "native_mcp_registration": {"exit_code": 0},
+  "native_mcp_list": {"exit_code": 0, "message": "No MCP servers configured"},
+  "configuration_recognition": "PARTIAL",
+  "transport": "NOT_VERIFIED",
+  "planner_generator_healer_execution": "NOT_VERIFIED",
+  "note": "仅在临时虚构目录执行；未用检查命令退出 0 冒充实际 MCP 或模型执行。V2 配置需 mcp.servers；生成器仍输出旧式配置。未修改用户已有路由。"
+}

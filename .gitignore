@@ -3,3 +3,8 @@ __pycache__/
 *.sqlite
 .pytest_cache/
 .DS_Store
+
+.ads/
+*.egg-info/
+build/
+dist/

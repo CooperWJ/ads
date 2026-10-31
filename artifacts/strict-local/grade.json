@@ -1,0 +1,186 @@
+{
+  "case_id": "ADS-M0-001",
+  "profile": "backend",
+  "status": "PASS",
+  "source_material_sha256": "70fd7aa3946fd99c185d71fa1bb4b0eb7cb1ce14938bf6079b4bd81f049199eb",
+  "base_tree_sha256": "22d7cca7386b81efc9b1a34b4ef87760a0683b83b8c880a0d01ce559a248ccd8",
+  "candidate_tree_sha256": "420053cad62a151151247ffcec65f898e05fa47ab75b8ca955e5c01b4d0cad6d",
+  "candidate_patch_sha256": "4965bfff64a7b187e588db979fdb80a61c844bb99a356e253b219283ee06c1d6",
+  "qa_case": "pass",
+  "evidence_case": "current",
+  "checks": [
+    {
+      "check": "ui_structure",
+      "status": "PASS",
+      "detail": "HTTP-served UI contains the required seven data slots and actions; browser behavior checked separately"
+    },
+    {
+      "check": "api_contract",
+      "status": "PASS",
+      "detail": "real HTTP list/detail response contains all seven record-backed fields"
+    },
+    {
+      "check": "sqlite_persistence_and_auth",
+      "status": "PASS",
+      "detail": "viewer rejected; editor save persisted in SQLite and GET read-back reflects value"
+    },
+    {
+      "check": "real_xlsx_export",
+      "status": "PASS",
+      "detail": "real XLSX downloaded via HTTP, ZIP/XML verified, columns and saved data verified"
+    },
+    {
+      "check": "independent_qa",
+      "status": "PASS",
+      "detail": "all independently required QA cases passed; no DEV result substituted"
+    },
+    {
+      "check": "source_bound_evidence",
+      "status": "PASS",
+      "detail": "evidence source identity matches independently computed candidate digest"
+    }
+  ],
+  "raw_source_inventory": {
+    "status": "PASS",
+    "source_svg_labels": 13,
+    "mapped_svg_labels": 13,
+    "obligations": 18,
+    "brief_sentences": 6
+  },
+  "delivery_verdict": {
+    "status": "NOT_VERIFIED",
+    "total": 18,
+    "passed": 2,
+    "obligations": [
+      {
+        "id": "page-title",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "project-selection",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "details-section",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-title",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-category",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-phase",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-owner",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-start",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-end",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-ref",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "edit-notes",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "save-notes",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "export-xlsx",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "record-backed-values",
+        "status": "PASS",
+        "missing_or_failed_checks": []
+      },
+      {
+        "id": "saved-value-survives-revisit",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "export-after-save",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "viewer-write-rejected",
+        "status": "PASS",
+        "missing_or_failed_checks": []
+      },
+      {
+        "id": "real-system-integration",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      }
+    ]
+  },
+  "protected_rubric_sha256": "63171cb1af371c18bd377af159ee8da1d9d7b403b9e87b4fd9c353cce8ab037d",
+  "execution_mode": "new ephemeral worktree and fresh SQLite DB; no OS/container isolation",
+  "grader_sha256": "9e1ca3726fbb0a207e3e84658c12788244ef39f5702476ada2b9b568a8f3fc8a",
+  "generated_at_utc": "2026-10-31T08:53:17.209992+00:00"
+}

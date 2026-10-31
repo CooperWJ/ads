@@ -1,0 +1,50 @@
+test_empty_patch_fails (test_m0.GraderTests.test_empty_patch_fails) ... ok
+test_frozen_base_digest (test_m0.GraderTests.test_frozen_base_digest) ... ok
+test_malformed_xlsx_rejected (test_m0.GraderTests.test_malformed_xlsx_rejected) ... ok
+test_missing_qa_is_blocked (test_m0.GraderTests.test_missing_qa_is_blocked) ... ok
+test_no_unauthorized_grader_patch (test_m0.GraderTests.test_no_unauthorized_grader_patch) ... ok
+test_patch_cannot_modify_test_script (test_m0.GraderTests.test_patch_cannot_modify_test_script) ... ok
+test_patch_traversal_rejected (test_m0.GraderTests.test_patch_traversal_rejected) ... ok
+test_reference_backend_process_passes (test_m0.GraderTests.test_reference_backend_process_passes) ... ok
+test_reference_patch_whitelist (test_m0.GraderTests.test_reference_patch_whitelist) ... ok
+test_stale_evidence_rejected (test_m0.GraderTests.test_stale_evidence_rejected) ... ok
+test_xlsx_reads_with_independent_excel_library (test_m0.GraderTests.test_xlsx_reads_with_independent_excel_library) ... ok
+test_all_original_unit_tests_preserved (test_v020.EvaluatorV020Tests.test_all_original_unit_tests_preserved) ... ok
+test_custom_patch_requires_explicit_host_risk_opt_in (test_v020.EvaluatorV020Tests.test_custom_patch_requires_explicit_host_risk_opt_in) ... ok
+test_forbid_binary_patch (test_v020.EvaluatorV020Tests.test_forbid_binary_patch) ... ok
+test_forbid_effective_path_disagreement (test_v020.EvaluatorV020Tests.test_forbid_effective_path_disagreement) ... ok
+test_forbid_mode_changes (test_v020.EvaluatorV020Tests.test_forbid_mode_changes) ... ok
+test_js_crash_fails_even_without_chromium (test_v020.EvaluatorV020Tests.test_js_crash_fails_even_without_chromium) ... ok
+test_node_check_never_mislabeled_as_browser (test_v020.EvaluatorV020Tests.test_node_check_never_mislabeled_as_browser) ... ok
+test_reference_node_integration_passes (test_v020.EvaluatorV020Tests.test_reference_node_integration_passes) ... ok
+test_scope_allows_application_only (test_v020.EvaluatorV020Tests.test_scope_allows_application_only) ... ok
+test_scope_detects_protected_change (test_v020.EvaluatorV020Tests.test_scope_detects_protected_change) ... ok
+test_scope_detects_symlink (test_v020.EvaluatorV020Tests.test_scope_detects_symlink) ... ok
+test_strict_browser_calibration_rejects_missing_cases (test_v020.EvaluatorV020Tests.test_strict_browser_calibration_rejects_missing_cases) ... ok
+test_strict_browser_calibration_requires_reference_full_pass (test_v020.EvaluatorV020Tests.test_strict_browser_calibration_requires_reference_full_pass) ... ok
+test_all_brief_sentences_linked (test_v030.BriefCompletenessTests.test_all_brief_sentences_linked) ... ok
+test_brief_sentence_requires_existing_obligation (test_v030.BriefCompletenessTests.test_brief_sentence_requires_existing_obligation) ... ok
+test_new_requirement_sentence_is_detected (test_v030.BriefCompletenessTests.test_new_requirement_sentence_is_detected) ... ok
+test_whole_business_sentence_cannot_disappear_from_rubric (test_v030.BriefCompletenessTests.test_whole_business_sentence_cannot_disappear_from_rubric) ... ok
+test_protected_rubric_hash_in_real_evidence (test_v030.CrossCuttingAssuranceTests.test_protected_rubric_hash_in_real_evidence) ... ok
+test_qa_pending_invalidates_delivery_even_if_all_other_checks_pass (test_v030.CrossCuttingAssuranceTests.test_qa_pending_invalidates_delivery_even_if_all_other_checks_pass) ... ok
+test_stale_source_identity_invalidates_delivery (test_v030.CrossCuttingAssuranceTests.test_stale_source_identity_invalidates_delivery) ... ok
+test_adding_new_raw_svg_item_without_rubric_update_fails (test_v030.RawCompletenessTests.test_adding_new_raw_svg_item_without_rubric_update_fails) ... ok
+test_all_requirements_pass_only_with_all_required_check_results (test_v030.RawCompletenessTests.test_all_requirements_pass_only_with_all_required_check_results) ... ok
+test_backend_reference_pass_not_mislabeled_complete (test_v030.RawCompletenessTests.test_backend_reference_pass_not_mislabeled_complete) ... ok
+test_cannot_disable_browser_requirement_for_visible_ui (test_v030.RawCompletenessTests.test_cannot_disable_browser_requirement_for_visible_ui) ... ok
+test_complete_svg_fixture_audited (test_v030.RawCompletenessTests.test_complete_svg_fixture_audited) ... ok
+test_duplicate_mapping_not_allowed (test_v030.RawCompletenessTests.test_duplicate_mapping_not_allowed) ... ok
+test_failed_browser_prevents_delivery_success (test_v030.RawCompletenessTests.test_failed_browser_prevents_delivery_success) ... ok
+test_missing_check_is_not_verified_not_pass (test_v030.RawCompletenessTests.test_missing_check_is_not_verified_not_pass) ... ok
+test_omitted_one_of_seven_attributes_fails (test_v030.RawCompletenessTests.test_omitted_one_of_seven_attributes_fails) ... ok
+test_omitted_whole_ui_obligation_fails_even_if_not_in_test_plan (test_v030.RawCompletenessTests.test_omitted_whole_ui_obligation_fails_even_if_not_in_test_plan) ... ok
+test_real_bad_variant_reports_failed_obligations (test_v030.RawCompletenessTests.test_real_bad_variant_reports_failed_obligations) ... ok
+test_strict_cli_refuses_to_grant_delivery_without_browser (test_v030.RawCompletenessTests.test_strict_cli_refuses_to_grant_delivery_without_browser) ... ok
+test_unknown_check_cannot_make_missing_test_look_passed (test_v030.RawCompletenessTests.test_unknown_check_cannot_make_missing_test_look_passed) ... ok
+test_unknown_orphan_source_cannot_be_accepted (test_v030.RawCompletenessTests.test_unknown_orphan_source_cannot_be_accepted) ... ok
+
+----------------------------------------------------------------------
+Ran 45 tests in 8.992s
+
+OK

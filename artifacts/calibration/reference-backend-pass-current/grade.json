@@ -1,0 +1,277 @@
+{
+  "case_id": "ADS-M0-001",
+  "profile": "backend",
+  "status": "PASS",
+  "source_material_sha256": "70fd7aa3946fd99c185d71fa1bb4b0eb7cb1ce14938bf6079b4bd81f049199eb",
+  "base_tree_sha256": "22d7cca7386b81efc9b1a34b4ef87760a0683b83b8c880a0d01ce559a248ccd8",
+  "candidate_tree_sha256": "420053cad62a151151247ffcec65f898e05fa47ab75b8ca955e5c01b4d0cad6d",
+  "candidate_patch_sha256": "4965bfff64a7b187e588db979fdb80a61c844bb99a356e253b219283ee06c1d6",
+  "qa_case": "pass",
+  "evidence_case": "current",
+  "checks": [
+    {
+      "check": "ui_structure",
+      "status": "PASS",
+      "detail": "HTTP-served UI contains the required seven data slots and actions; browser behavior checked separately"
+    },
+    {
+      "check": "api_contract",
+      "status": "PASS",
+      "detail": "real HTTP list/detail response contains all seven record-backed fields"
+    },
+    {
+      "check": "sqlite_persistence_and_auth",
+      "status": "PASS",
+      "detail": "viewer rejected; editor save persisted in SQLite and GET read-back reflects value"
+    },
+    {
+      "check": "real_xlsx_export",
+      "status": "PASS",
+      "detail": "real XLSX downloaded via HTTP, ZIP/XML verified, columns and saved data verified"
+    },
+    {
+      "check": "independent_qa",
+      "status": "PASS",
+      "detail": "all independently required QA cases passed; no DEV result substituted"
+    },
+    {
+      "check": "source_bound_evidence",
+      "status": "PASS",
+      "detail": "evidence source identity matches independently computed candidate digest"
+    }
+  ],
+  "raw_source_inventory": {
+    "status": "PASS",
+    "source_svg_labels": 13,
+    "mapped_svg_labels": 13,
+    "obligations": 18,
+    "brief_sentences": 6
+  },
+  "source_discovery": {
+    "status": "GAP",
+    "source_count": 4,
+    "unit_count": 44,
+    "reviewed_units": 44,
+    "dispositions": {
+      "CONTEXT": 9,
+      "EXCLUDED": 0,
+      "REQUIRED": 35
+    },
+    "new_unverified_obligations": [
+      "menu-route-accessible",
+      "page-error-state"
+    ],
+    "needs_acceptance_design": 2,
+    "coverage_dimensions": {
+      "material_inventory": "PASS",
+      "source_extraction": "PASS",
+      "source_decisions": "PASS",
+      "accepted_obligation_verification": "GAP"
+    },
+    "review_sha256": "3975ef0fcb1c8546af37524a8a0dd794705e9d38f57e7f51c7ab347eea4c57df",
+    "sources": [
+      {
+        "source": "raw/brief.md",
+        "sha256": "d2b1e665282ffae91438cbe17b4dee0295a2ced86f3e1ba1b47d37127166772d",
+        "units": 8,
+        "meta": {
+          "fragments": 8
+        }
+      },
+      {
+        "source": "raw/data_dictionary.xlsx",
+        "sha256": "a3c05906a469767fa43c93bce7226d92d6f5b9798cb1669e2d9fa86a9bbaeef3",
+        "units": 14,
+        "meta": {
+          "sheets": [
+            {
+              "sheet": "Fields",
+              "visibility": "visible",
+              "rows": 7
+            },
+            {
+              "sheet": "Actions",
+              "visibility": "visible",
+              "rows": 3
+            },
+            {
+              "sheet": "Examples",
+              "visibility": "visible",
+              "rows": 1
+            }
+          ],
+          "formulas": 1,
+          "fragments": 14
+        }
+      },
+      {
+        "source": "raw/prd.md",
+        "sha256": "99b676f5ff6892dd5ede4706e2825df0c71186c5eb2fff25c9e804e647d59a80",
+        "units": 9,
+        "meta": {
+          "fragments": 9
+        }
+      },
+      {
+        "source": "raw/wireframe.svg",
+        "sha256": "a1657cad00d4a223d4a01460d615931b73059f9e57075466ba3149b603a9641d",
+        "units": 13,
+        "meta": {
+          "fragments": 13
+        }
+      }
+    ],
+    "acceptance_closure": {
+      "mode": "m0",
+      "status": "GAP",
+      "remaining": [
+        "menu-route-accessible",
+        "page-error-state"
+      ],
+      "required_browser": false,
+      "acceptance_sha256": null
+    }
+  },
+  "delivery_verdict": {
+    "status": "NOT_VERIFIED",
+    "total": 18,
+    "passed": 2,
+    "obligations": [
+      {
+        "id": "page-title",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "project-selection",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "details-section",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-title",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-category",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-phase",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-owner",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-start",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-end",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "field-ref",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "edit-notes",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "save-notes",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "export-xlsx",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "record-backed-values",
+        "status": "PASS",
+        "missing_or_failed_checks": []
+      },
+      {
+        "id": "saved-value-survives-revisit",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "export-after-save",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      },
+      {
+        "id": "viewer-write-rejected",
+        "status": "PASS",
+        "missing_or_failed_checks": []
+      },
+      {
+        "id": "real-system-integration",
+        "status": "NOT_VERIFIED",
+        "missing_or_failed_checks": [
+          "node_js_dom_real_http",
+          "real_chromium_user_journey"
+        ]
+      }
+    ],
+    "m1_unverified_new_obligations": [
+      "menu-route-accessible",
+      "page-error-state"
+    ]
+  },
+  "m1_acceptance_enabled": false,
+  "m1_acceptance_sha256": null,
+  "protected_rubric_sha256": "63171cb1af371c18bd377af159ee8da1d9d7b403b9e87b4fd9c353cce8ab037d",
+  "execution_mode": "new ephemeral worktree and fresh SQLite DB; no OS/container isolation",
+  "grader_sha256": "5a420d1c5e64bccc72911633d933338f8d9049de59ea09de157cf86cdcfa5367",
+  "generated_at_utc": "2026-10-31T09:13:06.103433+00:00"
+}

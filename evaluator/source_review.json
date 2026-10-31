@@ -1,0 +1,464 @@
+{
+  "schema": "ads-independent-source-review/v1",
+  "disclaimer": "Synthetic benchmark fixture only. Reviewer strings are calibration provenance, not authenticated human approval. Do not expose as accepted business truth.",
+  "sources": [
+    {
+      "source": "raw/brief.md",
+      "sha256": "d2b1e665282ffae91438cbe17b4dee0295a2ced86f3e1ba1b47d37127166772d",
+      "units": 8
+    },
+    {
+      "source": "raw/data_dictionary.xlsx",
+      "sha256": "a3c05906a469767fa43c93bce7226d92d6f5b9798cb1669e2d9fa86a9bbaeef3",
+      "units": 14
+    },
+    {
+      "source": "raw/prd.md",
+      "sha256": "99b676f5ff6892dd5ede4706e2825df0c71186c5eb2fff25c9e804e647d59a80",
+      "units": 9
+    },
+    {
+      "source": "raw/wireframe.svg",
+      "sha256": "a1657cad00d4a223d4a01460d615931b73059f9e57075466ba3149b603a9641d",
+      "units": 13
+    }
+  ],
+  "decisions": [
+    {
+      "unit_id": "b7731b2200fb98e871b4",
+      "text_sha256": "b150d38682a468e033c3865744f796041815656c65ec4fca5cc6fca33da882d3",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L1"
+    },
+    {
+      "unit_id": "253e047b8345fe875dad",
+      "text_sha256": "efcc47347f51e519dd6cf9714f5719e6ffa394095b920aeae89330f6f726ceb8",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "project-selection",
+        "field-title",
+        "field-category",
+        "field-phase",
+        "field-owner",
+        "field-start",
+        "field-end",
+        "field-ref"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S1"
+    },
+    {
+      "unit_id": "bff98d3c7f5f558f95f0",
+      "text_sha256": "b5fd829f95961b0b4e9376e66f926fb13b0aa0ad2a183bf0e360eeac1c38147f",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "record-backed-values"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S2"
+    },
+    {
+      "unit_id": "5ee01a1f4fafbd231db7",
+      "text_sha256": "aa273285a11203a5d17cf1e7e7885a493d0014dac097d2d071ccf4761d560ea1",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "saved-value-survives-revisit"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S3"
+    },
+    {
+      "unit_id": "4b5858ae958f3e78b3a4",
+      "text_sha256": "51616efcd8ab7d540fc284017609baa153a58e57da9327f7035d65ef4bad9e61",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "export-after-save",
+        "export-xlsx"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S4"
+    },
+    {
+      "unit_id": "863774f91872a80eb6c2",
+      "text_sha256": "1762fd5c700f8b29607fc456ed4453a47f502f001faf81d0a9aefcbd00b05d4a",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "viewer-write-rejected"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S5"
+    },
+    {
+      "unit_id": "04da7476e50a9eb1ae9f",
+      "text_sha256": "248bd427af61b2204d2cc36dc1bcf83f3c36d9b2807e762536dff218cf2ce9d4",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "real-system-integration"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L3:S6"
+    },
+    {
+      "unit_id": "9e96b04dbee1f98e12fe",
+      "text_sha256": "6d4b6f8588b238880a33e8f4b7226fd80501de7e9f0b4c9875eea060afb0e82b",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/brief.md/L5:S1",
+      "reason": "Non-product documentation, not a functional requirement; example formula is not an approved oracle."
+    },
+    {
+      "unit_id": "ef0b8a4ddeed696dd3ef",
+      "text_sha256": "f3e8997dfdce51225791a309293b90d9b99d49771b78d170e03b9d73343d8d98",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R1"
+    },
+    {
+      "unit_id": "5be7001f6b824adc863e",
+      "text_sha256": "706716270ac5eae9b372e44dc8d590ae3018e14ece48a7ba75517b9b4beb6344",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-title"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R2"
+    },
+    {
+      "unit_id": "5689d36ff7bc379d7a97",
+      "text_sha256": "1fa2f13ea240c76d1ee00e54b3d22f826c5ee58b43f8285619d25ebdd643a9f0",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-category"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R3"
+    },
+    {
+      "unit_id": "191bbc62368422e4a252",
+      "text_sha256": "063c7fb17455c0d44a7b15a99b6c9ef7251cf423eaeb4204084c439663e8aeb9",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-phase"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R4"
+    },
+    {
+      "unit_id": "5211592a54c5ef5a93b7",
+      "text_sha256": "c23c62345870169b945513b0f51219f635234519fc7c1767369743680d8489e2",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-owner"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R5"
+    },
+    {
+      "unit_id": "498d9158367ff0fd6754",
+      "text_sha256": "695fce05c4dd58e29b9c958886e48eb87ed1d2d6cd746a6bbd45b852bb07a605",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-start"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R6"
+    },
+    {
+      "unit_id": "d905efd385771d51a269",
+      "text_sha256": "0e949fedce4b2fbe792f778d79681222d765f4e9df73f3fd7f8b44c55fb20b5c",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-end"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R7"
+    },
+    {
+      "unit_id": "6dafbc17efc86a8a32b0",
+      "text_sha256": "9d9534681718eadc15b80a42a95d3e8a6bbc35ad12ab0220389c92163822a1c0",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-ref"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Fields!R8"
+    },
+    {
+      "unit_id": "fb09185dc4e4f4e65a55",
+      "text_sha256": "726768aa0c5c8cab39805813a6e4853a4a698b62fc0b5b211430444773ed917d",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Actions!R1"
+    },
+    {
+      "unit_id": "fbb330688ac9937f8416",
+      "text_sha256": "9d006015500589a4e146167187ff3912ae5bdadd059541188396b3664a03cf0d",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "save-notes",
+        "saved-value-survives-revisit"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Actions!R2"
+    },
+    {
+      "unit_id": "e32dd2f754d9caf28d7b",
+      "text_sha256": "131f55e4e72eb7c66414123743c40a02941502fbd2d88e83dbcc1959b0fa0008",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "export-xlsx",
+        "export-after-save"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Actions!R3"
+    },
+    {
+      "unit_id": "f1b2725e1d1c8b78f807",
+      "text_sha256": "82d9ff2b350603f6d226d0d64c92320afb3e8bac3b36ea0da590d41d08ad0808",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "viewer-write-rejected"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Actions!R4"
+    },
+    {
+      "unit_id": "a899bcd86bb7568558cb",
+      "text_sha256": "264607d479b4addd014603ac08e89f8eb211e41e86e7b80aacdb35d8eec86fff",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Examples!R1"
+    },
+    {
+      "unit_id": "425beb089fe640e19f38",
+      "text_sha256": "e6afb72ccb3d1eddfb9951968f8d66be14ae8c20ae75ee3d38c5ce48688e3e9f",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/data_dictionary.xlsx/Examples!R2",
+      "reason": "Non-product documentation, not a functional requirement; example formula is not an approved oracle."
+    },
+    {
+      "unit_id": "1660d1ffcb4bc238a210",
+      "text_sha256": "b5bb9ff0c0e4a56e7d5b93f406b2640e3542d610d2953d802314f8ee5ab911dc",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L1"
+    },
+    {
+      "unit_id": "acd2b3b5653ee23170eb",
+      "text_sha256": "5711d65b648cdba6581306ec6c9b8d9d909b875cb875eb4b50f67e6ae9aaf805",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L3"
+    },
+    {
+      "unit_id": "67652654e32acd678a5a",
+      "text_sha256": "097ec0b10d4ee4e18c8d4fd6b3ddfb7b602092aa5030ea615474ca7057200553",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "menu-route-accessible"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L4"
+    },
+    {
+      "unit_id": "6234471af3a24fd1721f",
+      "text_sha256": "f775dafeedfdb2541b4351567b5afe241d776879a36878ef67f39fbc287c11a0",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "project-selection",
+        "record-backed-values"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L5"
+    },
+    {
+      "unit_id": "d79edf383e1c36c2263a",
+      "text_sha256": "cd4747bf872c4fb884f9e57775b3032e09a0e2cc212336199c58fa108726395b",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "page-error-state"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L6"
+    },
+    {
+      "unit_id": "db3eda0e0ead1820b7f8",
+      "text_sha256": "ff8059dc6752afdd30d275932b1d5031a2ec854b387a8c57ecc6689915293a43",
+      "disposition": "CONTEXT",
+      "obligations": [],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L8"
+    },
+    {
+      "unit_id": "f70c217189adfd055394",
+      "text_sha256": "23f64c893658897b2e147889985645758927898a6cb03c2925aabd44d7711597",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "saved-value-survives-revisit"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L9"
+    },
+    {
+      "unit_id": "1aa76efde74a08c354bc",
+      "text_sha256": "0f42d9498542f0d3b1b5a025f392aed24cf0cdbd35fb2ce5e9a82a6e71a408fb",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "export-xlsx",
+        "export-after-save"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L10"
+    },
+    {
+      "unit_id": "e61b3da188b34fe69e47",
+      "text_sha256": "369e59724b77c2f3c74f94b4cb417b1ed065b9fae40a288c6198e386310d5a6d",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "viewer-write-rejected"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/prd.md/L11"
+    },
+    {
+      "unit_id": "b230e0ff75b56c5d244a",
+      "text_sha256": "c1e1d86a8a6b99bcf3086d30a78a57dfa764c981d0df2bd770468d59900122af",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "page-title"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[1]"
+    },
+    {
+      "unit_id": "12ff3ab42e4273bb87b0",
+      "text_sha256": "dafa79fdef56bd3f6311a8875ae9d0baf542594a81ac77ac46757ce00a4db47e",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "project-selection"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[2]"
+    },
+    {
+      "unit_id": "6013e5db9dd7b796b7ca",
+      "text_sha256": "f4da1f140774defa856f0806315a63f55e760aacaff6094e98afd18f21ab78f2",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "details-section"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[3]"
+    },
+    {
+      "unit_id": "d5132cd5a3cd4cf827ee",
+      "text_sha256": "7e8cd2056da73a7fefb6cd91f4e5d199d08d9058c517b9a2476b1b520324d674",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-title"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[4]"
+    },
+    {
+      "unit_id": "3bd366a842d8b8e84cae",
+      "text_sha256": "292c06f0045a45d044be282b132b7055ae224e18e02b523a451d8ea96fadfd24",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-category"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[5]"
+    },
+    {
+      "unit_id": "ef75b3cf4a20a4f92f63",
+      "text_sha256": "46342ec1eec9d78dd13d15f0e035d625a9b357b3493f8c2baef668633194852c",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-phase"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[6]"
+    },
+    {
+      "unit_id": "90f2c6c95cc452e03785",
+      "text_sha256": "4b1b8aa3608a26da451ae0630d75b60ab1bc2dd229c41a80838fc7993e835c46",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-owner"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[7]"
+    },
+    {
+      "unit_id": "6308649d039f703ca753",
+      "text_sha256": "0b5ea72d6cac50b877711f58e638676a70da2ce6cf59f07fae6a168c74c76534",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-start"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[8]"
+    },
+    {
+      "unit_id": "3711ca3f7fcb5e968542",
+      "text_sha256": "09ad479abf4b36c3385a284f123ace7c7e0dd3b7c866791c94c990a70a3f2559",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-end"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[9]"
+    },
+    {
+      "unit_id": "c51feea71d4cfcd2e95b",
+      "text_sha256": "36b57d91989469a2b5291615aa3efc58e5315e3d1a1d5b53a0cec9081c9f99cc",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "field-ref"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[10]"
+    },
+    {
+      "unit_id": "c6710679b4ea894488e5",
+      "text_sha256": "7992b8349f05a91d08e86989ae03240fc659eeaa617134b14c8fe5e57bbb6e54",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "edit-notes"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[11]"
+    },
+    {
+      "unit_id": "4cb2545d7939e9c96684",
+      "text_sha256": "eb76a6cc99ba688173d54fc9bc625784822e7429b886f1a52d36c6c8230caa88",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "save-notes"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[12]"
+    },
+    {
+      "unit_id": "99d99f9937dade47ebc2",
+      "text_sha256": "33889598d8a4a7aca64c24e2de401ae130071ac1ca35dacf9adc02b6a72a3746",
+      "disposition": "REQUIRED",
+      "obligations": [
+        "export-xlsx"
+      ],
+      "reviewer": "synthetic-fixture-calibration-author",
+      "decision_ref": "ADS-M1-FIXTURE-001/raw/wireframe.svg/text[13]"
+    }
+  ]
+}

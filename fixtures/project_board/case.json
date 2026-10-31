@@ -1,0 +1,20 @@
+{
+  "case_id": "ADS-M0-001",
+  "base_tree_sha256": "22d7cca7386b81efc9b1a34b4ef87760a0683b83b8c880a0d01ce559a248ccd8",
+  "raw_material_sha256": "70fd7aa3946fd99c185d71fa1bb4b0eb7cb1ce14938bf6079b4bd81f049199eb",
+  "reference_patch": "reference.patch",
+  "empty_expected": "FAIL",
+  "reference_expected_backend": "PASS",
+  "reference_expected_full": "PASS (only if real browser available)",
+  "equivalent_expected": "PASS",
+  "bad_variants": [
+    "auth_bypass",
+    "bad_export",
+    "missing_ui_field",
+    "no_persistence",
+    "placeholder_api",
+    "ui_crash"
+  ],
+  "evaluator_version": "ads-m0-grader/v1",
+  "trust_note": "Local grader path isolation is NOT an OS security boundary; protected CI must run with separate identities."
+}

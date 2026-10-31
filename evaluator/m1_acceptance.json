@@ -1,0 +1,24 @@
+{
+  "schema": "ads-m1-acceptance-pack/v1",
+  "case_id": "ADS-M0-001",
+  "obligations": [
+    {
+      "id": "menu-route-accessible",
+      "source": "raw/prd.md",
+      "source_text": "The project board must open from the navigation menu.",
+      "checks": [
+        "menu_route_accessible"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "page-error-state",
+      "source": "raw/prd.md",
+      "source_text": "Show an explicit error state when the project request fails.",
+      "checks": [
+        "request_error_state"
+      ],
+      "browser_required": true
+    }
+  ]
+}

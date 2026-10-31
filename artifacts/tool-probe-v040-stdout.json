@@ -1,0 +1,77 @@
+{
+  "generated_at_utc": "2026-10-31T09:02:22.983951+00:00",
+  "playwright_bundled_chromium": {
+    "path": "/home/oai/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome",
+    "installed": false,
+    "status": "BROWSER_BINARY_MISSING"
+  },
+  "os": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "programs": {
+    "python3": {
+      "installed": true,
+      "path": "/opt/pyvenv/bin/python3",
+      "version": {
+        "exit_code": 0,
+        "output": "Python 3.13.5"
+      }
+    },
+    "node": {
+      "installed": true,
+      "path": "/opt/nvm/versions/node/v22.16.0/bin/node",
+      "version": {
+        "exit_code": 0,
+        "output": "v22.16.0"
+      }
+    },
+    "chromium": {
+      "installed": true,
+      "path": "/usr/bin/chromium",
+      "version": {
+        "exit_code": 0,
+        "output": "Chromium 144.0.7559.96 built on Debian GNU/Linux 13 (trixie)"
+      }
+    },
+    "docker": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "podman": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "harbor": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "opencode": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "playwright": {
+      "installed": true,
+      "path": "/opt/pyvenv/bin/playwright",
+      "version": {
+        "exit_code": 0,
+        "output": "Version 1.57.0"
+      }
+    }
+  },
+  "python_packages": {
+    "playwright": "1.57.0",
+    "pytest": "9.0.2",
+    "openpyxl": "3.1.5",
+    "harbor": null
+  },
+  "poc_decisions": {
+    "HTTP_SQLite_XLSX": "TESTED: see calibration summary",
+    "Playwright_runner": "NOT_VERIFIED: reference/full did not PASS; use permitted runner and --require-browser",
+    "Playwright_test_agents_for_OpenCode": "NOT_TESTED: OpenCode binary and Node test-agent integration not available",
+    "Harbor_adapter": "NOT_TESTED: Harbor and Docker/Podman absent; cannot claim isolated worker evaluation",
+    "OpenCode_SDK_session_recovery": "NOT_TESTED: OpenCode CLI absent",
+    "External_protected_CI": "NOT_IMPLEMENTED: local grader shares host filesystem"
+  }
+}

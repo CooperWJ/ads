@@ -1,0 +1,40 @@
+name: ADS M0 calibration self-test (not a protected external grader)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'evaluator/**'
+      - 'fixtures/**'
+      - 'tests/**'
+      - '.github/workflows/m0-selftest.yml'
+permissions:
+  contents: read
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser runner
+        run: |
+          python -m pip install 'playwright==1.57.0'
+          python -m playwright install --with-deps chromium
+      - name: Run evaluator and trust-boundary unit tests
+        run: python -m unittest discover -s tests -p 'test*.py' -v
+      - name: Require real browser calibration, including bad variant
+        run: python evaluator/calibrate.py --require-browser
+      - name: Publish calibration evidence for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ads-m0-calibration
+          path: artifacts/calibration-summary.json
+          if-no-files-found: warn
+      - name: Require real M1 menu and error-state browser calibration
+        run: python evaluator/calibrate_m1.py --require-browser

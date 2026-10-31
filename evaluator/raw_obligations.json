@@ -1,0 +1,232 @@
+{
+  "schema": "ads-m0-raw-obligations/v1",
+  "case_id": "ADS-M0-001",
+  "description": "Evaluator-owned rubric audited against raw SVG text nodes and brief assertions. It is not AI-generated acceptance authority.",
+  "obligations": [
+    {
+      "id": "page-title",
+      "source": "raw/wireframe.svg",
+      "source_text": "Fictional Project Board",
+      "checks": [
+        "ui_structure"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "project-selection",
+      "source": "raw/wireframe.svg",
+      "source_text": "Select project",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "details-section",
+      "source": "raw/wireframe.svg",
+      "source_text": "Read-only project details",
+      "checks": [
+        "ui_structure"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-title",
+      "source": "raw/wireframe.svg",
+      "source_text": "Title",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-category",
+      "source": "raw/wireframe.svg",
+      "source_text": "Category",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-phase",
+      "source": "raw/wireframe.svg",
+      "source_text": "Phase",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-owner",
+      "source": "raw/wireframe.svg",
+      "source_text": "Owner",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-start",
+      "source": "raw/wireframe.svg",
+      "source_text": "Milestone start",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-end",
+      "source": "raw/wireframe.svg",
+      "source_text": "Milestone end",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "field-ref",
+      "source": "raw/wireframe.svg",
+      "source_text": "Reference code",
+      "checks": [
+        "ui_structure",
+        "api_contract"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "edit-notes",
+      "source": "raw/wireframe.svg",
+      "source_text": "Editable notes",
+      "checks": [
+        "ui_structure",
+        "sqlite_persistence_and_auth"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "save-notes",
+      "source": "raw/wireframe.svg",
+      "source_text": "Save notes",
+      "checks": [
+        "ui_structure",
+        "sqlite_persistence_and_auth"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "export-xlsx",
+      "source": "raw/wireframe.svg",
+      "source_text": "Export XLSX",
+      "checks": [
+        "ui_structure",
+        "real_xlsx_export"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "record-backed-values",
+      "source": "raw/brief.md",
+      "source_text": "Values must come from the persisted project record, not placeholder responses.",
+      "checks": [
+        "api_contract"
+      ],
+      "browser_required": false
+    },
+    {
+      "id": "saved-value-survives-revisit",
+      "source": "raw/brief.md",
+      "source_text": "Users can edit notes, save them, and revisit the project to see the saved value.",
+      "checks": [
+        "sqlite_persistence_and_auth",
+        "node_js_dom_real_http"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "export-after-save",
+      "source": "raw/brief.md",
+      "source_text": "control is disabled before saving and becomes available after a successful save",
+      "checks": [
+        "node_js_dom_real_http",
+        "real_xlsx_export"
+      ],
+      "browser_required": true
+    },
+    {
+      "id": "viewer-write-rejected",
+      "source": "raw/brief.md",
+      "source_text": "A viewer must not be able to submit changes.",
+      "checks": [
+        "sqlite_persistence_and_auth"
+      ],
+      "browser_required": false
+    },
+    {
+      "id": "real-system-integration",
+      "source": "raw/brief.md",
+      "source_text": "The page, API, and database must work together in a fresh environment.",
+      "checks": [
+        "api_contract",
+        "sqlite_persistence_and_auth",
+        "node_js_dom_real_http"
+      ],
+      "browser_required": true
+    }
+  ],
+  "brief_sentences": [
+    {
+      "text": "A user selects one project from a list and sees **seven read-only attributes**: title, category, phase, owner, milestone start, milestone end, and reference code.",
+      "obligations": [
+        "project-selection",
+        "field-title",
+        "field-category",
+        "field-phase",
+        "field-owner",
+        "field-start",
+        "field-end",
+        "field-ref"
+      ]
+    },
+    {
+      "text": "Values must come from the persisted project record, not placeholder responses.",
+      "obligations": [
+        "record-backed-values"
+      ]
+    },
+    {
+      "text": "Users can edit notes, save them, and revisit the project to see the saved value.",
+      "obligations": [
+        "saved-value-survives-revisit",
+        "edit-notes",
+        "save-notes"
+      ]
+    },
+    {
+      "text": "The **Export XLSX** control is disabled before saving and becomes available after a successful save; its downloaded workbook must contain all seven attributes and the saved notes.",
+      "obligations": [
+        "export-xlsx",
+        "export-after-save"
+      ]
+    },
+    {
+      "text": "A viewer must not be able to submit changes.",
+      "obligations": [
+        "viewer-write-rejected"
+      ]
+    },
+    {
+      "text": "The page, API, and database must work together in a fresh environment.",
+      "obligations": [
+        "real-system-integration"
+      ]
+    }
+  ]
+}

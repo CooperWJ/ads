@@ -1,0 +1,245 @@
+{
+  "status": "PASS",
+  "calibrated_profile": "backend + limited Node JS real HTTP (not browser)",
+  "calibrated": 14,
+  "checks": [
+    {
+      "case": "reference",
+      "expected": "PASS",
+      "actual": "PASS",
+      "match": true
+    },
+    {
+      "case": "empty",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "equivalent",
+      "expected": "PASS",
+      "actual": "PASS",
+      "match": true
+    },
+    {
+      "case": "missing_ui_field",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "placeholder_api",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "bad_export",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "no_persistence",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "auth_bypass",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "qa-pending",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "stale-evidence",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "node-integration-reference",
+      "expected": "PASS",
+      "actual": "PASS",
+      "match": true
+    },
+    {
+      "case": "node-integration-equivalent",
+      "expected": "PASS",
+      "actual": "PASS",
+      "match": true
+    },
+    {
+      "case": "node-integration-ui_crash",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    },
+    {
+      "case": "node-integration-empty",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "match": true
+    }
+  ],
+  "executions": [
+    {
+      "candidate": "reference",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "PASS",
+      "exit_code": 0,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/reference-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "empty",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/empty-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "equivalent",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "PASS",
+      "exit_code": 0,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/equivalent-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "missing_ui_field",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/missing_ui_field-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "placeholder_api",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/placeholder_api-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "bad_export",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/bad_export-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "no_persistence",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/no_persistence-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "auth_bypass",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/auth_bypass-backend-pass-current/grade.json"
+    },
+    {
+      "candidate": "reference",
+      "profile": "backend",
+      "qa": "pending",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/reference-backend-pending-current/grade.json"
+    },
+    {
+      "candidate": "reference",
+      "profile": "backend",
+      "qa": "pass",
+      "evidence": "stale",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/reference-backend-pass-stale/grade.json"
+    },
+    {
+      "candidate": "reference",
+      "profile": "integration",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "PASS",
+      "exit_code": 0,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/reference-integration-pass-current/grade.json"
+    },
+    {
+      "candidate": "equivalent",
+      "profile": "integration",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "PASS",
+      "exit_code": 0,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/equivalent-integration-pass-current/grade.json"
+    },
+    {
+      "candidate": "ui_crash",
+      "profile": "integration",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/ui_crash-integration-pass-current/grade.json"
+    },
+    {
+      "candidate": "empty",
+      "profile": "integration",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/empty-integration-pass-current/grade.json"
+    },
+    {
+      "candidate": "reference",
+      "profile": "full",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "BLOCKED",
+      "exit_code": 2,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/reference-full-pass-current/grade.json"
+    },
+    {
+      "candidate": "ui_crash",
+      "profile": "full",
+      "qa": "pass",
+      "evidence": "current",
+      "status": "FAIL",
+      "exit_code": 1,
+      "report": "/mnt/data/ads-m0-v0.5.0/artifacts/calibration/ui_crash-full-pass-current/grade.json"
+    }
+  ],
+  "browser_calibration": {
+    "required": false,
+    "reference_status": "BLOCKED",
+    "ui_crash_status": "FAIL",
+    "calibrated": false,
+    "status": "NOT_VERIFIED"
+  },
+  "trusted_ci_status": "NOT_IMPLEMENTED: local filesystem isolation is not security isolation"
+}

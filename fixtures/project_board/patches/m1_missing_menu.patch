@@ -1,0 +1,63 @@
+--- a/app.py
++++ b/app.py
+@@ -70,8 +70,8 @@
+ 
+     def do_GET(self):
+         path = urlparse(self.path).path
+-        if path in ('/', '/app.js'):
+-            target = HERE / 'web' / ('index.html' if path == '/' else 'app.js')
++        if path in ('/', '/board', '/app.js'):
++            target = HERE / 'web' / ('index.html' if path in ('/','/board') else 'app.js')
+             self.send(200, target.read_bytes(), 'text/html; charset=utf-8' if path == '/' else 'application/javascript; charset=utf-8')
+             return
+         if path == '/health':
+@@ -90,7 +90,7 @@
+                 return
+             data = dict(row)
+             if len(parts) == 3:
+-                self.json(200, {"id": data["id"]})  # Deliberately incomplete seed implementation
++                self.json(200, data)
+                 return
+             if len(parts) == 4 and parts[3] == 'export':
+                 self.send(200, xlsx_bytes(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', {'Content-Disposition': 'attachment; filename="project.xlsx"'})
+--- a/web/app.js
++++ b/web/app.js
+@@ -2,6 +2,7 @@
+ const selector = document.getElementById('project-select');
+ const details = document.getElementById('project-details');
+ const message = document.getElementById('message');
++const errorPanel = document.getElementById('error');
+ const exportButton = document.getElementById('export');
+ const fields = ['title','category','phase','owner','milestone_start','milestone_end','reference_code'];
+ let currentId = null;
+@@ -27,6 +28,8 @@
+   details.hidden = true;
+   exportButton.disabled = true;
+   message.textContent = '';
++  errorPanel.textContent = '';
++  errorPanel.hidden = true;
+   if (!currentId) return;
+   try {
+     const project = await (await requireResponse(`/api/projects/${currentId}`)).json();
+@@ -36,7 +39,7 @@
+     }
+     document.getElementById('notes').value = project.notes;
+     details.hidden = false;
+-  } catch (error) { message.textContent = `Load failed: ${error.message}`; }
++  } catch (error) { errorPanel.hidden = false; errorPanel.textContent = `Load failed: ${error.message}`; message.textContent = `Load failed: ${error.message}`; }
+ });
+ 
+ document.getElementById('save').addEventListener('click', async () => {
+--- a/web/index.html
++++ b/web/index.html
+@@ -1,8 +1,8 @@
+ <!doctype html>
+ <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fictional Project Board</title>
+ <style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:20px;color:#1d2939}main{display:grid;gap:20px}section{background:#f7f8fa;padding:18px;border-radius:10px}label{display:block;margin:9px 0}select,input,button{padding:9px;font:inherit}dl{display:grid;grid-template-columns:180px 1fr;gap:10px}dt{font-weight:bold}button{margin:8px 8px 8px 0}#message{min-height:25px}</style></head>
+-<body><main><h1>Fictional Project Board</h1><label for="project-select">Select project</label><select id="project-select"><option value="">Select a project</option></select>
++<body><nav aria-label="Main menu"><span id="menu-project-board">Project board</span></nav><main><h1>Fictional Project Board</h1><label for="project-select">Select project</label><select id="project-select"><option value="">Select a project</option></select>
+ <section id="project-details" aria-label="Project details" hidden><h2>Read-only project details</h2><dl>
+ <dt>Title</dt><dd data-field="title"></dd><dt>Category</dt><dd data-field="category"></dd><dt>Phase</dt><dd data-field="phase"></dd><dt>Owner</dt><dd data-field="owner"></dd><dt>Milestone start</dt><dd data-field="milestone_start"></dd><dt>Milestone end</dt><dd data-field="milestone_end"></dd><dt>Reference code</dt><dd data-field="reference_code"></dd>
+ </dl><label for="notes">Editable notes</label><input id="notes" maxlength="200"/><div><button id="save">Save notes</button><button id="export" disabled>Export XLSX</button></div></section>
+-<p id="message" role="status"></p></main><script src="/app.js"></script></body></html>
++<p id="message" role="status"></p><p id="error" role="alert" hidden></p></main><script src="/app.js"></script></body></html>

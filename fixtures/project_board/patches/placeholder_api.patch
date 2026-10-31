@@ -1,0 +1,11 @@
+--- a/app.py
++++ b/app.py
+@@ -90,7 +90,7 @@
+                 return
+             data = dict(row)
+             if len(parts) == 3:
+-                self.json(200, {"id": data["id"]})  # Deliberately incomplete seed implementation
++                self.json(200, {"id": data["id"], "title": data["title"]})
+                 return
+             if len(parts) == 4 and parts[3] == 'export':
+                 self.send(200, xlsx_bytes(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', {'Content-Disposition': 'attachment; filename="project.xlsx"'})

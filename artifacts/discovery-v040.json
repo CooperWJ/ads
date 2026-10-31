@@ -1,0 +1,75 @@
+{
+  "status": "GAP",
+  "source_count": 4,
+  "unit_count": 44,
+  "reviewed_units": 44,
+  "dispositions": {
+    "CONTEXT": 9,
+    "REQUIRED": 35,
+    "EXCLUDED": 0
+  },
+  "new_unverified_obligations": [
+    "menu-route-accessible",
+    "page-error-state"
+  ],
+  "needs_acceptance_design": 2,
+  "coverage_dimensions": {
+    "material_inventory": "PASS",
+    "source_extraction": "PASS",
+    "source_decisions": "PASS",
+    "accepted_obligation_verification": "GAP"
+  },
+  "review_sha256": "3975ef0fcb1c8546af37524a8a0dd794705e9d38f57e7f51c7ab347eea4c57df",
+  "sources": [
+    {
+      "source": "raw/brief.md",
+      "sha256": "d2b1e665282ffae91438cbe17b4dee0295a2ced86f3e1ba1b47d37127166772d",
+      "units": 8,
+      "meta": {
+        "fragments": 8
+      }
+    },
+    {
+      "source": "raw/data_dictionary.xlsx",
+      "sha256": "a3c05906a469767fa43c93bce7226d92d6f5b9798cb1669e2d9fa86a9bbaeef3",
+      "units": 14,
+      "meta": {
+        "sheets": [
+          {
+            "sheet": "Fields",
+            "visibility": "visible",
+            "rows": 7
+          },
+          {
+            "sheet": "Actions",
+            "visibility": "visible",
+            "rows": 3
+          },
+          {
+            "sheet": "Examples",
+            "visibility": "visible",
+            "rows": 1
+          }
+        ],
+        "formulas": 1,
+        "fragments": 14
+      }
+    },
+    {
+      "source": "raw/prd.md",
+      "sha256": "99b676f5ff6892dd5ede4706e2825df0c71186c5eb2fff25c9e804e647d59a80",
+      "units": 9,
+      "meta": {
+        "fragments": 9
+      }
+    },
+    {
+      "source": "raw/wireframe.svg",
+      "sha256": "a1657cad00d4a223d4a01460d615931b73059f9e57075466ba3149b603a9641d",
+      "units": 13,
+      "meta": {
+        "fragments": 13
+      }
+    }
+  ]
+}

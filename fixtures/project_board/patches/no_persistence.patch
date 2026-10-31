@@ -1,0 +1,20 @@
+--- a/app.py
++++ b/app.py
+@@ -90,7 +90,7 @@
+                 return
+             data = dict(row)
+             if len(parts) == 3:
+-                self.json(200, {"id": data["id"]})  # Deliberately incomplete seed implementation
++                self.json(200, data)
+                 return
+             if len(parts) == 4 and parts[3] == 'export':
+                 self.send(200, xlsx_bytes(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', {'Content-Disposition': 'attachment; filename="project.xlsx"'})
+@@ -116,7 +116,7 @@
+             self.json(400, {'error': 'invalid payload'})
+             return
+         with database() as db:
+-            result = db.execute('UPDATE projects SET notes=? WHERE id=?', (notes, int(parts[2])))
++            result = db.execute('SELECT 1')
+             db.commit()
+         if result.rowcount == 0:
+             self.json(404, {'error': 'not found'})

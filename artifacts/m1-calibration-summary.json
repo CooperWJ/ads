@@ -1,0 +1,69 @@
+{
+  "schema": "ads-m1-calibration/v1",
+  "integration": {
+    "status": "PASS",
+    "cases": [
+      {
+        "case": "reference_m1",
+        "expected": "PASS",
+        "actual": "PASS",
+        "pass": true
+      },
+      {
+        "case": "m1_missing_menu",
+        "expected": "FAIL",
+        "actual": "FAIL",
+        "pass": true
+      },
+      {
+        "case": "m1_silent_error",
+        "expected": "FAIL",
+        "actual": "FAIL",
+        "pass": true
+      },
+      {
+        "case": "reference",
+        "expected": "FAIL",
+        "actual": "FAIL",
+        "pass": true
+      },
+      {
+        "case": "empty",
+        "expected": "FAIL",
+        "actual": "FAIL",
+        "pass": true
+      }
+    ]
+  },
+  "browser": {
+    "status": "NOT_VERIFIED",
+    "cases": [
+      {
+        "case": "reference_m1",
+        "profile": "full",
+        "status": "BLOCKED",
+        "delivery": "NOT_VERIFIED",
+        "exit_code": 2,
+        "report": "/mnt/data/ads-m0-v0.5.0/artifacts/m1-calibration/reference_m1-full/grade.json"
+      },
+      {
+        "case": "m1_missing_menu",
+        "profile": "full",
+        "status": "FAIL",
+        "delivery": "FAIL",
+        "exit_code": 1,
+        "report": "/mnt/data/ads-m0-v0.5.0/artifacts/m1-calibration/m1_missing_menu-full/grade.json"
+      },
+      {
+        "case": "m1_silent_error",
+        "profile": "full",
+        "status": "FAIL",
+        "delivery": "FAIL",
+        "exit_code": 1,
+        "report": "/mnt/data/ads-m0-v0.5.0/artifacts/m1-calibration/m1_silent_error-full/grade.json"
+      }
+    ]
+  },
+  "full_m1_calibrated": false,
+  "status": "PASS"
+}

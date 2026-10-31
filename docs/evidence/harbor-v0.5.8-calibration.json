@@ -1,0 +1,72 @@
+{
+  "schema": "ads-harbor-boundary-calibration/v1",
+  "status": "PASS",
+  "harbor_version": "0.25.0",
+  "run_id": "e31a5dec031c48418a51550eec24e99d",
+  "base_image": "python@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c",
+  "scope": "isolated export artifact calibration; not AI development or full delivery",
+  "protected_ci": "NOT_VERIFIED",
+  "opencode_development_slice": "NOT_VERIFIED",
+  "cases": [
+    {
+      "case": "bad-export",
+      "expected_reward": 0,
+      "actual_reward": 0,
+      "status": "PASS",
+      "task_checksum": "4a91934bdf1da905a683a0d22e64fe51b85616a154f8185731225a9655ad762d",
+      "environment_setup": {
+        "started_at": "2026-10-31T14:11:54.155996Z",
+        "finished_at": "2026-10-31T14:12:01.822519Z"
+      },
+      "agent_execution": {
+        "started_at": "2026-10-31T14:12:01.822733Z",
+        "finished_at": "2026-10-31T14:12:02.682316Z"
+      },
+      "verifier": {
+        "started_at": "2026-10-31T14:12:13.373737Z",
+        "finished_at": "2026-10-31T14:12:29.201743Z"
+      }
+    },
+    {
+      "case": "gate-tamper",
+      "expected_reward": 0,
+      "actual_reward": 0,
+      "status": "PASS",
+      "task_checksum": "bc48e649be79374743b25d9b476793d359dd1a32edd53ae9a958704ba84b8499",
+      "environment_setup": {
+        "started_at": "2026-10-31T14:12:29.331090Z",
+        "finished_at": "2026-10-31T14:12:33.416824Z"
+      },
+      "agent_execution": {
+        "started_at": "2026-10-31T14:12:33.416963Z",
+        "finished_at": "2026-10-31T14:12:34.259588Z"
+      },
+      "verifier": {
+        "started_at": "2026-10-31T14:12:44.934464Z",
+        "finished_at": "2026-10-31T14:13:00.439608Z"
+      }
+    },
+    {
+      "case": "reference",
+      "expected_reward": 1,
+      "actual_reward": 1,
+      "status": "PASS",
+      "task_checksum": "c58c1fc7210a1588b1a1703bd2dc05cab4aa6e34cb51cba66b19cb70ec81dfa2",
+      "environment_setup": {
+        "started_at": "2026-10-31T14:13:00.566357Z",
+        "finished_at": "2026-10-31T14:13:04.644231Z"
+      },
+      "agent_execution": {
+        "started_at": "2026-10-31T14:13:04.644357Z",
+        "finished_at": "2026-10-31T14:13:05.479065Z"
+      },
+      "verifier": {
+        "started_at": "2026-10-31T14:13:16.168493Z",
+        "finished_at": "2026-10-31T14:13:31.658433Z"
+      }
+    }
+  ],
+  "ci_run_url": "https://github.com/CooperWJ/ads/actions/runs/41208957430",
+  "tested_commit": "223bb8fef3028f3dfe774c8b74c88fed214f91aa",
+  "artifact_url": "https://github.com/CooperWJ/ads/actions/runs/41208957430/artifacts/13045517323"
+}

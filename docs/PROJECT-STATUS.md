@@ -10,7 +10,7 @@
 | 恢复审计器 | 本地一致性检查 | 命令、run_id、回执、历史内容、本地计数相互绑定；导出仍不是独立可信证明 |
 | 工具中途崩溃、远程副作用幂等 | NOT_VERIFIED | 暂缓通用故障编排器，先验证具体原生执行旅程 |
 | 最小受信执行与受保护评分 | NOT_VERIFIED | 当前工作流为自测；本轮读取分支保护被连接权限拒绝，不能据此认定配置存在或不存在 |
-| Harbor 独立导出 verifier | 待 Docker CI 实测 | 已固定 0.25.0，原生配置和本地 HTTP 校准通过；详见 Harbor 最小集成指南 |
+| Harbor 独立导出 verifier | PASS（导出产物边界） | Harbor 0.25.0 / Docker 三例校准通过；运行 41208957430，原生摘要见 docs/evidence/harbor-v0.5.8-calibration.json；不代表完整交付 |
 | Playwright Test Agents | NOT_TESTED | 尚无真实集成结果 |
 | 多来源需求发现 | PARTIAL | 受控虚构 MD/SVG/XLSX；固定审查样本不证明陌生需求语义召回率 |
 | 原始需求到 OpenCode 实现切片 | NOT_VERIFIED | 参考补丁通过不等于 Agent 实际完成开发 |

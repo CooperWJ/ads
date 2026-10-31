@@ -35,6 +35,14 @@ python3 poc/harbor_export/check_results.py /tmp/ads-harbor-run /tmp/ads-harbor-r
 python3 -m unittest discover -s tests -p 'test_harbor_export.py' -v
 ```
 
+## 实测结果
+
+- 被测提交：`223bb8fef3028f3dfe774c8b74c88fed214f91aa`。
+- [Harbor 原生 Docker 运行](https://github.com/CooperWJ/ads/actions/runs/41208957430)：3 trial、0 exception，reference=1、bad-export=0、gate-tamper=0，全部匹配预期；Harbor 执行 99 秒。
+- [原生结果与依赖清单](https://github.com/CooperWJ/ads/actions/runs/41208957430/artifacts/13045517323)；低敏摘要见 `docs/evidence/harbor-v0.5.8-calibration.json`。
+- [同提交 M0/M1 浏览器自测](https://github.com/CooperWJ/ads/actions/runs/41208957278)成功；本地全量 122 项测试通过。
+- 此记录后的文档整理不改变被测实现。运行资源为每容器配置 1 CPU / 512 MB；记录阶段时间，未采集实际峰值 CPU/内存。
+
 ## 采用决策与后续
 
 采用 Harbor 原生任务、Docker、oracle 和 separate verifier；ADS 只提供任务生成与严格结果投影。删除自研评测调度平台的必要性假设。

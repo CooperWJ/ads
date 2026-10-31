@@ -1,0 +1,70 @@
+{
+  "schema": "ads-container-journey-calibration/v1",
+  "status": "PASS",
+  "runtime_image": "python@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c",
+  "cases": [
+    {
+      "candidate": "reference_m1",
+      "expected": "PASS",
+      "actual": "PASS",
+      "delivery": "PASS",
+      "browser": "PASS",
+      "status": "PASS",
+      "runtime": {
+        "read_only_root": true,
+        "internal_network": true,
+        "cap_drop_all": true,
+        "no_new_privileges": true,
+        "mounted_scope": "one disposable database file",
+        "candidate_image_id": "sha256:1deaa352e5a4bd4fb2476c077504eb3f9ede570b01baf8e984eadf0bdb0db66e",
+        "memory_bytes": 536870912,
+        "nano_cpus": 1000000000,
+        "pids_limit": 128
+      }
+    },
+    {
+      "candidate": "m1_missing_menu",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "delivery": "FAIL",
+      "browser": "FAIL",
+      "status": "PASS",
+      "runtime": {
+        "read_only_root": true,
+        "internal_network": true,
+        "cap_drop_all": true,
+        "no_new_privileges": true,
+        "mounted_scope": "one disposable database file",
+        "candidate_image_id": "sha256:ebb8ba94a16eb336688336dfb23fb5f62dc3c1edcbde44cf53f8fee8489a5eb2",
+        "memory_bytes": 536870912,
+        "nano_cpus": 1000000000,
+        "pids_limit": 128
+      }
+    },
+    {
+      "candidate": "m1_silent_error",
+      "expected": "FAIL",
+      "actual": "FAIL",
+      "delivery": "FAIL",
+      "browser": "FAIL",
+      "status": "PASS",
+      "runtime": {
+        "read_only_root": true,
+        "internal_network": true,
+        "cap_drop_all": true,
+        "no_new_privileges": true,
+        "mounted_scope": "one disposable database file",
+        "candidate_image_id": "sha256:acf87aefdb2463e1604f57376e6816e9d56589c5a7c2dd27b73b14769d948718",
+        "memory_bytes": 536870912,
+        "nano_cpus": 1000000000,
+        "pids_limit": 128
+      }
+    }
+  ],
+  "scope": "fixture full-journey calibration; QA inputs synthetic",
+  "opencode_development": "NOT_VERIFIED",
+  "protected_ci": "NOT_VERIFIED",
+  "tested_commit": "a8e1e778800e28e06648e78a84fc8f43f2360ba8",
+  "ci_run_url": "https://github.com/CooperWJ/ads/actions/runs/41210486664",
+  "artifact_url": "https://github.com/CooperWJ/ads/actions/runs/41210486664/artifacts/13045878067"
+}

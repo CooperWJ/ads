@@ -308,6 +308,25 @@ function assistantResult(
     throw new Error('OpenCode session export id did not match the created session.');
   }
   const messages = Array.isArray(exported.messages) ? exported.messages as JsonRecord[] : [];
+  const allowedMessageTypes = new Set([
+    'user', 'assistant', 'system', 'synthetic', 'idle', 'agent-switched', 'model-switched',
+  ]);
+  for (const message of messages) {
+    const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
+    const type = String(info.type ?? info.role ?? '');
+    if (!allowedMessageTypes.has(type)) {
+      throw new Error(`OpenCode session contains forbidden native execution message type: ${type || 'unknown'}.`);
+    }
+    if (type === 'agent-switched' && info.agent !== expectedAgent) {
+      throw new Error('OpenCode session switched to an unexpected agent profile.');
+    }
+    if (type === 'model-switched') {
+      const selected = (info.model && typeof info.model === 'object' ? info.model : {}) as JsonRecord;
+      if (selected.providerID !== expectedProvider || selected.modelID !== expectedModel) {
+        throw new Error('OpenCode session switched to an unexpected model.');
+      }
+    }
+  }
   const assistants = messages.filter((message) => {
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
     return info.type === 'assistant' || info.role === 'assistant';

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.11 — 原生 Session 续接身份确认
+
+- 显式 `--session` 后核对 OpenCode 原生 JSONL 的 sessionID；匹配才确认续接，其他 ID 或缺失身份分别阻断。
+- 摘要区分 CONFIRMED、MISMATCH、NOT_OBSERVED 和 NOT_REQUESTED，避免仅凭参数已传递推断宿主实际续接。
+- 增加合成子进程回归，覆盖匹配、错配和无身份事件；不证明远程副作用恰好一次。
+
 ## v0.6.10 — OpenCode 原生错误低敏分类
 
 - 从原生 error event 提取格式受限的错误类型、状态码、错误代码与 Provider ID，不复制原始 message 或响应正文。

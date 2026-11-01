@@ -5,7 +5,7 @@
   "scripts": {
     "test": "e2e run --config e2e.config.ts",
     "test:agent": "e2e run --config e2e.agent.config.ts",
-    "test:agent-config": "node --experimental-strip-types --check tests/agent-journey.e2e.ts && node --experimental-strip-types --check e2e.agent.opencode-cli.config.ts && node --experimental-strip-types --check opencode-cli-model.ts && node --test tests/agent-config.test.mjs tests/opencode-cli-model.test.mjs",
+    "test:agent-config": "node --experimental-strip-types --check tests/agent-journey.e2e.ts && node --experimental-strip-types --check e2e.agent.opencode-cli.config.ts && node --experimental-strip-types --check opencode-cli-model.ts && node --experimental-strip-types --check agent-repair.ts && node --test tests/agent-config.test.mjs tests/opencode-cli-model.test.mjs tests/agent-repair.test.mjs",
     "login:agent": "e2e login opencode-console",
     "models:agent": "e2e models opencode-console"
   },

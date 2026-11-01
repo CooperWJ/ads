@@ -78,7 +78,7 @@ def summarize_native_error(detail):
 def change_set(before, after):
     """Summarize repository path changes without copying file contents."""
     if not isinstance(after, dict):
-        return {'status': 'UNKNOWN', 'added': [], 'modified': [], 'deleted': [],
+        return {'status': 'UNKNOWN', 'coverage': 'UNAVAILABLE', 'added': [], 'modified': [], 'deleted': [],
                 'counts': {'added': 0, 'modified': 0, 'deleted': 0}}
     old_repos = {item['name']: item.get('files', {}) for item in before.get('repositories', [])}
     new_repos = {item['name']: item.get('files', {}) for item in after.get('repositories', [])}
@@ -93,7 +93,8 @@ def change_set(before, after):
         for path in sorted(set(old) & set(new)):
             if old[path] != new[path]:
                 modified.append({'repository': repo, 'path': path})
-    return {'status': 'OBSERVED', 'added': added, 'modified': modified, 'deleted': deleted,
+    return {'status': 'OBSERVED', 'coverage': 'git-tracked-and-unignored-files',
+            'added': added, 'modified': modified, 'deleted': deleted,
             'counts': {'added': len(added), 'modified': len(modified), 'deleted': len(deleted)}}
 
 

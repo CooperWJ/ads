@@ -61,6 +61,40 @@ print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
         evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
         self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
 
+    def test_verification_binds_exact_development_and_behavior_artifacts(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'tool_use','part':{'type':'tool','tool':'skill',
+ 'state':{'status':'completed','input':{'name':'test-driven-development'},'metadata':{'exit':0}}}}))
+print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
+''')
+        development = engineering.develop(project, 'synthetic/model', execute=True)
+        run = test_ads_core.evidence.run_checks(project)
+        binding = run['development_binding']
+        self.assertEqual(binding['status'], 'MATCHED')
+        self.assertEqual(binding['run_id'], development['run_id'])
+        self.assertEqual(binding['behavior_sha256'], development['behavior_sha256'])
+        self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding'], binding)
+        self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
+
+    def test_verification_marks_development_stale_when_code_changed_after_run(self):
+        project = self.configure("pass\\n")
+        development = engineering.develop(project, 'synthetic/model', execute=True)
+        with (self.root / 'app.py').open('a') as source:
+            source.write('\\n# changed after native development\\n')
+        run = test_ads_core.evidence.run_checks(project)
+        self.assertEqual(run['status'], 'PASS')
+        self.assertEqual(run['development_binding']['status'], 'STALE')
+        self.assertEqual(run['development_binding']['run_id'], development['run_id'])
+
+    def test_tampered_behavior_artifact_invalidates_bound_verification(self):
+        project = self.configure("pass\\n")
+        engineering.develop(project, 'synthetic/model', execute=True)
+        run = test_ads_core.evidence.run_checks(project)
+        behavior = self.root / '.ads' / 'development' / run['development_binding']['run_id'] / 'behavior.json'
+        behavior.write_text('{}')
+        with self.assertRaises(test_ads_core.Blocked):
+            test_ads_core.evidence.load_current(project)
+
     @unittest.skipUnless(os.name == 'posix', 'POSIX permissions only')
     def test_raw_native_evidence_is_private_to_current_user(self):
         project = self.configure("print('{}')\\n")

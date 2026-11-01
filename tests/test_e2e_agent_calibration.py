@@ -39,6 +39,7 @@ class E2EAgentCalibrationTests(unittest.TestCase):
             root = project.root
             self.assertTrue((root / 'e2e.agent.opencode-cli.config.ts').is_file())
             self.assertTrue((root / 'opencode-cli-model.ts').is_file())
+            self.assertTrue((root / 'agent-repair.ts').is_file())
             self.assertTrue((root / 'tests/agent-journey.e2e.ts').is_file())
             self.assertIn("cache: 'off'", (root / 'e2e.config.ts').read_text())
             config = json.loads((root / 'ads.project.json').read_text())
@@ -56,6 +57,7 @@ class E2EAgentCalibrationTests(unittest.TestCase):
             root = project.root
             self.assertTrue((root / 'e2e.agent.config.ts').is_file())
             self.assertFalse((root / 'opencode-cli-model.ts').exists())
+            self.assertTrue((root / 'agent-repair.ts').is_file())
             config = json.loads((root / 'ads.project.json').read_text())
             argvs = [check.get('argv', []) for check in config.get('checks', [])]
             self.assertTrue(any('e2e.agent.config.ts' in argv for argv in argvs))

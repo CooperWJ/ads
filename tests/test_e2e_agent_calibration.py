@@ -27,6 +27,30 @@ def observed_agent():
     }
 
 
+def valid_repair_ledger():
+    return {
+        'schema': 'ads-agent-repair-ledger/v1',
+        'test_id': 'agent-bounded-repair-save-refresh-export',
+        'max_repairs': 1,
+        'repair_attempts': 1,
+        'observations': [
+            {
+                'ok': False, 'code': 'SAVE_HTTP_503',
+                'status': 'Save failed: HTTP 503', 'attempts': 1, 'persisted': '',
+            },
+            {
+                'ok': True, 'code': 'SAVE_VERIFIED', 'status': 'Saved',
+                'selectedProjectId': '1', 'note': 'Reviewed in M0',
+                'persisted': 'Reviewed in M0', 'attempts': 2,
+            },
+        ],
+        'save_attempts': 3,
+        'export_attempts': 1,
+        'final_persisted': 'Reviewed in M0',
+        'final_exported': 'Reviewed in M0',
+    }
+
+
 class E2EAgentCalibrationTests(unittest.TestCase):
     def test_prepare_binds_local_opencode_cli_profile_and_adapter(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -61,6 +85,30 @@ class E2EAgentCalibrationTests(unittest.TestCase):
             config = json.loads((root / 'ads.project.json').read_text())
             argvs = [check.get('argv', []) for check in config.get('checks', [])]
             self.assertTrue(any('e2e.agent.config.ts' in argv for argv in argvs))
+
+    def test_repair_ledger_requires_semantically_valid_single_repair_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'agent-repair-ledger.json'
+            path.write_text(json.dumps(valid_repair_ledger()))
+            data, status, digest = calibrate.validate_agent_repair_ledger(path)
+            self.assertEqual(status, 'VALID')
+            self.assertEqual(data['repair_attempts'], 1)
+            self.assertRegex(digest, r'^[a-f0-9]{64}$')
+
+            invalid = valid_repair_ledger()
+            invalid['repair_attempts'] = 2
+            path.write_text(json.dumps(invalid))
+            _data, status, digest = calibrate.validate_agent_repair_ledger(path)
+            self.assertEqual(status, 'INVALID')
+            self.assertRegex(digest, r'^[a-f0-9]{64}$')
+
+    def test_repair_ledger_missing_or_malformed_is_not_accepted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'missing.json'
+            self.assertEqual(calibrate.validate_agent_repair_ledger(path), (None, 'MISSING', None))
+            path.write_text('{not-json')
+            _data, status, _digest = calibrate.validate_agent_repair_ledger(path)
+            self.assertEqual(status, 'INVALID')
 
     def test_only_live_agent_plus_deterministic_run_can_pass(self):
         self.assertEqual(calibrate.agent_status(observed_agent(), True), 'PASS')

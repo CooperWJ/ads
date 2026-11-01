@@ -1,7 +1,7 @@
 import { test } from '@e2e-dev/web';
 import { expect } from 'e2e';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { runWithBoundedRepair } from '../agent-repair.ts';
@@ -116,4 +116,18 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
   expect(observed.persisted).toBe(EXPECTED_NOTE);
   expect(observed.exported).toBe(EXPECTED_NOTE);
   await app.screenshot('agent-repaired-saved-refreshed-exported');
+
+  const ledgerPath = process.env.ADS_E2E_REPAIR_LEDGER_PATH;
+  if (!ledgerPath) throw new Error('ADS_E2E_REPAIR_LEDGER_PATH is required for repair evidence.');
+  writeFileSync(ledgerPath, JSON.stringify({
+    schema: 'ads-agent-repair-ledger/v1',
+    test_id: 'agent-bounded-repair-save-refresh-export',
+    max_repairs: 1,
+    repair_attempts: result.repairAttempts,
+    observations: result.observations,
+    save_attempts: saveAttempts(),
+    export_attempts: exportAttempts(),
+    final_persisted: observed.persisted,
+    final_exported: observed.exported,
+  }, null, 2) + '\\n');
 });

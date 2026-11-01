@@ -56,3 +56,6 @@ OpenCode 原生 error event 会投影有限的结构化字段：错误类型、H
 ## 最后一次编辑后的验证观察
 
 `final_verification_after_last_direct_edit` 比较可识别的测试命令与直接 `write/edit/apply_patch/patch` 工具事件顺序：最后一次可识别测试成功且发生在最后一次直接编辑之后为 `OBSERVED`；最后测试失败为 `FAILED`；测试早于最后编辑为 `NOT_OBSERVED`；事件流不完整、缺少最终 stop 事件、没有测试/编辑或退出码不可读时为 `INDETERMINATE`。该指标不识别通过 shell、子代理或外部 IDE 完成的所有修改，也不判断测试是否覆盖正确需求。OpenCode 的 JSONL 事件流可能缺少最终 `step_finish`（参见 [upstream issue #53207](https://github.com/anomalyco/opencode/issues/53207)），因此 ADS 对缺失终止事件保持保守，不推断完成。
+
+
+行为摘要还提供 `test_command_process_results`，按原生进程退出码统计 `exit_zero`、`nonzero` 和 `unknown`。`exit_zero` 只表示命令进程返回 0，不证明实际发现或执行了测试，也不证明断言充分；未知退出码单独计数，不能计为成功。

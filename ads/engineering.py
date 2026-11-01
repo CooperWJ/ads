@@ -7,7 +7,7 @@ import time
 import uuid
 
 from .project import require, path_in, write_json, digest
-from .process import execute
+from .process import execute as execute_process
 
 
 def route(description):
@@ -63,7 +63,7 @@ def develop(project, model, execute=False):
     code, error = None, None
     with (directory / 'native-private.jsonl').open('wb') as out, (directory / 'stderr-private.log').open('wb') as err:
         try:
-            code = execute(argv, cwd=project.root, stdout=out, stderr=err, timeout=timeout)
+            code = execute_process(argv, cwd=project.root, stdout=out, stderr=err, timeout=timeout)
         except subprocess.TimeoutExpired:
             error = 'TIMEOUT'
     types, tools, session_ids = [], 0, set()

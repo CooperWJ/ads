@@ -21,6 +21,15 @@ function persistedNote(): string {
   }).trim();
 }
 
+function exportAttempts(): number {
+  const counter = join(dirname(process.env.ADS_DB_PATH!), '.ads-e2e-export-attempts');
+  try {
+    return Number(readFileSync(counter, 'utf8').trim());
+  } catch {
+    return 0;
+  }
+}
+
 function saveAttempts(): number {
   const counter = join(dirname(process.env.ADS_DB_PATH!), '.ads-e2e-save-attempts');
   try {
@@ -57,6 +66,7 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
         expect(note).toBe(EXPECTED_NOTE);
         expect(persisted).toBe('');
         expect(attempts).toBe(1);
+        expect(exportAttempts()).toBe(0);
         await app.screenshot('agent-first-save-rejected');
         return { ok: false, code: 'SAVE_HTTP_503', status, note, persisted, attempts };
       }
@@ -65,6 +75,7 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
       expect(note).toBe(EXPECTED_NOTE);
       expect(persisted).toBe(EXPECTED_NOTE);
       expect(attempts).toBe(2);
+      expect(exportAttempts()).toBe(0);
       await app.screenshot('agent-repair-save-verified');
       return { ok: true, code: 'SAVE_VERIFIED', status, note, persisted, attempts };
     },
@@ -91,6 +102,7 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
   expect(saveAttempts()).toBe(3);
 
   const download = await browser.waitForDownload(() => screen.getByRole('button', 'Export XLSX').tap());
+  expect(exportAttempts()).toBe(1);
 
   // Independent oracle reads the actual DB and downloaded workbook, not Agent narration.
   const observed = JSON.parse(execFileSync(process.env.ADS_PYTHON!, [

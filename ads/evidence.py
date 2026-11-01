@@ -107,6 +107,9 @@ def development_binding(project, subject, run_id=None):
             'test_driven_development_invoked': behavior.get('test_driven_development_invoked', 'INDETERMINATE'),
             'verification_before_completion_invoked': behavior.get('verification_before_completion_invoked', 'INDETERMINATE'),
             'test_commands_observed': behavior.get('test_commands_observed'),
+            'test_command_process_results': behavior.get('test_command_process_results', {
+                'exit_zero': None, 'nonzero': None, 'unknown': None,
+            }),
             'direct_edit_tools_observed': behavior.get('direct_edit_tools_observed'),
             'test_before_first_direct_edit': behavior.get('test_before_first_direct_edit', 'INDETERMINATE'),
             'observed_red_green_sequence': behavior.get('observed_red_green_sequence', 'INDETERMINATE'),

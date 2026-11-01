@@ -74,6 +74,8 @@ def prepare(workspace, variant, probe=None, agent=False):
             shutil.copyfile(HERE / 'tests/journey.e2e.ts', workspace / 'tests/journey.e2e.ts')
             title = 'tests/journey.e2e.ts::save-refresh-export'
         target = 'chromium'
+    if agent and "cache: 'off'" not in (workspace / 'e2e.config.ts').read_text():
+        raise ValueError('Agent evaluation requires the inherited e2e cache: off policy')
     case = json.dumps([title,target,'default','0'], ensure_ascii=False, separators=(',', ':'))
     write_json(workspace / 'contract.json', {'schema':'ads-contract/v1',
         'authority':{'reviewer':'synthetic-fixture-calibration','decision_ref':'frozen-ADS-M0-001'},
@@ -106,12 +108,12 @@ def collect(project, run, expected, out, agent=False):
         cache_modes = (agent_evidence or {}).get('cache_modes', {})
         agent_observed = (agent_evidence or {}).get('status') == 'OBSERVED'
         model_calls = (agent_evidence or {}).get('model_calls', 0)
-        if not agent_observed or model_calls == 0 or cache_modes.get('self-finalized', 0) > 0:
+        if (not agent_observed or model_calls == 0 or cache_modes.get('self-finalized', 0) > 0
+                or (agent_evidence or {}).get('model_provenance') != 'OBSERVED'):
             state = 'BLOCKED'
         elif (agent_evidence.get('mode') != 'AGENT_PLUS_DETERMINISTIC'
               or agent_evidence.get('act_steps', 0) == 0
               or agent_evidence.get('deterministic_assertions_after_act', 0) == 0
-              or agent_evidence.get('model_provenance') != 'OBSERVED'
               or not correct):
             state = 'FAIL'
         else:

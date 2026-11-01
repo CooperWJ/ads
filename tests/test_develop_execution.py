@@ -76,6 +76,15 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding'], binding)
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
 
+    def test_cli_verify_exposes_development_binding(self):
+        project = self.configure("pass\\n")
+        engineering.develop(project, 'synthetic/model', execute=True)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(['--root', str(self.root), 'verify'])
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertEqual(json.loads(output.getvalue())['development_binding']['status'], 'MATCHED')
+
     def test_verification_marks_development_stale_when_code_changed_after_run(self):
         project = self.configure("pass\\n")
         development = engineering.develop(project, 'synthetic/model', execute=True)

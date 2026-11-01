@@ -16,6 +16,8 @@ ads init --superpowers --e2e
 
 OpenCode 负责开发与调用工具；Superpowers 提供复现、TDD 和完成前验证方法；e2e 负责操作实际应用并产出轨迹。已有 OpenSpec 要求不重复访谈。自愈可调整导航路径，关键预期仍由已确认要求给定。e2e MCP 不需要模型即可提供确定性工具，`agent.act/assert` 仍需要有额度的模型。
 
+ADS 的 report-1 适配现会按用例投影低敏 Agent 事实：`agent.act`/`agent.assert` 数量、确定性 locator assertion 数量、动作数、模型调用/token/成本及缓存模式。摘要不复制 Agent 指令、turns、事件详情、屏幕或原始输出；模型标识仅接受安全字符集。只有报告同时观察到 `agent.act` 与确定性断言时才标记 `AGENT_PLUS_DETERMINISTIC`。缓存重放单独计数，不能冒充实时模型调用；成本或模型元数据不完整时保持 PARTIAL/NOT_REPORTED。该投影目前由确定性夹具验证，真实 Agent 模型执行与修复闭环仍未验证。
+
 ## 接入 ADS 的现有验证命令
 
 在项目 Profile 增加一个检查（路径与测试由项目决定）：

@@ -110,6 +110,7 @@ def main(argv=None):
                 run = evidence.run_checks(project, args.role)
                 result = {'status': run['status'], 'run_id': run['run_id'], 'role': run['role'],
                           'subject_sha256': run['subject']['sha256'], 'subject_unchanged': run['subject_unchanged'],
+                          'development_binding': run.get('development_binding', {'status': 'NOT_LINKED'}),
                           'checks': [{'id': c['check_id'], 'status': c['status'], 'failure': c['failure']} for c in run['checks']],
                           'trust': run['trust']}
             elif args.command == 'gate':

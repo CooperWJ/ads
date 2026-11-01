@@ -183,6 +183,27 @@ print(json.dumps({'type':'error','error':{'name':'APIError','data':{'message':'r
         self.assertEqual(result['error_type'], 'APIError')
         self.assertEqual(result['status'], 'BLOCKED')
 
+    def test_native_quota_error_is_safely_classified(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'error','error':{'name':'APIError','data':{
+ 'message':'private diagnostic text','statusCode':429,'code':'provider.free-limit','providerID':'opencode'}}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'APIError')
+        self.assertEqual(result['native_error']['classification'], 'MODEL_QUOTA')
+        self.assertEqual(result['native_error']['status_code'], 429)
+        self.assertEqual(result['native_error']['code'], 'provider.free-limit')
+        self.assertEqual(result['native_error']['provider_id'], 'opencode')
+        self.assertNotIn('private diagnostic text', json.dumps(result))
+
+    def test_native_error_classification_is_conservative(self):
+        auth = engineering.summarize_native_error({'name':'APIError','data':{'statusCode':403}})
+        upstream = engineering.summarize_native_error({'name':'APIError','data':{'statusCode':503}})
+        rate = engineering.summarize_native_error({'name':'APIError','data':{'statusCode':429}})
+        self.assertEqual(auth['classification'], 'AUTH_OR_PERMISSION')
+        self.assertEqual(upstream['classification'], 'UPSTREAM_FAILURE')
+        self.assertEqual(rate['classification'], 'RATE_LIMITED')
+
     def test_executable_start_error_is_recorded(self):
         project = self.configure('pass\n')
         (self.root / 'native-stub').write_text('not an executable format')

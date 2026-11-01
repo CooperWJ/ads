@@ -38,3 +38,9 @@ python3 -m unittest tests.test_develop_execution -v
 - `NOT_LINKED`：没有可关联的 ADS 开发运行。QA 责任运行不继承开发行为声明。
 
 验证记录固定引用开发 `run_id` 和两份证据哈希。`ads verify` 后再修改行为文件，会使 `ads status` 在加载该验证记录时阻断。若开发后代码变化，新的验证会保留 `STALE` 关系，而不是把旧开发声明嫁接到新代码上。此关联只证明同一输入版本的对应关系，不证明 Skill 指导被遵循或业务需求已正确实现。
+
+## 原生错误的低敏诊断
+
+OpenCode 原生 error event 会投影有限的结构化字段：错误类型、HTTP 状态码、格式受限的错误代码和 Provider ID。原始 `message`、请求内容、响应正文及凭据不会写入公开摘要；原始事件仍只保存在本地私有运行目录。
+
+分类规则保守处理：`provider.free-limit`/quota 代码为 `MODEL_QUOTA`，HTTP 429 但无配额代码为 `RATE_LIMITED`，401/403 为 `AUTH_OR_PERMISSION`，408/504 为 `UPSTREAM_TIMEOUT`，5xx 为 `UPSTREAM_FAILURE`，其他为 `UNKNOWN`。分类只辅助诊断，不自动重试、不切换模型/账户，也不更改权限。未知字段不会被猜测。

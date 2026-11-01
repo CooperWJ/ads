@@ -41,6 +41,39 @@ def context(project, freeze=False):
             'automatic_side_effect_replay': False}
 
 
+def _safe_error_label(value):
+    if not isinstance(value, str) or not 0 < len(value) <= 100:
+        return None
+    return value if all(ch.isalnum() or ch in '_.-' for ch in value) else None
+
+
+def summarize_native_error(detail):
+    """Expose only stable, non-message fields from a native OpenCode error."""
+    if not isinstance(detail, dict):
+        return {'type': 'NATIVE_ERROR', 'classification': 'UNKNOWN'}
+    data = detail.get('data')
+    data = data if isinstance(data, dict) else {}
+    name = _safe_error_label(detail.get('type') or detail.get('name')) or 'NATIVE_ERROR'
+    status = data.get('statusCode')
+    status = status if type(status) is int and 400 <= status <= 599 else None
+    code = _safe_error_label(data.get('code') or detail.get('code'))
+    provider = _safe_error_label(data.get('providerID') or data.get('providerId') or detail.get('providerID'))
+    normalized_code = (code or '').lower()
+    if 'free-limit' in normalized_code or 'quota' in normalized_code:
+        classification = 'MODEL_QUOTA'
+    elif status == 429:
+        classification = 'RATE_LIMITED'
+    elif status in (401, 403):
+        classification = 'AUTH_OR_PERMISSION'
+    elif status in (408, 504):
+        classification = 'UPSTREAM_TIMEOUT'
+    elif status is not None and status >= 500:
+        classification = 'UPSTREAM_FAILURE'
+    else:
+        classification = 'UNKNOWN'
+    return {'type': name, 'classification': classification, 'status_code': status,
+            'code': code, 'provider_id': provider}
+
 def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
     config = project.config.get('development', {})
@@ -88,6 +121,7 @@ def develop(project, model, execute=False, session=None):
     behavior = inspect_stream(stream)
     write_json(directory / 'behavior.json', behavior)
     types, session_ids = [], set()
+    native_error = None
     for line in stream.splitlines():
         try:
             event = json.loads(line)
@@ -98,8 +132,8 @@ def develop(project, model, execute=False, session=None):
                 session_ids.add(event['sessionID'])
             if event.get('type') == 'error':
                 detail = event.get('error')
-                kind = (detail.get('type') or detail.get('name')) if isinstance(detail, dict) else None
-                error = kind if isinstance(kind, str) and kind else 'NATIVE_ERROR'
+                native_error = summarize_native_error(detail)
+                error = native_error['type']
             types.append(event.get('type'))
     try:
         after = project.snapshot(development=True)
@@ -112,7 +146,8 @@ def develop(project, model, execute=False, session=None):
               'behavior_path': str(behavior_path.relative_to(project.root)),
               'behavior_sha256': digest(behavior_path.read_bytes()),
               'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
-              'exit_code': code, 'error_type': error, 'duration_seconds': time.monotonic()-started,
+              'exit_code': code, 'error_type': error, 'native_error': native_error,
+              'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
               'native_sessions_observed': len(session_ids), 'stream_tool_events': behavior['completed_tool_calls'],
               'behavior_evidence': behavior,

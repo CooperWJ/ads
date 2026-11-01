@@ -113,6 +113,8 @@ class E2EAgentEvidenceTests(unittest.TestCase):
             'provider': 'deepseek', 'model': 'deepseek-v4.1-flash-free',
         }])
         self.assertEqual(evidence['model_provenance'], 'OBSERVED')
+        self.assertEqual(evidence['model_usage_status'], 'OBSERVED')
+        self.assertEqual(evidence['model_cost_status'], 'OBSERVED')
         self.assertEqual(evidence['cache_modes']['missed'], 1)
 
     def test_projection_never_copies_agent_instruction_turn_or_event_detail(self):
@@ -167,6 +169,28 @@ class E2EAgentEvidenceTests(unittest.TestCase):
             doc['run']['results'][0]['attempts'][0]['steps'] = [step]
             with self.subTest(mutate=mutate), self.assertRaises(Blocked):
                 self.evaluate(doc)
+
+    def test_partial_model_metadata_never_reports_a_complete_cost(self):
+        doc = report()
+        first = agent_step()
+        second = agent_step()
+        second.pop('model')
+        doc['run']['results'][0]['attempts'][0]['steps'] = [
+            first, second, deterministic_assertion(),
+        ]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['model_provenance'], 'PARTIAL')
+        self.assertEqual(evidence['model_usage_status'], 'PARTIAL')
+        self.assertEqual(evidence['model_cost_status'], 'PARTIAL')
+        self.assertIsNone(evidence['estimated_cost_usd'])
+
+    def test_unsafe_model_identifier_is_rejected(self):
+        doc = report()
+        step = agent_step()
+        step['model']['provider'] = 'provider-with-secret-token value'
+        doc['run']['results'][0]['attempts'][0]['steps'] = [step]
+        with self.assertRaises(Blocked):
+            self.evaluate(doc)
 
     def test_serial_group_agent_evidence_uses_the_exact_member_steps(self):
         doc = report()

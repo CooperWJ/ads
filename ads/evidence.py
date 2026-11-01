@@ -63,6 +63,62 @@ def parse(kind, data):
     return {'junit': junit, 'playwright': playwright, 'e2e': e2e}[kind](data)
 
 
+
+def development_binding(project, subject, run_id=None):
+    """Bind verification to one exact native development run when available."""
+    try:
+        if run_id is None:
+            pointer_path = path_in(project.root, '.ads/latest-development.json')
+            if not pointer_path.is_file():
+                return {'status': 'NOT_LINKED'}
+            pointer = json.loads(pointer_path.read_text())
+            run_id = pointer.get('run_id')
+            expected_summary_sha = pointer.get('summary_sha256')
+            expected_behavior_sha = pointer.get('behavior_sha256')
+        else:
+            expected_summary_sha = None
+            expected_behavior_sha = None
+        require(isinstance(run_id, str) and len(run_id) == 32
+                and all(ch in '0123456789abcdef' for ch in run_id), '开发运行 ID 无效')
+        directory = path_in(project.root, f'.ads/development/{run_id}', exists=True)
+        summary_path = path_in(project.root, f'.ads/development/{run_id}/summary.json', exists=True)
+        behavior_path = path_in(project.root, f'.ads/development/{run_id}/behavior.json', exists=True)
+        summary_bytes = summary_path.read_bytes()
+        behavior_bytes = behavior_path.read_bytes()
+        summary_sha = digest(summary_bytes)
+        behavior_sha = digest(behavior_bytes)
+        require(expected_summary_sha is None or expected_summary_sha == summary_sha,
+                '最新开发摘要指纹不符')
+        require(expected_behavior_sha is None or expected_behavior_sha == behavior_sha,
+                '最新行为证据指纹不符')
+        summary = json.loads(summary_bytes)
+        behavior = json.loads(behavior_bytes)
+        require(summary.get('schema') == 'ads-development-run/v1'
+                and summary.get('run_id') == run_id, '开发摘要身份不符')
+        require(summary.get('behavior_path') == str(behavior_path.relative_to(project.root))
+                and summary.get('behavior_sha256') == behavior_sha
+                and summary.get('behavior_evidence') == behavior, '行为证据与开发摘要不一致')
+        output_subject = summary.get('output_subject')
+        status = 'MATCHED' if output_subject == subject else 'STALE'
+        return {'status': status, 'run_id': run_id, 'summary_sha256': summary_sha,
+                'behavior_sha256': behavior_sha,
+                'output_subject_sha256': output_subject.get('sha256') if isinstance(output_subject, dict) else None}
+    except (Blocked, OSError, ValueError, KeyError, TypeError):
+        return {'status': 'INVALID', 'run_id': run_id if isinstance(run_id, str) else None}
+
+
+def validate_development_binding(project, binding, subject):
+    status = binding.get('status')
+    if status in ('NOT_LINKED', 'INVALID'):
+        return
+    require(status in ('MATCHED', 'STALE') and isinstance(binding.get('run_id'), str),
+            '未知开发证据绑定状态')
+    actual = development_binding(project, subject, binding['run_id'])
+    require(actual == binding and actual['status'] == status,
+            '关联的开发摘要或行为证据已变化')
+
+
+
 def run_checks(project, role='dev'):
     require(role in ('dev', 'qa'), '未知执行责任')
     contract = project.contract()
@@ -70,6 +126,7 @@ def run_checks(project, role='dev'):
         from .qa import reviewed_baseline
         reviewed_baseline(project)
     before = project.snapshot()
+    linked_development = development_binding(project, before) if role == 'dev' else {'status': 'NOT_APPLICABLE'}
     run_id = uuid.uuid4().hex
     directory = path_in(project.root, f'.ads/runs/{run_id}')
     directory.mkdir(parents=True, exist_ok=False)
@@ -111,6 +168,7 @@ def run_checks(project, role='dev'):
     after = project.snapshot()
     report = {'schema': 'ads-project-run/v1', 'run_id': run_id, 'role': role,
               'subject': before, 'subject_unchanged': before == after,
+              'development_binding': linked_development,
               'status': 'PASS' if before == after and all(x['status'] == 'PASS' for x in results) else 'FAIL',
               'checks': results, 'trust': 'LOCAL_EXECUTION', 'independent_qa_identity': 'NOT_VERIFIED',
               'contract_authority': contract['authority']}
@@ -124,6 +182,8 @@ def load_current(project, role='dev'):
     run = json.loads(path_in(project.root, f'.ads/runs/{pointer["run_id"]}/run.json', exists=True).read_text())
     require(run.get('schema') == 'ads-project-run/v1' and run.get('role') == role, '运行记录身份不符')
     require(run.get('subject') == project.snapshot() and run.get('subject_unchanged') is True, '代码、来源、契约或配置已经漂移')
+    if role == 'dev':
+        validate_development_binding(project, run.get('development_binding', {'status': 'NOT_LINKED'}), run['subject'])
     for check in run['checks']:
         report = path_in(project.root, check['report'], exists=True)
         require(digest(report.read_bytes()) == check['report_sha256'], '原始测试报告已被修改')
@@ -157,6 +217,7 @@ def decide(project):
         good = good and alignment_state == 'SCOPED_RECONCILED_LOCAL'
     return {'schema': 'ads-project-decision/v1', 'development': 'DEV_VERIFIED_LOCAL' if good else 'BLOCKED',
             'obligations': obligations, 'subject_sha256': run['subject']['sha256'],
+            'development_binding': run.get('development_binding', {'status': 'NOT_LINKED'}),
             'source_inventory': discovered['status'], 'requirements_alignment': alignment_state,
             'semantic_completeness': 'NOT_VERIFIED',
             'qa_independence': 'NOT_VERIFIED', 'release': 'NOT_VERIFIED',

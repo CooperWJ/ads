@@ -53,8 +53,39 @@ class OpenSpecAdapterTests(unittest.TestCase):
         self.assertEqual(result['status'], 'COMPILED_DERIVED')
         self.assertFalse(result['approval_created'])
         self.assertEqual(len(self.project.contract()['obligations']), 2)
-        self.assertEqual(evidence.run_checks(self.project)['status'], 'PASS')
-        self.assertEqual(evidence.decide(self.project)['development'], 'DEV_VERIFIED_LOCAL')
+        run = evidence.run_checks(self.project)
+        self.assertEqual(run['status'], 'PASS')
+        decision = evidence.decide(self.project)
+        self.assertEqual(decision['development'], 'DEV_VERIFIED_LOCAL')
+        self.assertEqual(decision['verification_run_id'], run['run_id'])
+        self.assertEqual(decision['verification_run_status'], 'PASS')
+        self.assertEqual(len(decision['obligations']), 2)
+        for obligation in decision['obligations']:
+            self.assertEqual(obligation['status'], 'PASS')
+            self.assertEqual(len(obligation['verification_evidence']), 1)
+            evidence_ref = obligation['verification_evidence'][0]
+            self.assertEqual(evidence_ref['expected'], 'PASS')
+            self.assertEqual(evidence_ref['observed'], 'PASS')
+            self.assertEqual(evidence_ref['status'], 'PASS')
+            self.assertEqual(evidence_ref['reference']['run_id'], run['run_id'])
+            self.assertEqual(evidence_ref['reference']['subject_sha256'], run['subject']['sha256'])
+            self.assertTrue(evidence_ref['reference']['report_sha256'])
+
+
+    def test_failed_case_keeps_expected_result_and_exact_failed_report_reference(self):
+        openspec.compile_contract(self.project)
+        (self.root/'app.py').write_text('def normalize(value):\\n    return value\\n')
+        run = evidence.run_checks(self.project)
+        self.assertEqual(run['status'], 'FAIL')
+        decision = evidence.decide(self.project)
+        self.assertEqual(decision['development'], 'BLOCKED')
+        failed = next(x for x in decision['obligations'] if x['id'] == openspec.scenarios(self.project)[0]['id'])
+        ref = failed['verification_evidence'][0]
+        self.assertEqual(ref['expected'], 'PASS')
+        self.assertEqual(ref['observed'], 'FAIL')
+        self.assertEqual(ref['status'], 'NOT_VERIFIED')
+        self.assertEqual(ref['reference']['run_id'], run['run_id'])
+        self.assertEqual(ref['reference']['report_sha256'], run['checks'][0]['report_sha256'])
 
     def test_missing_whole_scenario_is_a_gap_not_empty_success(self):
         self.mapping['bindings'].pop()

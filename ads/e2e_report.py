@@ -63,6 +63,8 @@ def _agent_evidence(result, attempts):
                 for key in ('inputTokens', 'outputTokens', 'calls'):
                     if key in model:
                         require(type(model[key]) is int and model[key] >= 0, 'Agent token/call 计数无效')
+                require(type(model.get('calls')) is int and model['calls'] == metrics['modelCalls'],
+                        'Agent 模型调用数与 step 计数不一致')
                 if 'estimatedCostUsd' in model:
                     cost = model['estimatedCostUsd']
                     require(type(cost) in (int, float) and cost >= 0

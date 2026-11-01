@@ -96,6 +96,7 @@ def change_set(before, after):
     return {'status': 'OBSERVED', 'added': added, 'modified': modified, 'deleted': deleted,
             'counts': {'added': len(added), 'modified': len(modified), 'deleted': len(deleted)}}
 
+
 def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
     config = project.config.get('development', {})

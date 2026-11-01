@@ -118,6 +118,6 @@ ADS_E2E_OPENCODE_MODEL='<models 命令返回的精确模型 ID>' \
 
 ### 两种 profile 共用的验收规则
 
-Agent 只负责通过 UI 选择 Project Echo、输入指定内容并保存。之后由确定性断言检查 UI 状态、刷新持久化、数据库记录和 XLSX 导出。Profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 Token。
+Agent 通过 UI 选择 Project Echo、输入指定内容并保存。校准场景会注入一次确定性 HTTP 503：先由独立 UI/SQLite oracle 识别失败，再将结构化观察反馈给 Agent，只允许一次 repair act，并再次执行相同 oracle。repair 成功后才允许测试本身刷新页面、重新保存并导出 XLSX；服务端计数器证明 Agent 没有提前导出或在单次 act 内偷偷重试。最终由独立 DB/XLSX oracle 验证持久化。`agent-repair.ts` 将 repair budget 限制为 0–2，当前旅程固定为 1；超额、Agent 调用异常或 oracle 异常均 fail-closed。校准额外生成 `agent-repair-ledger.json`，验证 schema、首轮失败、一次修复、最终状态与导出计数，并在摘要中记录 SHA-256。Profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 Token。
 
-这里关闭的是 e2e journey/step replay，避免缓存结果冒充真实 Agent 执行；模型供应商可能仍使用 prompt-prefix 缓存，它不会跳过模型调用，验收仍要求 report 记录真实 model call。CI 只运行 fake CLI 契约测试和 profile 配置测试，不登录、不调用真实模型；真实执行结果必须由显式运行产生的 report 与模型用量证据确认。
+这里关闭的是 e2e journey/step replay，避免缓存结果冒充真实 Agent 执行；模型供应商可能仍使用 prompt-prefix 缓存，它不会跳过模型调用，验收仍要求 report 记录真实 model call。CI 运行 fake CLI 契约测试、repair helper 单元测试和 profile 配置测试，不登录、不调用真实模型；真实 Agent repair journey 必须由显式模型运行产生的 report、repair ledger 与模型用量证据确认。

@@ -60,6 +60,7 @@ print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
         self.assertEqual(result['behavior_evidence']['systematic_debugging_invoked'], 'OBSERVED')
         evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
         self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
+        self.assertEqual(result['change_set']['counts'], {'added': 0, 'modified': 0, 'deleted': 0})
 
     def test_verification_binds_exact_development_and_behavior_artifacts(self):
         project = self.configure('''import json
@@ -122,6 +123,19 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
         self.assertEqual((directory / 'native-private.jsonl').stat().st_mode & 0o777, 0o600)
         self.assertEqual((directory / 'stderr-private.log').stat().st_mode & 0o777, 0o600)
+
+    def test_development_summary_lists_added_and_modified_paths(self):
+        project = self.configure('''from pathlib import Path
+app = Path('app.py')
+app.write_text(app.read_text() + chr(10) + '# synthetic change' + chr(10))
+Path('new-note.txt').write_text('synthetic addition')
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['change_set']['status'], 'OBSERVED')
+        self.assertEqual(result['change_set']['counts'], {'added': 1, 'modified': 1, 'deleted': 0})
+        self.assertEqual(result['change_set']['added'], [{'repository': 'code', 'path': 'new-note.txt'}])
+        self.assertEqual(result['change_set']['modified'], [{'repository': 'code', 'path': 'app.py'}])
+        self.assertEqual(result['change_set']['deleted'], [])
 
     def test_native_failure_is_recorded_and_blocked(self):
         project = self.configure('import sys\nsys.exit(7)\n')

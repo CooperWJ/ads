@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import subprocess
 
-from .project import Project, require, path_in, write_json
+from .project import Blocked, Project, require, path_in, write_json
 from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment, integrations
 
 
@@ -67,6 +67,7 @@ def main(argv=None):
     develop = sub.add_parser('develop')
     develop.add_argument('--model', required=True)
     develop.add_argument('--execute', action='store_true')
+    develop.add_argument('--session', help='明确续接 OpenCode 原生 Session；不自动重放副作用')
     trust = sub.add_parser('attest')
     trust.add_argument('artifact')
     sub.add_parser('smoke')
@@ -122,10 +123,16 @@ def main(argv=None):
                 else:
                     config = project.config.get('qa', {})
                     result = qa.intake(path_in(project.root, config['source'], exists=True))
-                    result['mapping'] = qa.candidates(result, project.contract())
+                    try:
+                        result['mapping'] = qa.candidates(result, project.contract())
+                    except Blocked as exc:
+                        result['mapping'] = []
+                        result['requirement_reconciliation'] = 'BLOCKED'
+                        result['mapping_failure'] = str(exc)
+                    result['status'] = 'IMPORTED'
                     write_json(path_in(project.root, '.ads/qa-intake.json'), result)
             elif args.command == 'develop':
-                result = engineering.develop(project, args.model, args.execute)
+                result = engineering.develop(project, args.model, args.execute, session=args.session)
             elif args.command == 'attest':
                 result = assurance.attest(project, args.artifact)
             elif args.command == 'smoke':

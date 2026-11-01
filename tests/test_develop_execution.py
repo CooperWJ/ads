@@ -2,6 +2,8 @@
 import io
 import json
 import os
+import signal
+import threading
 from contextlib import redirect_stdout
 import unittest
 
@@ -65,3 +67,46 @@ print(json.dumps({'type': 'step_finish', 'sessionID': 'synthetic-session'}))
         project = self.configure("raise RuntimeError('不应启动')\n")
         self.assertEqual(engineering.develop(project, 'synthetic/model')['status'], 'PLANNED')
         self.assertFalse((self.root / '.ads/development').exists())
+
+    def test_explicit_session_is_forwarded_to_native_once(self):
+        project = self.configure('''import sys,json
+assert sys.argv[sys.argv.index('--session')+1] == 'ses_synthetic'
+print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic'}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True, session='ses_synthetic')
+        self.assertEqual(result['session_id'], 'ses_synthetic')
+        self.assertEqual(result['requested_session'], 'ses_synthetic')
+        self.assertFalse(result['automatic_side_effect_replay'])
+
+    def test_interrupt_persists_receipt_after_process_cleanup(self):
+        project = self.configure('import time\ntime.sleep(30)\n')
+        timer = threading.Timer(.3, lambda: os.kill(os.getpid(), signal.SIGINT))
+        timer.start()
+        try:
+            result = engineering.develop(project, 'synthetic/model', execute=True)
+        finally:
+            timer.cancel()
+        self.assertEqual(result['error_type'], 'INTERRUPTED')
+        summary = next((self.root / '.ads/development').glob('*/summary.json'))
+        self.assertEqual(json.loads(summary.read_text())['status'], 'BLOCKED')
+
+    def test_native_corrupting_authority_keeps_failure_summary(self):
+        project = self.configure("from pathlib import Path\nPath('contract.json').write_text('invalid JSON')\n")
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'CONTEXT_UNREADABLE')
+        self.assertIsNone(result['output_subject'])
+        self.assertFalse(result['authority_unchanged'])
+
+    def test_non_object_native_error_is_not_lost(self):
+        project = self.configure('print(\'{"type":"error","error":"synthetic failure"}\')\n')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'NATIVE_ERROR')
+        self.assertEqual(result['status'], 'BLOCKED')
+
+    def test_executable_start_error_is_recorded(self):
+        project = self.configure('pass\n')
+        (self.root / 'native-stub').write_text('not an executable format')
+        engineering.context(project, freeze=True)
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'EXECUTION_ERROR')
+        self.assertEqual(result['status'], 'BLOCKED')

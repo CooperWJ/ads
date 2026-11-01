@@ -102,6 +102,9 @@ def development_binding(project, subject, run_id=None):
         status = 'MATCHED' if output_subject == subject else 'STALE'
         return {'status': status, 'run_id': run_id, 'summary_sha256': summary_sha,
                 'behavior_sha256': behavior_sha,
+                'change_set': summary.get('change_set', {'status': 'UNKNOWN', 'coverage': 'UNAVAILABLE',
+                    'added': [], 'modified': [], 'deleted': [],
+                    'counts': {'added': None, 'modified': None, 'deleted': None}}),
                 'output_subject_sha256': output_subject.get('sha256') if isinstance(output_subject, dict) else None}
     except (Blocked, OSError, ValueError, KeyError, TypeError):
         return {'status': 'INVALID', 'run_id': run_id if isinstance(run_id, str) else None}

@@ -65,7 +65,8 @@ def develop(project, model, execute=False, session=None):
     timeout = config.get('timeout_seconds', 600)
     require(type(timeout) is int and 1 <= timeout <= 1800, '开发调用必须有界')
     before = project.snapshot(development=True)
-    directory = path_in(project.root, '.ads/development/' + uuid.uuid4().hex)
+    run_id = uuid.uuid4().hex
+    directory = path_in(project.root, '.ads/development/' + run_id)
     directory.mkdir(parents=True, exist_ok=False)
     if os.name == 'posix':
         directory.chmod(0o700)
@@ -106,12 +107,22 @@ def develop(project, model, execute=False, session=None):
         after = None
         error = error or 'CONTEXT_UNREADABLE'
     authority_unchanged = after is not None and before['files'] == after['files']
-    report = {**plan, 'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
+    behavior_path = directory / 'behavior.json'
+    report = {**plan, 'schema': 'ads-development-run/v1', 'run_id': run_id,
+              'behavior_path': str(behavior_path.relative_to(project.root)),
+              'behavior_sha256': digest(behavior_path.read_bytes()),
+              'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
               'exit_code': code, 'error_type': error, 'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
               'native_sessions_observed': len(session_ids), 'stream_tool_events': behavior['completed_tool_calls'],
               'behavior_evidence': behavior,
               'session_id': next(iter(session_ids)) if len(session_ids) == 1 else None,
               'completion': 'NOT_VERIFIED', 'verification': '必须运行外部 ads verify 和 QA，不能凭原生退出 0 认可完成'}
-    write_json(directory / 'summary.json', report)
+    summary_path = directory / 'summary.json'
+    write_json(summary_path, report)
+    write_json(path_in(project.root, '.ads/latest-development.json'), {
+        'run_id': run_id,
+        'summary_sha256': digest(summary_path.read_bytes()),
+        'behavior_sha256': report['behavior_sha256'],
+    })
     return report

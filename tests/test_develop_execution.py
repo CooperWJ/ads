@@ -95,6 +95,16 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(run['development_binding']['status'], 'STALE')
         self.assertEqual(run['development_binding']['run_id'], development['run_id'])
 
+    def test_tampered_behavior_before_verify_is_marked_invalid(self):
+        project = self.configure("pass" + chr(10))
+        development = engineering.develop(project, 'synthetic/model', execute=True)
+        behavior = self.root / '.ads' / 'development' / development['run_id'] / 'behavior.json'
+        behavior.write_text('{}')
+        run = test_ads_core.evidence.run_checks(project)
+        self.assertEqual(run['status'], 'PASS')
+        self.assertEqual(run['development_binding']['status'], 'INVALID')
+        self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding']['status'], 'INVALID')
+
     def test_tampered_behavior_artifact_invalidates_bound_verification(self):
         project = self.configure("pass" + chr(10))
         engineering.develop(project, 'synthetic/model', execute=True)

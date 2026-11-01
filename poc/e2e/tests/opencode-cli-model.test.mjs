@@ -102,8 +102,8 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     const run = calls.find((call) => call.command === 'run');
     assert.ok(run);
     assert.equal(Object.keys(run.config.mcp).length, 0);
-    assert.deepEqual(run.config.plugin, []);
-    assert.ok(run.config.experimental.policies.some((rule) =>
+    assert.deepEqual(run.config.plugins, []);
+    assert.ok(run.config.policies.some((rule) =>
       rule.action === 'tool.use' && rule.resource === '*' && rule.effect === 'deny'));
     assert.ok(run.config.experimental.policies.some((rule) =>
       rule.action === 'provider.use' && rule.resource === '*' && rule.effect === 'deny'));

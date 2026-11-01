@@ -77,6 +77,21 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding'], binding)
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
 
+    def test_verification_binding_carries_observed_change_scope(self):
+        project = self.configure('''from pathlib import Path
+app = Path('app.py')
+app.write_text(app.read_text() + chr(10) + '# scoped change' + chr(10))
+Path('scope-note.txt').write_text('observed addition')
+''')
+        development = engineering.develop(project, 'synthetic/model', execute=True)
+        run = test_ads_core.evidence.run_checks(project)
+        binding = run['development_binding']
+        self.assertEqual(binding['status'], 'MATCHED')
+        self.assertEqual(binding['run_id'], development['run_id'])
+        self.assertEqual(binding['change_set']['counts'], {'added': 1, 'modified': 1, 'deleted': 0})
+        self.assertEqual(binding['change_set']['added'], [{'repository': 'code', 'path': 'scope-note.txt'}])
+        self.assertEqual(binding['change_set']['modified'], [{'repository': 'code', 'path': 'app.py'}])
+
     def test_cli_verify_exposes_development_binding(self):
         project = self.configure("pass" + chr(10))
         engineering.develop(project, 'synthetic/model', execute=True)

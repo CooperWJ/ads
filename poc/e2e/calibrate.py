@@ -37,7 +37,7 @@ def command(cwd, *argv):
     subprocess.run(argv, cwd=cwd, check=True, capture_output=True)
 
 
-def prepare(workspace, variant, probe=None, agent=False):
+def prepare(workspace, variant, probe=None, agent=False, agent_backend='opencode-cli'):
     workspace.mkdir(parents=True, exist_ok=False)
     (workspace / 'node_modules').symlink_to(PACKAGES, target_is_directory=True)
     (workspace / '.gitignore').write_text('node_modules\n.ads/\n__pycache__/\n*.sqlite*\n')
@@ -66,9 +66,16 @@ def prepare(workspace, variant, probe=None, agent=False):
         shutil.copyfile(HERE / 'e2e.config.ts', workspace / 'e2e.config.ts')
         shutil.copyfile(HERE / 'assert_product.py', workspace / 'assert_product.py')
         if agent:
-            shutil.copyfile(HERE / 'e2e.agent.config.ts', workspace / 'e2e.agent.config.ts')
+            if agent_backend == 'opencode-cli':
+                config_file = 'e2e.agent.opencode-cli.config.ts'
+                shutil.copyfile(HERE / config_file, workspace / config_file)
+                shutil.copyfile(HERE / 'opencode-cli-model.ts', workspace / 'opencode-cli-model.ts')
+            elif agent_backend == 'opencode-console':
+                config_file = 'e2e.agent.config.ts'
+                shutil.copyfile(HERE / config_file, workspace / config_file)
+            else:
+                raise ValueError('unsupported e2e agent backend')
             shutil.copyfile(HERE / 'tests/agent-journey.e2e.ts', workspace / 'tests/agent-journey.e2e.ts')
-            config_file = 'e2e.agent.config.ts'
             title = 'tests/agent-journey.e2e.ts::agent-save-refresh-export'
         else:
             shutil.copyfile(HERE / 'tests/journey.e2e.ts', workspace / 'tests/journey.e2e.ts')
@@ -145,7 +152,7 @@ def collect(project, run, expected, out, agent=False):
             'status':state}
 
 
-def calibrate(out, browser=True, agent=False):
+def calibrate(out, browser=True, agent=False, agent_backend='opencode-cli'):
     require_tools = CLI.is_file() and shutil.which('node')
     if not require_tools:
         raise ValueError('先在 poc/e2e 运行 npm ci；不回退其他测试器')
@@ -181,11 +188,12 @@ def calibrate(out, browser=True, agent=False):
     if agent:
         location = out / 'agent'
         location.mkdir()
-        model_id = os.environ.get('ADS_E2E_OPENCODE_MODEL', '').strip()
+        model_env = 'ADS_E2E_OPENCODE_CLI_MODEL' if agent_backend == 'opencode-cli' else 'ADS_E2E_OPENCODE_MODEL'
+        model_id = os.environ.get(model_env, '').strip()
         if not model_id:
-            agent_row = {'status':'BLOCKED','reason':'ADS_E2E_OPENCODE_MODEL_NOT_CONFIGURED'}
+            agent_row = {'status':'BLOCKED','reason':f'{model_env}_NOT_CONFIGURED'}
         else:
-            project = prepare(location / 'workspace', 'reference', agent=True)
+            project = prepare(location / 'workspace', 'reference', agent=True, agent_backend=agent_backend)
             with service(project.root / 'app', location) as url, environment({
                 'ADS_E2E_URL':url, 'ADS_PYTHON':sys.executable, 'ADS_DB_PATH':str(project.root / 'app/runtime.sqlite'),
                 'E2E_TELEMETRY_DISABLED':'1', 'CI':'1'}):
@@ -196,7 +204,8 @@ def calibrate(out, browser=True, agent=False):
     return {'status':overall,
             'browser_journeys':rows,'native_report_probes':probes,'agent_journey':agent_row,
             'framework':'e2e@0.22.0 / @e2e-dev/web@0.15.4',
-            'scope':'known fictional variants and real upstream execution; agent profile uses OpenCode Console OAuth; not independent QA identity or model-generated code',
+            'scope':'known fictional variants and real upstream execution; Agent profile uses local OpenCode CLI or explicit OpenCode Console OAuth; not independent QA identity or model-generated code',
+            'agent_backend':(agent_backend if agent else 'NOT_RUN'),
             'model_execution':('NOT_RUN' if not agent else (agent_row['status'] if agent_row else 'BLOCKED')),
             'protected_execution':'NOT_VERIFIED'}
 
@@ -205,10 +214,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--out',type=Path,required=True)
     parser.add_argument('--reports-only',action='store_true')
-    parser.add_argument('--agent',action='store_true',help='Run the OpenCode Console-backed agent journey; requires an explicit model and e2e login')
+    parser.add_argument('--agent',action='store_true',help='Run the opt-in OpenCode-backed agent journey')
+    parser.add_argument('--agent-backend',choices=['opencode-cli','opencode-console'],default='opencode-cli',help='Use local OpenCode CLI auth by default, or explicit Console OAuth')
     args = parser.parse_args()
     try:
-        summary = calibrate(args.out.resolve(), not args.reports_only, args.agent)
+        summary = calibrate(args.out.resolve(), not args.reports_only, args.agent, args.agent_backend)
     except Exception as exc:
         summary = {'status':'INFRA_ERROR','error_type':type(exc).__name__,'detail':str(exc)[:300]}
     write_json(args.out.resolve() / 'summary.json',summary)

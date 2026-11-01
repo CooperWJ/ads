@@ -74,20 +74,50 @@ python3 poc/e2e/native_probe.py --executable /绝对路径/opencode --out /tmp/a
 同轮实际原始需求开发仍被匿名模型额度拒绝，0 工具调用且源码未变化，摘要见 docs/evidence/opencode-v0.6.7-attempt.json。本轮未把参考工程、模型配置或技能加载计为完整模型开发成功。
 
 
-## OpenCode Console Agent profile
+## OpenCode Agent profiles
 
-默认 `e2e.config.ts` 只执行确定性旅程。Agent 混合旅程位于独立的 `e2e.agent.config.ts`，避免普通 CI 在没有用户授权或模型额度时偷偷发起模型请求。
+默认 `e2e.config.ts` 只执行确定性旅程。Agent 混合旅程使用独立 profile，避免普通 CI 在没有用户授权或模型额度时偷偷发起模型请求。
 
-准备与运行：
+### Local OpenCode CLI（默认优先）
+
+使用用户本机已登录的 OpenCode CLI，不复制 API Key，也不需要再登录 e2e OAuth。适配器要求 OpenCode CLI **v2.2.3 或更新版本**，并在模型调用前检查版本：
+
+```bash
+cd poc/e2e
+npm ci
+opencode --version
+opencode models
+export ADS_E2E_OPENCODE_CLI_MODEL='opencode/<exact-model-id>'
+python3 calibrate.py --agent --agent-backend opencode-cli --out /tmp/ads-e2e-agent
+```
+
+`ADS_E2E_OPENCODE_CLI_MODEL` 必须是 OpenCode CLI 实际可用的完整 `provider/model` ID。可通过 `ADS_E2E_OPENCODE_BIN` 指定 CLI 可执行文件。每次模型调用在临时项目中启动独立的 `opencode run`：
+
+- 临时 Agent 只有一个模型步骤；OpenCode 原生工具、MCP 和插件全部禁止。
+- 只允许指定的模型 Provider，防止模型静默回退。
+- e2e 工具调用以 JSON 返回，由 e2e runner 执行；OpenCode 本身不操作应用。
+- 导出 session 验证实际 Provider、model ID、Token 和成本；随后删除 session 和临时目录。
+- 模型身份不匹配、session 无法导出或清理失败，均不接受该次结果。
+
+模型额度耗尽、例如 Provider 返回 `free-limit` 时，结果保持 BLOCKED。不会换模型、换账号、重试其他 Provider 或绕过额度限制。 这些隔离设置只作用于临时 e2e 项目，不修改用户主项目的 OpenCode 配置或 Skills；仅复用本机认证和显式选择的模型。
+
+### OpenCode Console OAuth（可选）
+
+如果账户有第三方客户端可用的 Zen 付费模型或 OpenCode Go 模型，可使用 e2e 官方 Provider：
 
 ```bash
 cd poc/e2e
 npm ci
 npm run login:agent
 npm run models:agent
-ADS_E2E_OPENCODE_MODEL='<models 命令返回的精确模型 ID>' python3 calibrate.py --agent --out /tmp/ads-e2e-agent
+ADS_E2E_OPENCODE_MODEL='<models 命令返回的精确模型 ID>' \
+  python3 calibrate.py --agent --agent-backend opencode-console --out /tmp/ads-e2e-agent
 ```
 
-该 profile 使用 e2e 官方 `opencode-console` OAuth provider；通过设备授权登录 OpenCode Console，并且只使用显式指定的模型。模型列表以 `npm run models:agent` 的实际结果为准；裸模型 ID 对应 OpenCode Zen，`go/` 前缀对应 OpenCode Go，后者需要 Go 订阅。部分 Zen 免费模型不向第三方客户端开放；如果当前模型不在列表中，不应尝试绕过限制，也不会自动切换到其他模型或账号。无可用模型、凭证缺失或额度不可达时，结果保持 BLOCKED。
+裸模型 ID 对应 OpenCode Zen，`go/` 前缀对应 OpenCode Go，后者需要 Go 订阅。部分 Zen 免费模型不向第三方客户端开放；如果模型不在列表中，不应尝试绕过限制。
 
-Agent 只负责在 UI 中选择 Project Echo、输入指定内容并保存。保存后的状态、刷新后的持久化值、数据库记录和 XLSX 导出由确定性断言与独立 oracle 检查。Agent profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 token。这里关闭的是 e2e journey/step replay，避免缓存结果冒充真实 Agent 执行；模型供应商可能仍使用 prompt-prefix 缓存，它不会跳过模型调用，验收仍要求 report 记录真实 model call。CI 只验证 profile 配置，不登录、不调用真实模型；真实执行结果必须由显式运行产生的 report 与模型用量证据确认。
+### 两种 profile 共用的验收规则
+
+Agent 只负责通过 UI 选择 Project Echo、输入指定内容并保存。之后由确定性断言检查 UI 状态、刷新持久化、数据库记录和 XLSX 导出。Profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 Token。
+
+这里关闭的是 e2e journey/step replay，避免缓存结果冒充真实 Agent 执行；模型供应商可能仍使用 prompt-prefix 缓存，它不会跳过模型调用，验收仍要求 report 记录真实 model call。CI 只运行 fake CLI 契约测试和 profile 配置测试，不登录、不调用真实模型；真实执行结果必须由显式运行产生的 report 与模型用量证据确认。

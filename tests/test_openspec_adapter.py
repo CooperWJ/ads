@@ -1,9 +1,11 @@
 """派生视图不漏整条规格；业务变化与机械来源重绑定分开。"""
+import copy
 import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 from test_ads_core import fixture
@@ -89,6 +91,31 @@ class OpenSpecAdapterTests(unittest.TestCase):
         self.assertEqual(ref['status'], 'NOT_VERIFIED')
         self.assertEqual(ref['reference']['run_id'], run['run_id'])
         self.assertEqual(ref['reference']['report_sha256'], run['checks'][0]['report_sha256'])
+        self.assertEqual(failed['verification_evidence'][1]['observed'], 'CHECK_FAILED')
+
+    def test_missing_and_ambiguous_test_evidence_never_pass(self):
+        openspec.compile_contract(self.project)
+        run = evidence.run_checks(self.project)
+
+        missing = copy.deepcopy(run)
+        missing['checks'][0]['cases'] = []
+        with patch('ads.evidence.load_current', return_value=missing):
+            decision = evidence.decide(self.project)
+        first = decision['obligations'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'MISSING')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(decision['development'], 'BLOCKED')
+
+        ambiguous = copy.deepcopy(run)
+        ambiguous['checks'][0]['cases'].append(copy.deepcopy(ambiguous['checks'][0]['cases'][0]))
+        with patch('ads.evidence.load_current', return_value=ambiguous):
+            decision = evidence.decide(self.project)
+        first = decision['obligations'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'AMBIGUOUS')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(decision['development'], 'BLOCKED')
 
     def test_missing_whole_scenario_is_a_gap_not_empty_success(self):
         self.mapping['bindings'].pop()

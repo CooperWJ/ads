@@ -93,6 +93,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.json(200, {"id": data["id"]})  # Deliberately incomplete seed implementation
                 return
             if len(parts) == 4 and parts[3] == 'export':
+                if os.environ.get('ADS_E2E_FAIL_FIRST_SAVE') == '1':
+                    # Record exports so the Agent cannot bypass deterministic verification.
+                    attempts_file = HERE / '.ads-e2e-export-attempts'
+                    try:
+                        attempts = int(attempts_file.read_text())
+                    except (FileNotFoundError, ValueError):
+                        attempts = 0
+                    attempts_file.write_text(str(attempts + 1))
                 self.send(200, xlsx_bytes(data), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', {'Content-Disposition': 'attachment; filename="project.xlsx"'})
                 return
         self.json(404, {'error': 'not found'})

@@ -74,7 +74,7 @@ class OpenSpecAdapterTests(unittest.TestCase):
 
     def test_failed_case_keeps_expected_result_and_exact_failed_report_reference(self):
         openspec.compile_contract(self.project)
-        (self.root/'app.py').write_text('def normalize(value):\\n    return value\\n')
+        (self.root/'app.py').write_text('def normalize(value):\n    return value\n')
         run = evidence.run_checks(self.project)
         self.assertEqual(run['status'], 'FAIL')
         decision = evidence.decide(self.project)

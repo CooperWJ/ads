@@ -1,4 +1,6 @@
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -26,6 +28,37 @@ def observed_agent():
 
 
 class E2EAgentCalibrationTests(unittest.TestCase):
+    def test_prepare_binds_local_opencode_cli_profile_and_adapter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = calibrate.prepare(
+                Path(temporary) / 'workspace',
+                'reference',
+                agent=True,
+                agent_backend='opencode-cli',
+            )
+            root = project.root
+            self.assertTrue((root / 'e2e.agent.opencode-cli.config.ts').is_file())
+            self.assertTrue((root / 'opencode-cli-model.ts').is_file())
+            self.assertTrue((root / 'tests/agent-journey.e2e.ts').is_file())
+            self.assertIn("cache: 'off'", (root / 'e2e.config.ts').read_text())
+            config = json.loads((root / 'ads.project.json').read_text())
+            argv = config['checks'][0]['argv']
+            self.assertIn('e2e.agent.opencode-cli.config.ts', argv)
+
+    def test_prepare_binds_console_profile_without_cli_adapter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = calibrate.prepare(
+                Path(temporary) / 'workspace',
+                'reference',
+                agent=True,
+                agent_backend='opencode-console',
+            )
+            root = project.root
+            self.assertTrue((root / 'e2e.agent.config.ts').is_file())
+            self.assertFalse((root / 'opencode-cli-model.ts').exists())
+            config = json.loads((root / 'ads.project.json').read_text())
+            self.assertIn('e2e.agent.config.ts', config['checks'][0]['argv'])
+
     def test_only_live_agent_plus_deterministic_run_can_pass(self):
         self.assertEqual(calibrate.agent_status(observed_agent(), True), 'PASS')
         self.assertEqual(calibrate.agent_status(observed_agent(), False), 'FAIL')

@@ -6,6 +6,25 @@ import re
 from .project import require
 
 
+AGENT_ERROR_CODES = frozenset({
+    'AUTH_CREDENTIAL_UNAVAILABLE', 'AUTH_CREDENTIAL_INVALID', 'SECRET_UNAVAILABLE',
+    'ENVIRONMENT_UNAVAILABLE', 'APP_UNREACHABLE', 'APP_ALREADY_RUNNING',
+    'SEED_DATA_MISSING', 'TEST_SETUP_FAILED', 'APP_NOT_OPEN', 'POLICY_DENIED',
+    'MODEL_UNAVAILABLE', 'AUTOMATION_UNSUPPORTED', 'STEP_BUDGET_EXHAUSTED',
+    'STEP_TIMEOUT', 'CONTEXT_OVERFLOW', 'MODEL_REFUSED', 'MODEL_PROVIDER_FAILED',
+    'CANCELLED', 'AUTHENTICATION_FAILED', 'MODEL_OUTPUT_INVALID',
+    'LOCATOR_NOT_FOUND', 'LOCATOR_AMBIGUOUS', 'ACTION_FAILED', 'STEP_NO_CONCLUSION',
+    'ASSERTION_FAILED', 'ASSERTION_INCONCLUSIVE', 'REPLAY_STALE',
+})
+AGENT_BLOCKED_CODES = frozenset({
+    'AUTH_CREDENTIAL_UNAVAILABLE', 'AUTH_CREDENTIAL_INVALID', 'SECRET_UNAVAILABLE',
+    'ENVIRONMENT_UNAVAILABLE', 'APP_UNREACHABLE', 'APP_ALREADY_RUNNING',
+    'SEED_DATA_MISSING', 'TEST_SETUP_FAILED', 'APP_NOT_OPEN', 'POLICY_DENIED',
+    'MODEL_UNAVAILABLE', 'MODEL_PROVIDER_FAILED', 'AUTOMATION_UNSUPPORTED',
+    'STEP_BUDGET_EXHAUSTED', 'STEP_TIMEOUT', 'CONTEXT_OVERFLOW', 'MODEL_REFUSED',
+})
+
+
 def _agent_evidence(result, attempts):
     """只投影 Agent/断言计数与模型用量；不复制指令、事件详情、屏幕或对话。"""
     step_groups = []
@@ -33,6 +52,8 @@ def _agent_evidence(result, attempts):
 
     agent_steps, deterministic = [], 0
     deterministic_after_act = 0
+    error_codes, blocked_error_codes = set(), set()
+    failed_agent_step = False
     steps = [step for group in step_groups for step in group]
     require(all(isinstance(step, dict) and isinstance(step.get('api'), str) for step in steps),
             'e2e step 结构无效')
@@ -77,6 +98,20 @@ def _agent_evidence(result, attempts):
                     cost = model['estimatedCostUsd']
                     require(type(cost) in (int, float) and cost >= 0
                             and (type(cost) is int or math.isfinite(cost)), 'Agent 模型成本无效')
+            error = step.get('error')
+            if error:
+                failed_agent_step = True
+                if isinstance(error, dict) and error.get('code') is not None:
+                    code = error['code']
+                    require(isinstance(code, str) and code in AGENT_ERROR_CODES,
+                            '未知 e2e Agent 错误代码')
+                    error_codes.add(code)
+                    if error.get('blocked') is True or code in AGENT_BLOCKED_CODES:
+                        blocked_error_codes.add(code)
+                elif isinstance(error, dict) and error.get('blocked') is True:
+                    blocked_error_codes.add('UNKNOWN')
+            if step.get('status') != 'passed':
+                failed_agent_step = True
             agent_steps.append((step, metrics, cache, model))
 
     if not agent_steps:
@@ -98,6 +133,8 @@ def _agent_evidence(result, attempts):
             'model_usage_status': 'NO_MODEL_CALLS',
             'model_cost_status': 'NO_MODEL_CALLS',
             'cache_modes': {'self-finalized': 0, 'agent-concluded': 0, 'missed': 0, 'unobserved': 0},
+            'error_codes': [],
+            'blocked_error_codes': [],
         }
 
     act_steps = sum(step['api'] == 'agent.act' for step, _, _, _ in agent_steps)
@@ -129,7 +166,7 @@ def _agent_evidence(result, attempts):
                 missing_cost_steps += 1
     mixed = act_steps > 0 and deterministic_after_act > 0
     return {
-        'status': 'OBSERVED',
+        'status': 'BLOCKED' if blocked_error_codes else ('FAILED' if failed_agent_step else 'OBSERVED'),
         'mode': 'AGENT_PLUS_DETERMINISTIC' if mixed else
                 ('AGENT_WITHOUT_DETERMINISTIC_ASSERTION' if act_steps else 'AGENT_JUDGMENT_ONLY'),
         'agent_steps': len(agent_steps),
@@ -152,6 +189,8 @@ def _agent_evidence(result, attempts):
                              ('NOT_REPORTED' if not model_steps or (missing_cost_steps and not costs) else
                               ('PARTIAL' if missing_cost_steps or missing_model_steps else 'OBSERVED')),
         'cache_modes': cache_modes,
+        'error_codes': sorted(error_codes),
+        'blocked_error_codes': sorted(blocked_error_codes),
     }
 
 

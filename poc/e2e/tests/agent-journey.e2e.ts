@@ -57,21 +57,24 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
     verify: async () => {
       verificationNumber += 1;
       const status = (await screen.getByRole('status').textContent())?.trim() ?? '';
+      const selectedProjectId = await screen.getByLabel('Select project').inputValue();
       const note = await screen.getByLabel('Editable notes').inputValue();
       const persisted = persistedNote();
       const attempts = saveAttempts();
 
       if (verificationNumber === 1) {
         expect(status).toBe('Save failed: HTTP 503');
-        expect(note).toBe(EXPECTED_NOTE);
-        expect(persisted).toBe('');
         expect(attempts).toBe(1);
         expect(exportAttempts()).toBe(0);
         await app.screenshot('agent-first-save-rejected');
-        return { ok: false, code: 'SAVE_HTTP_503', status, note, persisted, attempts };
+        return {
+          ok: selectedProjectId === '1' && note === EXPECTED_NOTE && persisted === '',
+          code: 'SAVE_HTTP_503', status, selectedProjectId, note, persisted, attempts,
+        };
       }
 
       expect(status).toBe('Saved');
+      expect(selectedProjectId).toBe('1');
       expect(note).toBe(EXPECTED_NOTE);
       expect(persisted).toBe(EXPECTED_NOTE);
       expect(attempts).toBe(2);
@@ -82,9 +85,9 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
     buildRepairPrompt: (observation, repairNumber) =>
       [
         `The independent deterministic verifier reports repair ${repairNumber} is required.`,
-        `Observed code: ${String(observation.code)}; UI status: ${String(observation.status)}; database note: ${JSON.stringify(observation.persisted)}; save requests: ${String(observation.attempts)}.`,
+        `Observed code: ${String(observation.code)}; UI status: ${String(observation.status)}; selected project id: ${String(observation.selectedProjectId)}; note: ${JSON.stringify(observation.note)}; database note: ${JSON.stringify(observation.persisted)}; save requests: ${String(observation.attempts)}.`,
         'The first Save notes request was rejected with HTTP 503 and the database remains unchanged.',
-        'Project Echo is still selected and Editable notes must remain exactly "Reviewed in M0". Click Save notes exactly once more. Do not change another field or project. Do not export. Stop after the retry.',
+        'Select Project Echo (id 1) if needed, keep Editable notes exactly "Reviewed in M0", then click Save notes exactly once more. Do not change another field. Do not export. Stop after the retry.',
       ].join(' '),
     maxRepairs: 1,
   });

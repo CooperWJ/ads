@@ -135,6 +135,11 @@ def develop(project, model, execute=False, session=None):
                 native_error = summarize_native_error(detail)
                 error = native_error['type']
             types.append(event.get('type'))
+    session_confirmation = ('NOT_REQUESTED' if session is None else
+                             'CONFIRMED' if session in session_ids else
+                             'MISMATCH' if session_ids else 'NOT_OBSERVED')
+    if session is not None and session_confirmation != 'CONFIRMED' and error is None:
+        error = 'SESSION_MISMATCH' if session_confirmation == 'MISMATCH' else 'SESSION_NOT_CONFIRMED'
     try:
         after = project.snapshot(development=True)
     except (Blocked, OSError, ValueError):
@@ -149,9 +154,11 @@ def develop(project, model, execute=False, session=None):
               'exit_code': code, 'error_type': error, 'native_error': native_error,
               'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
-              'native_sessions_observed': len(session_ids), 'stream_tool_events': behavior['completed_tool_calls'],
+              'native_sessions_observed': len(session_ids), 'session_confirmation': session_confirmation,
+              'stream_tool_events': behavior['completed_tool_calls'],
               'behavior_evidence': behavior,
-              'session_id': next(iter(session_ids)) if len(session_ids) == 1 else None,
+              'session_id': (session if session_confirmation == 'CONFIRMED' else
+                            next(iter(session_ids)) if len(session_ids) == 1 else None),
               'completion': 'NOT_VERIFIED', 'verification': '必须运行外部 ads verify 和 QA，不能凭原生退出 0 认可完成'}
     summary_path = directory / 'summary.json'
     write_json(summary_path, report)

@@ -75,8 +75,9 @@ def prepare(workspace, variant, probe=None, agent=False, agent_backend='opencode
                 shutil.copyfile(HERE / config_file, workspace / config_file)
             else:
                 raise ValueError('unsupported e2e agent backend')
+            shutil.copyfile(HERE / 'agent-repair.ts', workspace / 'agent-repair.ts')
             shutil.copyfile(HERE / 'tests/agent-journey.e2e.ts', workspace / 'tests/agent-journey.e2e.ts')
-            title = 'tests/agent-journey.e2e.ts::agent-save-refresh-export'
+            title = 'tests/agent-journey.e2e.ts::agent-bounded-repair-save-refresh-export'
         else:
             shutil.copyfile(HERE / 'tests/journey.e2e.ts', workspace / 'tests/journey.e2e.ts')
             title = 'tests/journey.e2e.ts::save-refresh-export'
@@ -194,10 +195,11 @@ def calibrate(out, browser=True, agent=False, agent_backend='opencode-cli'):
             agent_row = {'status':'BLOCKED','reason':f'{model_env}_NOT_CONFIGURED'}
         else:
             project = prepare(location / 'workspace', 'reference', agent=True, agent_backend=agent_backend)
-            with service(project.root / 'app', location) as url, environment({
-                'ADS_E2E_URL':url, 'ADS_PYTHON':sys.executable, 'ADS_DB_PATH':str(project.root / 'app/runtime.sqlite'),
-                'E2E_TELEMETRY_DISABLED':'1', 'CI':'1'}):
-                agent_row = collect(project, evidence.run_checks(project), 'PASS', location, agent=True)
+            with environment({'ADS_E2E_FAIL_FIRST_SAVE':'1'}):
+                with service(project.root / 'app', location) as url, environment({
+                    'ADS_E2E_URL':url, 'ADS_PYTHON':sys.executable, 'ADS_DB_PATH':str(project.root / 'app/runtime.sqlite'),
+                    'E2E_TELEMETRY_DISABLED':'1', 'CI':'1'}):
+                    agent_row = collect(project, evidence.run_checks(project), 'PASS', location, agent=True)
     overall = 'FAIL' if any(r['status'] == 'FAIL' for r in rows+probes) else (
         'BLOCKED' if agent_row and agent_row['status'] == 'BLOCKED' else
         ('FAIL' if agent_row and agent_row['status'] == 'FAIL' else 'PASS'))

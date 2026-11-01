@@ -143,7 +143,7 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
     def test_explicit_session_is_forwarded_to_native_once(self):
         project = self.configure('''import sys,json
 assert sys.argv[sys.argv.index('--session')+1] == 'ses_synthetic'
-print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic'}))
+print(json.dumps({'type':'step_start','sessionID':'ses_synthetic'}))
 ''')
         result = engineering.develop(project, 'synthetic/model', execute=True, session='ses_synthetic')
         self.assertEqual(result['session_id'], 'ses_synthetic')

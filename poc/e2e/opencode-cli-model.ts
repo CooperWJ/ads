@@ -343,7 +343,7 @@ function assistantResult(
     ? stepFinish.part as JsonRecord
     : {};
   const finish = String(info.finish ?? info.finishReason ?? finishPart.reason ?? '');
-  if (finish && !['stop', 'end_turn', 'completed'].includes(finish)) {
+  if (finish && !['stop', 'end_turn', 'completed', 'length', 'content-filter'].includes(finish)) {
     throw new Error(`OpenCode model finished with unsupported reason: ${finish}.`);
   }
 
@@ -526,7 +526,11 @@ async function generate(
     const exportDigest = createHash('sha256').update(exportedRun.stdout).digest('hex');
     result = {
       content,
-      finishReason: { unified: calledTools ? 'tool-calls' : 'stop', raw: assistant.finish },
+      finishReason: {
+        unified: calledTools ? 'tool-calls' : assistant.finish === 'length' ? 'length'
+          : assistant.finish === 'content-filter' ? 'content-filter' : 'stop',
+        raw: assistant.finish,
+      },
       usage,
       warnings: [],
       response: { id: sessionId },

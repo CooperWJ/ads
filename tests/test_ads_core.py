@@ -320,10 +320,14 @@ class QATests(unittest.TestCase):
         run_id = 'a' * 32
         directory = self.root/'.ads'/'development'/run_id
         directory.mkdir(parents=True)
-        behavior = {}
+        behavior = {'stream_status': 'PARSE_CLEAN', 'terminal_event_observed': True}
         behavior_path = directory/'behavior.json'
         write_json(behavior_path, behavior)
         summary = {'schema': 'ads-development-run/v1', 'run_id': run_id,
+                   'status': 'EXECUTED_UNVERIFIED', 'exit_code': 0, 'error_type': None,
+                   'authority_unchanged': True, 'session_id': 'ses_synthetic',
+                   'native_sessions_observed': 1, 'requested_session': None,
+                   'session_confirmation': 'NOT_REQUESTED',
                    'behavior_path': str(behavior_path.relative_to(self.root)),
                    'behavior_sha256': digest(behavior_path.read_bytes()),
                    'behavior_evidence': behavior,
@@ -423,6 +427,23 @@ class QATests(unittest.TestCase):
         self.assertEqual(result['qa']['case_execution'], 'PASS_LOCAL')
         self.assertEqual(result['independent_qa_identity'], 'NOT_VERIFIED')
         self.assertEqual(result['release_authorization'], 'NOT_GRANTED')
+
+    def test_blocked_native_execution_cannot_bind_verification(self):
+        project, _ = self.configure_qa()
+        self.bind_native_development(project)
+        summary_path = next((self.root/'.ads'/'development').glob('*/summary.json'))
+        summary = json.loads(summary_path.read_text())
+        summary['status'] = 'BLOCKED'
+        write_json(summary_path, summary)
+        pointer = json.loads((self.root/'.ads'/'latest-development.json').read_text())
+        pointer['summary_sha256'] = digest(summary_path.read_bytes())
+        write_json(self.root/'.ads'/'latest-development.json', pointer)
+        run = evidence.run_checks(project, 'dev')
+        self.assertEqual(run['development_binding']['status'], 'INVALID')
+        evidence.run_checks(project, 'qa')
+        result = delivery.evaluate(project)
+        self.assertEqual(result['local_delivery_readiness'], 'BLOCKED')
+        self.assertIn('NATIVE_DEVELOPMENT_NOT_BOUND', result['reason_codes'])
 
     def test_release_readiness_blocks_without_qa_and_after_subject_drift(self):
         project, _ = self.configure_qa()

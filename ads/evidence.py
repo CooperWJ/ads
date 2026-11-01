@@ -95,6 +95,22 @@ def development_binding(project, subject, run_id=None):
         behavior = json.loads(behavior_bytes)
         require(summary.get('schema') == 'ads-development-run/v1'
                 and summary.get('run_id') == run_id, '开发摘要身份不符')
+        requested_session = summary.get('requested_session')
+        session_id = summary.get('session_id')
+        require(summary.get('status') == 'EXECUTED_UNVERIFIED'
+                and summary.get('exit_code') == 0 and summary.get('error_type') is None
+                and summary.get('authority_unchanged') is True,
+                '原生开发进程未成功完成或执行期间权威输入发生变化')
+        require(isinstance(session_id, str) and session_id.startswith('ses_')
+                and session_id.isascii() and summary.get('native_sessions_observed', 0) >= 1,
+                '未观察到唯一可绑定的原生 OpenCode Session')
+        require(summary.get('session_confirmation') ==
+                ('CONFIRMED' if requested_session is not None else 'NOT_REQUESTED')
+                and (requested_session is None or requested_session == session_id),
+                '原生 Session 续接身份未确认')
+        require(behavior.get('stream_status') == 'PARSE_CLEAN'
+                and behavior.get('terminal_event_observed') is True,
+                '原生 OpenCode 事件流不完整或缺少最终 stop')
         require(summary.get('behavior_path') == str(behavior_path.relative_to(project.root))
                 and summary.get('behavior_sha256') == behavior_sha
                 and summary.get('behavior_evidence') == behavior, '行为证据与开发摘要不一致')

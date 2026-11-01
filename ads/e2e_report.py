@@ -16,9 +16,17 @@ def _agent_evidence(result, attempts):
             require(all(isinstance(member, dict) for member in members), '串行组成员结构无效')
             selected = [member for member in members if member.get('testId') == result['testId']]
             require(len(selected) == 1, '串行组 Agent 证据成员缺失或重复')
-            step_groups.append(selected[0].get('steps', []))
+            member_steps = selected[0].get('steps')
+            if member_steps is None:
+                require(selected[0].get('status') != 'passed', '通过的串行成员缺少 steps')
+                member_steps = []
+            require(isinstance(member_steps, list), '串行成员 steps 必须为数组')
+            step_groups.append(member_steps)
         else:
-            current = attempt.get('steps', [])
+            current = attempt.get('steps')
+            if current is None:
+                require(attempt.get('status') != 'passed', '通过的 e2e attempt 缺少 steps')
+                current = []
             require(isinstance(current, list), 'e2e attempt steps 必须为数组')
             step_groups.append(current)
     require(all(isinstance(group, list) for group in step_groups), 'e2e step group 必须为数组')

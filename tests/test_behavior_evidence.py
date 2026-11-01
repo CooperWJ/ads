@@ -43,6 +43,9 @@ class BehaviorEvidenceTests(unittest.TestCase):
         self.assertEqual(result["test_before_first_direct_edit"], "OBSERVED")
         self.assertEqual(result["observed_red_green_sequence"], "OBSERVED")
         self.assertEqual(result["final_verification_after_last_direct_edit"], "OBSERVED")
+        self.assertEqual(result["test_command_process_results"], {
+            "exit_zero": 1, "nonzero": 1, "unknown": 0,
+        })
         serialized = json.dumps(result)
         self.assertNotIn("pytest -q", serialized)
         self.assertNotIn("private output", serialized)
@@ -74,6 +77,19 @@ class BehaviorEvidenceTests(unittest.TestCase):
             {"type": "step_finish", "part": {"reason": "stop"}},
         ))
         self.assertEqual(result["final_verification_after_last_direct_edit"], "FAILED")
+        self.assertEqual(result["test_command_process_results"], {
+            "exit_zero": 0, "nonzero": 1, "unknown": 0,
+        })
+
+    def test_unknown_test_process_exit_is_not_counted_as_pass(self):
+        result = inspect_stream(self.stream(
+            tool("bash", {"command": "pytest -q"}, None),
+            {"type": "step_finish", "part": {"reason": "stop"}},
+        ))
+        self.assertEqual(result["test_command_process_results"], {
+            "exit_zero": 0, "nonzero": 0, "unknown": 1,
+        })
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "INDETERMINATE")
 
     def test_later_edit_invalidates_final_verification_observation(self):
         result = inspect_stream(self.stream(

@@ -74,6 +74,11 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(binding['status'], 'MATCHED')
         self.assertEqual(binding['run_id'], development['run_id'])
         self.assertEqual(binding['behavior_sha256'], development['behavior_sha256'])
+        self.assertEqual(binding['behavior_summary']['test_driven_development_invoked'], 'OBSERVED')
+        self.assertEqual(binding['behavior_summary']['test_command_process_results'], {
+            'exit_zero': 0, 'nonzero': 0, 'unknown': 0,
+        })
+        self.assertEqual(binding['behavior_summary']['final_verification_after_last_direct_edit'], 'INDETERMINATE')
         self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding'], binding)
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
 
@@ -91,6 +96,15 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertEqual(binding['change_set']['counts'], {'added': 1, 'modified': 1, 'deleted': 0})
         self.assertEqual(binding['change_set']['added'], [{'repository': 'code', 'path': 'scope-note.txt'}])
         self.assertEqual(binding['change_set']['modified'], [{'repository': 'code', 'path': 'app.py'}])
+        self.assertEqual(binding['behavior_summary']['test_commands_observed'], 0)
+        self.assertEqual(binding['behavior_summary']['test_command_process_results'], {
+            'exit_zero': 0, 'nonzero': 0, 'unknown': 0,
+        })
+        serialized_behavior = json.dumps(binding['behavior_summary'])
+        # Field names may legitimately contain "command"; assert that private command
+        # contents are absent rather than rejecting the public metric's name.
+        self.assertNotIn('python -m unittest', serialized_behavior)
+        self.assertNotIn('native-stub', serialized_behavior)
 
     def test_cli_verify_exposes_development_binding(self):
         project = self.configure("pass" + chr(10))

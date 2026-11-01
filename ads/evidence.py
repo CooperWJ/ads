@@ -98,10 +98,28 @@ def development_binding(project, subject, run_id=None):
         require(summary.get('behavior_path') == str(behavior_path.relative_to(project.root))
                 and summary.get('behavior_sha256') == behavior_sha
                 and summary.get('behavior_evidence') == behavior, '行为证据与开发摘要不一致')
+        behavior_summary = {
+            'stream_status': behavior.get('stream_status', 'UNKNOWN'),
+            'terminal_event_observed': behavior.get('terminal_event_observed', False),
+            'tool_counts': behavior.get('tool_counts', {}),
+            'skills_invoked': behavior.get('skills_invoked', []),
+            'systematic_debugging_invoked': behavior.get('systematic_debugging_invoked', 'INDETERMINATE'),
+            'test_driven_development_invoked': behavior.get('test_driven_development_invoked', 'INDETERMINATE'),
+            'verification_before_completion_invoked': behavior.get('verification_before_completion_invoked', 'INDETERMINATE'),
+            'test_commands_observed': behavior.get('test_commands_observed'),
+            'test_command_process_results': behavior.get('test_command_process_results', {
+                'exit_zero': None, 'nonzero': None, 'unknown': None,
+            }),
+            'direct_edit_tools_observed': behavior.get('direct_edit_tools_observed'),
+            'test_before_first_direct_edit': behavior.get('test_before_first_direct_edit', 'INDETERMINATE'),
+            'observed_red_green_sequence': behavior.get('observed_red_green_sequence', 'INDETERMINATE'),
+            'final_verification_after_last_direct_edit': behavior.get('final_verification_after_last_direct_edit', 'INDETERMINATE'),
+        }
         output_subject = summary.get('output_subject')
         status = 'MATCHED' if output_subject == subject else 'STALE'
         return {'status': status, 'run_id': run_id, 'summary_sha256': summary_sha,
                 'behavior_sha256': behavior_sha,
+                'behavior_summary': behavior_summary,
                 'change_set': summary.get('change_set', {'status': 'UNKNOWN', 'coverage': 'UNAVAILABLE',
                     'added': [], 'modified': [], 'deleted': [],
                     'counts': {'added': None, 'modified': None, 'deleted': None}}),

@@ -143,11 +143,12 @@ class E2EAgentEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence['cache_modes']['self-finalized'], 1)
 
     def test_agent_without_deterministic_assertion_is_explicitly_distinguished(self):
-        doc = report()
-        doc['run']['results'][0]['attempts'][0]['steps'] = [agent_step()]
-        evidence = self.evaluate(doc)['agent_evidence']
-        self.assertEqual(evidence['mode'], 'AGENT_WITHOUT_DETERMINISTIC_ASSERTION')
-        self.assertEqual(evidence['deterministic_assertions'], 0)
+        for steps in ([agent_step()], [deterministic_assertion(), agent_step()]):
+            doc = report()
+            doc['run']['results'][0]['attempts'][0]['steps'] = steps
+            evidence = self.evaluate(doc)['agent_evidence']
+            self.assertEqual(evidence['mode'], 'AGENT_WITHOUT_DETERMINISTIC_ASSERTION')
+            self.assertEqual(evidence['deterministic_assertions_after_act'], 0)
 
     def test_agent_step_failure_cannot_hide_inside_passed_attempt(self):
         doc = report()

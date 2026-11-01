@@ -326,7 +326,7 @@ function assistantResult(
       throw new Error('OpenCode native tool execution is forbidden in the e2e model adapter.');
     }
     const text = parts.filter((part) => part.type === 'text' && typeof part.text === 'string')
-      .map((part) => part.text as string).join('\\n');
+      .map((part) => part.text as string).join('\n');
     const model = (info.model && typeof info.model === 'object' ? info.model
       : sessionInfo.model && typeof sessionInfo.model === 'object' ? sessionInfo.model : undefined) as JsonRecord | undefined;
     const providerId = String(model?.providerID ?? model?.providerId ?? info.providerID ?? '');

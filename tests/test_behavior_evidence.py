@@ -50,7 +50,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
     def test_does_not_infer_tdd_when_only_tests_or_only_edits_are_seen(self):
         only_test = inspect_stream(self.stream(tool("bash", {"command": "npm test"}, 0)))
         self.assertEqual(only_test["test_before_first_direct_edit"], "INDETERMINATE")
-        self.assertEqual(only_test["observed_red_green_sequence"], "NOT_OBSERVED")
+        self.assertEqual(only_test["observed_red_green_sequence"], "INDETERMINATE")
         only_edit = inspect_stream(self.stream(tool("edit", {"filePath": "x.py"})))
         self.assertEqual(only_edit["test_before_first_direct_edit"], "INDETERMINATE")
 

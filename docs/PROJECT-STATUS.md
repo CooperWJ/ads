@@ -12,7 +12,7 @@
 | 最小受信执行与受保护评分 | NOT_VERIFIED | 当前工作流为自测；本轮读取分支保护被连接权限拒绝，不能据此认定配置存在或不存在 |
 | Harbor 独立导出 verifier | PASS（导出产物边界） | Harbor 0.25.0 / Docker 三例校准通过；运行 41208957430，原生摘要见 docs/evidence/harbor-v0.5.8-calibration.json；不代表完整交付 |
 | Playwright Test Agents | PARTIAL | 原生识别三个子 Agent；MCP 状态未显示已配置服务器，模型执行未验证 |
-| 开发变更范围记录 | 已实现，确定性回归已测 | 从执行前后仓库快照记录 added/modified/deleted 路径及计数；不把变更事实等同于范围合规 |
+| 开发变更范围记录 | 已实现，确定性回归已测 | 从执行前后 Git 快照记录跟踪及未忽略文件的 added/modified/deleted 路径及计数；不把变更事实等同于范围合规 |
 | OpenCode 原生错误分类 | 已实现，确定性回归已测 | 安全摘要区分 MODEL_QUOTA、RATE_LIMITED、AUTH_OR_PERMISSION、UPSTREAM_TIMEOUT、UPSTREAM_FAILURE；不保留原始 message，不自动重试/换模 |
 | OpenCode 开发行为证据与验证绑定 | 已实现，确定性 CI 已测 | `behavior.json` 记录原生 Skill/工具/测试顺序；`ads verify` 绑定开发 run ID、输出快照及行为摘要哈希，区分 MATCHED/STALE/INVALID/NOT_LINKED；不把行为观察等同于 TDD 合规或需求正确 |
 | Superpowers 原生集成 | 原生注册与显式激活通过；模型使用未验证 | OpenCode 2.2.3，官方固定提交；调试/TDD/完成核验三技能已通过原生 API 激活，resume=false 不调用模型；真实模型请求仍为 provider.free-limit |
@@ -26,7 +26,7 @@
 
 ## 当前迭代
 
-v0.6.12 为每次原生开发运行生成实际文件变更清单（新增/修改/删除），来源于执行前后多仓快照；不可读取时显式 UNKNOWN。它为后续与任务范围、需求义务的对照提供事实，不自行判断改动是否合理。
+v0.6.12 为每次原生开发运行生成实际文件变更清单（新增/修改/删除），来源于执行前后 Git 快照，覆盖跟踪及未忽略文件；忽略文件不在清单内，不可读取时显式 UNKNOWN。它为后续与任务范围、需求义务的对照提供事实，不自行判断改动是否合理。
 
 v0.6.11 对显式原生 Session 续接增加身份核对：仅当 OpenCode JSONL 中观察到请求的 sessionID 才确认；错配或缺失身份会阻断续接声明。它不等于副作用恰好一次或完整恢复协议已验证。
 

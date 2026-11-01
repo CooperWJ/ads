@@ -88,6 +88,6 @@ npm run models:agent
 ADS_E2E_OPENCODE_MODEL='<models 命令返回的精确模型 ID>' python3 calibrate.py --agent --out /tmp/ads-e2e-agent
 ```
 
-该 profile 使用 e2e 官方 `opencode-console` OAuth provider；通过设备授权登录 OpenCode Console，并且只使用显式指定的模型。模型列表以 `npm run models:agent` 的实际结果为准。OpenCode Zen 免费模型不向第三方客户端开放时，不应尝试绕过限制，也不会自动切换到其他模型或账号；无可用模型、凭证缺失或额度不可达时，结果保持 BLOCKED。
+该 profile 使用 e2e 官方 `opencode-console` OAuth provider；通过设备授权登录 OpenCode Console，并且只使用显式指定的模型。模型列表以 `npm run models:agent` 的实际结果为准；裸模型 ID 对应 OpenCode Zen，`go/` 前缀对应 OpenCode Go，后者需要 Go 订阅。部分 Zen 免费模型不向第三方客户端开放；如果当前模型不在列表中，不应尝试绕过限制，也不会自动切换到其他模型或账号。无可用模型、凭证缺失或额度不可达时，结果保持 BLOCKED。
 
 Agent 只负责在 UI 中选择 Project Echo、输入指定内容并保存。保存后的状态、刷新后的持久化值、数据库记录和 XLSX 导出由确定性断言与独立 oracle 检查。Agent profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 token。CI 只验证 profile 配置，不登录、不调用真实模型；真实执行结果必须由显式运行产生的 report 与模型用量证据确认。

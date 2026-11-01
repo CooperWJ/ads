@@ -55,6 +55,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
         self.assertEqual(only_test["final_verification_after_last_direct_edit"], "INDETERMINATE")
         only_edit = inspect_stream(self.stream(tool("edit", {"filePath": "x.py"})))
         self.assertEqual(only_edit["test_before_first_direct_edit"], "INDETERMINATE")
+        self.assertEqual(only_edit["final_verification_after_last_direct_edit"], "INDETERMINATE")
 
     def test_ordering_is_indeterminate_without_terminal_event(self):
         result = inspect_stream(self.stream(

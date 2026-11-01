@@ -312,48 +312,61 @@ function assistantResult(
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
     return info.type === 'assistant' || info.role === 'assistant';
   });
-  if (assistants.length !== 1) {
-    throw new Error('OpenCode session must contain exactly one assistant model response.');
-  }
+  if (assistants.length === 0) throw new Error('OpenCode session contains no assistant model response.');
 
-  const message = assistants[0];
-  const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
-  if (info.agent !== expectedAgent) throw new Error('OpenCode session used an unexpected agent profile.');
-  if (info.retry) throw new Error('OpenCode CLI retried the model request; execution cannot be counted as one call.');
-  if (info.error) throw new Error('OpenCode assistant message contains a provider or execution error.');
-  const parts = Array.isArray(message.parts) ? message.parts as JsonRecord[]
-    : Array.isArray(message.content) ? message.content as JsonRecord[]
-      : Array.isArray(info.content) ? info.content as JsonRecord[] : [];
-  const text = parts.filter((part) => part.type === 'text' && typeof part.text === 'string')
-    .map((part) => part.text as string).join('\n');
-  if (!text.trim()) throw new Error('OpenCode session did not contain assistant text.');
-  if (parts.some((part) => ['tool', 'tool-call', 'tool_use', 'tool-result'].includes(String(part.type)))) {
-    throw new Error('OpenCode native tool execution is forbidden in the e2e model adapter.');
-  }
+  const parsed = assistants.map((message) => {
+    const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
+    if (info.agent !== expectedAgent) throw new Error('OpenCode session used an unexpected agent profile.');
+    if (info.retry) throw new Error('OpenCode CLI retried the model request; execution cannot be counted as one call.');
+    if (info.error) throw new Error('OpenCode assistant message contains a provider or execution error.');
+    const parts = Array.isArray(message.parts) ? message.parts as JsonRecord[]
+      : Array.isArray(message.content) ? message.content as JsonRecord[]
+        : Array.isArray(info.content) ? info.content as JsonRecord[] : [];
+    if (parts.some((part) => ['tool', 'tool-call', 'tool_use', 'tool-result'].includes(String(part.type)))) {
+      throw new Error('OpenCode native tool execution is forbidden in the e2e model adapter.');
+    }
+    const text = parts.filter((part) => part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text as string).join('\\n');
+    const model = (info.model && typeof info.model === 'object' ? info.model
+      : sessionInfo.model && typeof sessionInfo.model === 'object' ? sessionInfo.model : undefined) as JsonRecord | undefined;
+    const providerId = String(model?.providerID ?? model?.providerId ?? info.providerID ?? '');
+    const modelId = String(model?.modelID ?? model?.modelId ?? info.modelID ?? '');
+    if (providerId !== expectedProvider || modelId !== expectedModel) {
+      throw new Error('OpenCode session model identity did not match the explicitly requested provider/model.');
+    }
+    const finish = String(info.finish ?? info.finishReason ?? '');
+    const tokens = (info.tokens && typeof info.tokens === 'object' ? info.tokens : {}) as JsonRecord;
+    const costValue = info.cost;
+    const cost = typeof costValue === 'number' && Number.isFinite(costValue) && costValue >= 0
+      ? costValue
+      : undefined;
+    return { text, tokens, cost, finish, providerId, modelId, channel: String(info.channel ?? '') };
+  });
 
-  const model = (info.model && typeof info.model === 'object' ? info.model
-    : exported.info && typeof exported.info === 'object' ? (exported.info as JsonRecord).model : undefined) as JsonRecord | undefined;
-  const providerId = String(model?.providerID ?? model?.providerId ?? info.providerID ?? '');
-  const modelId = String(model?.modelID ?? model?.modelId ?? info.modelID ?? '');
-  if (providerId !== expectedProvider || modelId !== expectedModel) {
-    throw new Error('OpenCode session model identity did not match the explicitly requested provider/model.');
-  }
-
+  const withText = parsed.filter((item) => item.text.trim().length > 0);
+  if (withText.length === 0) throw new Error('OpenCode session did not contain assistant text.');
+  const final = [...withText].reverse().find((item) => item.channel === 'final') ?? withText[withText.length - 1];
   const finishPart = stepFinish?.part && typeof stepFinish.part === 'object'
     ? stepFinish.part as JsonRecord
     : {};
-  const finish = String(info.finish ?? info.finishReason ?? finishPart.reason ?? '');
+  const finish = String(finishPart.reason ?? final.finish ?? '');
   if (finish && !['stop', 'end_turn', 'completed', 'length', 'content-filter'].includes(finish)) {
     throw new Error(`OpenCode model finished with unsupported reason: ${finish}.`);
   }
-
-  const tokens = (info.tokens && typeof info.tokens === 'object' ? info.tokens
-    : finishPart.tokens && typeof finishPart.tokens === 'object' ? finishPart.tokens : {}) as JsonRecord;
-  const costValue = info.cost ?? finishPart.cost;
+  const tokens = (finishPart.tokens && typeof finishPart.tokens === 'object'
+    ? finishPart.tokens : final.tokens) as JsonRecord;
+  const costValue = finishPart.cost ?? final.cost;
   const cost = typeof costValue === 'number' && Number.isFinite(costValue) && costValue >= 0
     ? costValue
     : undefined;
-  return { text, tokens, cost, finish, providerId, modelId };
+  return {
+    text: final.text,
+    tokens,
+    cost,
+    finish,
+    providerId: final.providerId,
+    modelId: final.modelId,
+  };
 }
 
 function numeric(value: unknown): number | undefined {
@@ -513,7 +526,12 @@ async function generate(
       throw new Error('OpenCode session export failed; model execution cannot be verified.');
     }
     const exported = parseJsonOutput(exportedRun.stdout);
-    const stepFinish = [...events].reverse().find((event) => event.type === 'step_finish');
+    const stepStarts = events.filter((event) => event.type === 'step_start');
+    const stepFinishes = events.filter((event) => event.type === 'step_finish');
+    if (stepStarts.length > 1 || stepFinishes.length > 1) {
+      throw new Error('OpenCode CLI exceeded the one-step model-call boundary.');
+    }
+    const stepFinish = stepFinishes[0];
     const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId, 'ads-e2e-model');
 
     if (run.error || run.code !== 0 || run.signal) {

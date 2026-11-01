@@ -59,6 +59,8 @@ ads status
 
 `develop` 默认只显示计划；显式执行时只调用一次 OpenCode 原生 CLI，有超时，不换模型/账户、不新建 Agent Loop。源码可变化，但来源/契约/已加载权威资料不能静默改变。原生退出 0 仅为执行事实，后续仍需外部验证。
 
+需要续接时，使用摘要中的 `session_id`：`ads develop --model provider/model --session ses_example --execute`。ADS 将该 ID 交给原生 OpenCode，仍先核对当前上下文，不自动重放旧工具或更换模型。Session 是否恢复及其业务结果须看原生记录；参数传递不证明恢复成功。中断、启动失败或执行后上下文不可读时保留失败摘要。
+
 `context check` 在代码、来源、配置、知识或任何已声明仓库变化时返回 `REPLAN_REQUIRED`。不自动回放未知副作用。验证只自动执行明确声明 READ_ONLY/IDEMPOTENT 的命令；其他操作由现有授权流程处理。POSIX 超时会停止同进程组子进程；它不构成 OS 沙箱。
 
 ## 来源适配
@@ -68,6 +70,8 @@ ads status
 来源枚举、可读内容和业务语义完整性始终分开。资料中的命令是数据，不会变成工具调用。`status` 不把未知来源折叠为开发验证通过。
 
 ## QA 独立入口
+
+用例导入和质量检查可以先于需求契约。缺少可用契约时，`ads qa import` 仍保存原始用例和质量结果，同时标注 `requirement_reconciliation: BLOCKED` 与原因。导入成功只表示接收完成，不能作为需求一致或验收通过；`qa evaluate` 仍需已确认要求与独立执行结果。
 
 Profile 增加：
 

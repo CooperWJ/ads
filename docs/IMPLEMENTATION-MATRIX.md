@@ -19,10 +19,12 @@
 | 原始需求启动 | `ads init`、TASK.md、开发上下文 | 缺契约时实际子进程可启动；新增映射使上下文失效；正式 verify 仍拒绝缺契约 | 子进程适配测试不代表模型完成开发 |
 | C03 | 项目 Profile、必验集合、多仓检查 | Python 与 Node 两个真实测试进程集成，多仓任一变化使证据失效 | 真实 AI 子代理完成并集成整个切片尚未证明 |
 | C04 | 原生单次调用、超时进程组清理、漂移阻断 | POSIX 子进程中断试验，不自动回放未知副作用 | 不承诺远程/数据库操作的通用恰好一次 |
+| 会话续接与异常收尾 | `ads develop --session`、本轮摘要 | 原生参数单次传递、真实 SIGINT 清理后落盘、契约损坏仍保留失败记录 | 不证明模型续接成功或远程副作用幂等 |
 | C05 | 缺陷路由、执行错误与报告分类 | 真实断言失败、缺报告、超时、skipped/flaky 拒绝 | 因果调试由原生 Agent 和项目测试负责；没有第二个修复循环 |
 | D01 | 容器外 Chromium 旅程 | 参考实际通过；菜单和错误状态故障被检出 | 虚构已确认范围，不推广为所有 UI 正确 |
 | D02 | JUnit/Playwright 标准报告、真实 SQLite/API | 两栈和多仓进程、原基准 DB 写入/权限/API 测试 | Java/Testcontainers 由项目 Profile 接入，未声称已测试所有技术栈 |
 | D03 | `ads qa import/evaluate/defects`、QA 独立 role | 多 Sheet/隐藏 Sheet、无 Requirement ID、缺预期、DEV 不能替代 QA、PASS+PENDING 阻断 | 只消费外部决策，不自签 QA_ACCEPTED；真实 QA 身份未提供 |
+| QA 先导入 | `ads qa import` | 缺契约仍保留原始用例与质量结果，对照明确 BLOCKED；evaluate 不借导入成功通过 | 导入不是需求一致性确认 |
 | D04 | 新运行目录、源码/输入/报告/日志绑定 | 旧报告、报告篡改、输入漂移、数量不符被拒绝 | 本地记录不是签名证明 |
 | E01 | `ads gate` 与受信执行边界 | 配置缺权限不放行、真实保护设置适配测试 | 当前连接读取保护接口 403；未证明保护策略已启用 |
 | E02 | `ads attest`、构建 provenance 工作流、`ads smoke` | 冷安装、真实 HTTP 身份反例、主分支标准 attestation 签署及精确来源/摘要验证（41215258915） | 无生产部署目标或发布授权 |

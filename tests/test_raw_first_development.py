@@ -4,7 +4,10 @@ import unittest
 
 import test_ads_core
 from ads import engineering, evidence
-from ads.cli import init
+from ads.cli import init, main
+from contextlib import redirect_stdout
+import io
+import json
 from ads.project import Project, Blocked, write_json
 
 
@@ -50,3 +53,21 @@ class RawFirstTests(unittest.TestCase):
         (target / 'TASK.md').write_text('用户的任务')
         init(target)
         self.assertEqual((target / 'TASK.md').read_text(), '用户的任务')
+
+    def test_qa_quality_import_does_not_require_contract(self):
+        project = self.raw_project()
+        (self.root / 'qa.csv').write_text('用例名称,操作步骤,预期结果\n去空格,输入文本,两侧无空格\n')
+        project.config['qa'] = {'source': 'qa.csv'}
+        write_json(self.root / 'ads.project.json', project.config)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(['--root', str(self.root), 'qa', 'import'])
+        self.assertEqual(code, 0)
+        report = json.loads(output.getvalue())
+        self.assertEqual(report['quality'], 'VALID')
+        self.assertEqual(report['requirement_reconciliation'], 'BLOCKED')
+        self.assertEqual(report['approval'], 'NOT_GRANTED')
+        self.assertEqual(len(report['cases']), 1)
+        self.assertTrue((self.root / '.ads/qa-intake.json').exists())
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main(['--root', str(self.root), 'qa', 'evaluate']), 3)

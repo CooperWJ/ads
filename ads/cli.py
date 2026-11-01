@@ -6,14 +6,17 @@ import sys
 import subprocess
 
 from .project import Project, require, path_in, write_json
-from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment
+from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment, integrations
 
 
-def init(root):
+def init(root, superpowers=False):
     root = Path(root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     target = path_in(root, 'ads.project.json')
+    if superpowers and target.exists():
+        return integrations.superpowers(root)
     require(not target.exists(), '已有 Profile 不可覆盖，请增量修改')
+    integration = integrations.superpowers(root) if superpowers else None
     write_json(target, {'schema': 'ads-project/v1', 'repositories': [{'name': 'main', 'path': '.'}],
                         'source_dirs': ['docs/project/sources'], 'contract': '.ads/contract.json',
                         'spec_root': 'openspec/specs', 'verification_map': 'docs/project/verification-map.json',
@@ -24,21 +27,22 @@ def init(root):
     commands.mkdir(parents=True, exist_ok=True)
     for name, body in {
         'ads-status': '先运行 `ads status`，只读报告实际阻断和未验证项，不补造 PASS。',
-        'ads-develop': '先运行 `ads context check`。漂移时重新读取来源并规划，禁止回放旧副作用。读取项目原始来源与已确认规格，按用户切片实际开发和自测；疑似缺陷先复现并走 systematic-debugging。禁止改变验收预期换 PASS。完成后运行 `ads verify`，开发结果不能替代 QA 或发布授权。',
+        'ads-develop': '先运行 `ads context check`。漂移时重新读取来源并规划，禁止回放旧副作用。读取项目原始来源与已确认规格，按用户切片实际开发和自测。使用 Superpowers 时通过 OpenCode 原生 skill 工具加载：疑似缺陷先 systematic-debugging，再 test-driven-development；新增能力仅在需求不明确时 brainstorming，已有 OpenSpec 规格不重复访谈，writing-plans 只安排实现步骤。交付前加载 verification-before-completion，实际运行测试并核对结果。缺少插件时明确报告，不能假称调用成功。禁止改变验收预期换 PASS。完成后运行 `ads verify`，开发结果不能替代 QA 或发布授权。',
         'ads-qa': '先运行 `ads qa import`，分别核对用例质量与需求一致性。只消费既有 QA 决策投影，不自行批准。运行 `ads verify --role qa` 和 `ads qa evaluate`；DEV 结果不能替代 QA 执行。',
     }.items():
         path = commands / (name + '.md')
         if not path.exists():
             path.write_text('---\ndescription: "ADS 项目原生薄入口"\nagent: build\n---\n\n' + body + '\n')
     return {'status': 'INITIALIZED', 'next': '提供已确认规格派生的只读契约和项目测试命令；空配置不放行',
-            'contract_created_or_approved': False}
+            'contract_created_or_approved': False, 'superpowers': integration}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='ADS 项目工程与证据薄适配 CLI')
     parser.add_argument('--root', default='.')
     sub = parser.add_subparsers(dest='command', required=True)
-    sub.add_parser('init')
+    initialize = sub.add_parser('init')
+    initialize.add_argument('--superpowers', action='store_true', help='接入官方 OpenCode V2 Superpowers 插件；保留已有配置')
     route = sub.add_parser('route')
     route.add_argument('description')
     sub.add_parser('discover')
@@ -69,7 +73,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'init':
-            result = init(args.root)
+            result = init(args.root, args.superpowers)
         elif args.command == 'doctor':
             result = gates.doctor()
         elif args.command == 'route':

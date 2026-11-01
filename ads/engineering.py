@@ -14,6 +14,7 @@ def route(description):
     text = description.lower()
     if any(word in text for word in ('bug', '缺失', '不显示', '不可用', '错误', '回归', '失败')):
         return {'route': 'bug-fix', 'next': '复现既有行为 → systematic-debugging → 回归',
+                'skills': ['systematic-debugging', 'test-driven-development', 'verification-before-completion'],
                 'requires_new_spec': '仅在既有预期不存在或语义改变时'}
     if any(word in text for word in ('恢复', '继续会话', 'resume')):
         return {'route': 'recovery', 'next': '先 ads context check，再使用 OpenCode 原生 Session 续接',

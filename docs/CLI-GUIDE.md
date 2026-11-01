@@ -12,6 +12,8 @@ python3 -m venv /tmp/ads-env
 
 在已有 Git 项目根目录执行 `ads init`。它创建 Profile 和 `.opencode/commands/ads-status.md`、`ads-develop.md`、`ads-qa.md` 薄入口；不覆盖现有 Profile、Skill Router 或 OpenSpec 命令。业务文件只放项目自己的 `docs/project/`，不写入 ADS 核心。
 
+需要 Superpowers 时运行 `ads init --superpowers`。新项目同时初始化；已有 Profile 时只增量接入官方插件，保留已有命令和路由。OpenCode V2 重启后通过原生 `skill` 工具使用技能，不复制 `.opencode/skills`。配置与实际运行范围见 [Superpowers 接入](SUPERPOWERS.md)。
+
 空 Profile 不放行。指定原始资料目录、已有审批系统派生的只读契约和测试命令。契约是外部权威的机器投影，ADS 不提供“填写姓名即可批准”接口，也不维护第二套业务审批状态。
 
 ## 项目 Profile

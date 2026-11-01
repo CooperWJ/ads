@@ -45,3 +45,7 @@
 ## 原生开发执行修复补充
 
 `tests/test_develop_execution.py` 使用真实合成子进程覆盖 CLI 单次执行、摘要持久化、非零退出、超时与预览。修复前执行路径因布尔参数遮蔽函数而 TypeError；修复后调用共用有界执行器。此证据不包含真实模型、OpenCode 原生会话或独立 QA 验收。
+
+## Superpowers 原生复用
+
+官方固定提交通过 OpenCode V2 插件注册，不复制 Skills。`ads init --superpowers` 支持新旧项目增量接入；原生冒烟已验证插件 active、技能注册及三个技能的会话激活。使用 `resume=false`，不能将其计为模型自主技能调用。模型实测仍返回 provider.free-limit。复用官方技能替代自研调试/TDD/完成检查工作流，未新增审批或执行循环。详情与可重跑命令见 [Superpowers 接入](SUPERPOWERS.md)。

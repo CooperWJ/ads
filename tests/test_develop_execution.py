@@ -64,9 +64,9 @@ print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
 
     def test_verification_binds_exact_development_and_behavior_artifacts(self):
         project = self.configure('''import json
-print(json.dumps({'type':'tool_use','part':{'type':'tool','tool':'skill',
+print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{'type':'tool','tool':'skill',
  'state':{'status':'completed','input':{'name':'test-driven-development'},'metadata':{'exit':0}}}}))
-print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
+print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))
 ''')
         development = engineering.develop(project, 'synthetic/model', execute=True)
         run = test_ads_core.evidence.run_checks(project)
@@ -83,10 +83,12 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
 
     def test_verification_binding_carries_observed_change_scope(self):
-        project = self.configure('''from pathlib import Path
+        project = self.configure('''import json
+from pathlib import Path
 app = Path('app.py')
 app.write_text(app.read_text() + chr(10) + '# scoped change' + chr(10))
 Path('scope-note.txt').write_text('observed addition')
+print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))
 ''')
         development = engineering.develop(project, 'synthetic/model', execute=True)
         run = test_ads_core.evidence.run_checks(project)
@@ -107,7 +109,7 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertNotIn('native-stub', serialized_behavior)
 
     def test_cli_verify_exposes_development_binding(self):
-        project = self.configure("pass" + chr(10))
+        project = self.configure("import json\nprint(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))\n")
         engineering.develop(project, 'synthetic/model', execute=True)
         output = io.StringIO()
         with redirect_stdout(output):
@@ -115,8 +117,14 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertEqual(code, 0, output.getvalue())
         self.assertEqual(json.loads(output.getvalue())['development_binding']['status'], 'MATCHED')
 
-    def test_verification_marks_development_stale_when_code_changed_after_run(self):
+    def test_successful_process_without_observed_session_is_not_bindable(self):
         project = self.configure("pass" + chr(10))
+        engineering.develop(project, 'synthetic/model', execute=True)
+        run = test_ads_core.evidence.run_checks(project)
+        self.assertEqual(run['development_binding']['status'], 'INVALID')
+
+    def test_verification_marks_development_stale_when_code_changed_after_run(self):
+        project = self.configure("import json\nprint(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))\n")
         development = engineering.develop(project, 'synthetic/model', execute=True)
         with (self.root / 'app.py').open('a') as source:
             source.write(chr(10) + '# changed after native development' + chr(10))
@@ -126,7 +134,7 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertEqual(run['development_binding']['run_id'], development['run_id'])
 
     def test_tampered_behavior_before_verify_is_marked_invalid(self):
-        project = self.configure("pass" + chr(10))
+        project = self.configure("import json\nprint(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))\n")
         development = engineering.develop(project, 'synthetic/model', execute=True)
         behavior = self.root / '.ads' / 'development' / development['run_id'] / 'behavior.json'
         behavior.write_text('{}')
@@ -136,7 +144,7 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding']['status'], 'INVALID')
 
     def test_tampered_behavior_artifact_invalidates_bound_verification(self):
-        project = self.configure("pass" + chr(10))
+        project = self.configure("import json\nprint(json.dumps({'type':'step_finish','sessionID':'ses_synthetic','part':{'reason':'stop'}}))\n")
         engineering.develop(project, 'synthetic/model', execute=True)
         run = test_ads_core.evidence.run_checks(project)
         behavior = self.root / '.ads' / 'development' / run['development_binding']['run_id'] / 'behavior.json'

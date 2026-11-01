@@ -143,12 +143,31 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
     def test_explicit_session_is_forwarded_to_native_once(self):
         project = self.configure('''import sys,json
 assert sys.argv[sys.argv.index('--session')+1] == 'ses_synthetic'
-print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic'}))
+print(json.dumps({'type':'step_start','sessionID':'ses_synthetic'}))
 ''')
         result = engineering.develop(project, 'synthetic/model', execute=True, session='ses_synthetic')
         self.assertEqual(result['session_id'], 'ses_synthetic')
         self.assertEqual(result['requested_session'], 'ses_synthetic')
+        self.assertEqual(result['session_confirmation'], 'CONFIRMED')
         self.assertFalse(result['automatic_side_effect_replay'])
+
+    def test_requested_session_mismatch_blocks_resume_claim(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'step_start','sessionID':'ses_other'}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True, session='ses_requested')
+        self.assertEqual(result['status'], 'BLOCKED')
+        self.assertEqual(result['error_type'], 'SESSION_MISMATCH')
+        self.assertEqual(result['session_confirmation'], 'MISMATCH')
+
+    def test_requested_session_without_native_identity_is_not_confirmed(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'text','part':{'type':'text','text':'synthetic'}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True, session='ses_requested')
+        self.assertEqual(result['status'], 'BLOCKED')
+        self.assertEqual(result['error_type'], 'SESSION_NOT_CONFIRMED')
+        self.assertEqual(result['session_confirmation'], 'NOT_OBSERVED')
 
     def test_interrupt_persists_receipt_after_process_cleanup(self):
         project = self.configure('import time\ntime.sleep(30)\n')

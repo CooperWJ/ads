@@ -43,7 +43,8 @@ def context(project, freeze=False):
 
 
 
-_SAFE_ERROR_LABEL = re.compile(r'^[A-Za-z0-9_.-]{1,100}    require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
+_SAFE_ERROR_LABEL = re.compile(r'^[A-Za-z0-9_.-]{1,100}
+    require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
     config = project.config.get('development', {})
     native = config.get('executable', 'opencode')
     require(isinstance(native, str), '无效原生可执行文件')
@@ -144,7 +145,7 @@ def summarize_native_error(detail):
     status = status if type(status) is int and 400 <= status <= 599 else None
     code = data.get('code') or detail.get('code')
     code = code if isinstance(code, str) and _SAFE_ERROR_LABEL.fullmatch(code) else None
-    provider = data.get('providerID') or data.get('providerId')
+    provider = data.get('providerID') or data.get('providerId') or detail.get('providerID')
     provider = provider if isinstance(provider, str) and _SAFE_ERROR_LABEL.fullmatch(provider) else None
     normalized_code = (code or '').lower()
     if 'free-limit' in normalized_code or 'quota' in normalized_code:
@@ -161,8 +162,6 @@ def summarize_native_error(detail):
         classification = 'UNKNOWN'
     return {'type': name, 'classification': classification, 'status_code': status,
             'code': code, 'provider_id': provider}
-
-
 
 def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')

@@ -85,6 +85,7 @@ class CoreTests(unittest.TestCase):
     def test_real_process_and_all_required_assertions(self):
         run = evidence.run_checks(self.project)
         self.assertEqual(run['status'], 'PASS')
+        self.assertEqual(run['development_binding']['status'], 'NOT_LINKED')
         self.assertEqual(len(run['checks'][0]['cases']), 2)
         self.assertEqual(evidence.decide(self.project)['development'], 'DEV_VERIFIED_LOCAL')
         self.assertEqual(evidence.decide(self.project)['release'], 'NOT_VERIFIED')

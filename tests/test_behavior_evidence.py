@@ -28,6 +28,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
     def test_observes_skill_use_and_red_green_order_without_copying_commands(self):
         result = inspect_stream(self.stream(
             tool("skill", {"name": "systematic-debugging"}),
+            tool("skill", {"name": "test-driven-development"}),
             tool("bash", {"command": "pytest -q"}, 1),
             tool("edit", {"filePath": "src/app.py"}),
             tool("bash", {"command": "pytest -q"}, 0),
@@ -35,6 +36,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
         ))
         self.assertEqual(result["stream_status"], "COMPLETE")
         self.assertEqual(result["systematic_debugging_invoked"], "OBSERVED")
+        self.assertEqual(result["test_driven_development_invoked"], "OBSERVED")
         self.assertEqual(result["verification_before_completion_invoked"], "OBSERVED")
         self.assertEqual(result["test_before_first_direct_edit"], "OBSERVED")
         self.assertEqual(result["observed_red_green_sequence"], "OBSERVED")

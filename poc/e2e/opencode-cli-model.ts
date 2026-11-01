@@ -322,7 +322,8 @@ function assistantResult(
   if (info.retry) throw new Error('OpenCode CLI retried the model request; execution cannot be counted as one call.');
   if (info.error) throw new Error('OpenCode assistant message contains a provider or execution error.');
   const parts = Array.isArray(message.parts) ? message.parts as JsonRecord[]
-    : Array.isArray(info.content) ? info.content as JsonRecord[] : [];
+    : Array.isArray(message.content) ? message.content as JsonRecord[]
+      : Array.isArray(info.content) ? info.content as JsonRecord[] : [];
   const text = parts.filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text as string).join('\n');
   if (!text.trim()) throw new Error('OpenCode session did not contain assistant text.');

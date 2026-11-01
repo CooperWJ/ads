@@ -28,6 +28,8 @@ type TranscriptFile = {
   label: string;
 };
 
+const CLI_VERSION_CHECKS = new Map<string, Promise<void>>();
+
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/png': '.png',
   'image/jpeg': '.jpg',
@@ -214,6 +216,29 @@ async function capture(
     });
   });
 }
+
+async function assertCliVersion(binary: string, cwd: string, env: NodeJS.ProcessEnv): Promise<void> {
+  let checked = CLI_VERSION_CHECKS.get(binary);
+  if (!checked) {
+    checked = (async () => {
+      const result = await capture(binary, ['--version'], cwd, env);
+      if (result.error || result.code !== 0) {
+        throw new Error('OpenCode CLI version preflight failed.');
+      }
+      const version = `${result.stdout} ${result.stderr}`.match(/(?:^|\\s)v?(\\d+)\\.(\\d+)\\.(\\d+)(?:\\s|$)/);
+      if (!version) throw new Error('OpenCode CLI version could not be determined.');
+      const actual = version.slice(1).map(Number);
+      const minimum = [2, 2, 3];
+      const older = actual[0] < minimum[0]
+        || (actual[0] === minimum[0] && actual[1] < minimum[1])
+        || (actual[0] === minimum[0] && actual[1] === minimum[1] && actual[2] < minimum[2]);
+      if (older) throw new Error('OpenCode CLI v2.2.3 or newer is required for the isolated model adapter.');
+    })();
+    CLI_VERSION_CHECKS.set(binary, checked);
+  }
+  await checked;
+}
+
 
 function jsonLines(stdout: string): JsonRecord[] {
   return stdout.split('\n').flatMap((line) => {
@@ -415,6 +440,7 @@ async function generate(
   try {
     await mkdir(join(directory, '.opencode', 'agents'), { recursive: true });
     const { system, transcriptPath, attachments } = await writeTranscript(options.prompt, directory);
+    await assertCliVersion(binary, directory, { ...process.env });
     const rules = replyRules(options);
     const agentBody = [system, rules].filter(Boolean).join('\n\n');
     const agentFile = [

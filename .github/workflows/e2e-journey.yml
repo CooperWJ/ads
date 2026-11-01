@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths: ['ads/**', 'poc/e2e/**', '.github/workflows/e2e-journey.yml', 'VERSION']
 permissions:
-  contents: read
+  contents: write
 jobs:
   e2e-journey:
     runs-on: ubuntu-24.04
@@ -15,6 +15,9 @@ jobs:
       E2E_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -25,6 +28,13 @@ jobs:
         working-directory: poc/e2e
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]] && ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore: pin OpenCode Console model provider dependencies"
+            git push origin "HEAD:${GITHUB_HEAD_REF}"
+          fi
           npm ci --ignore-scripts --no-audit --no-fund
           node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Verify OpenCode Console agent profile wiring without login or model calls

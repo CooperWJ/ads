@@ -56,7 +56,9 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
     act: (prompt) => agent.act(prompt),
     verify: async () => {
       verificationNumber += 1;
-      const status = (await screen.getByRole('status').textContent())?.trim() ?? '';
+      const statusLocator = screen.getByRole('status');
+      await expect(statusLocator).toHaveText(verificationNumber === 1 ? 'Save failed: HTTP 503' : 'Saved');
+      const status = (await statusLocator.textContent())?.trim() ?? '';
       const selectedProjectId = await screen.getByLabel('Select project').inputValue();
       const note = await screen.getByLabel('Editable notes').inputValue();
       const persisted = persistedNote();

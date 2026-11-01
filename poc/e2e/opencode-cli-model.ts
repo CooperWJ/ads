@@ -431,6 +431,7 @@ async function generate(
       update: 'disable',
       plugins: [],
       mcp: {},
+      permissions: [{ action: '*', resource: '*', effect: 'deny' }],
       policies: [
           { action: 'tool.use', resource: '*', effect: 'deny' },
           { action: 'mcp.use', resource: '*', effect: 'deny' },

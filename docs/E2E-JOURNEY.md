@@ -12,7 +12,7 @@ npx --no-install e2e-web install --with-deps chromium
 ads init --superpowers --e2e
 ```
 
-保留项目已有 `e2e.config.ts` 和测试；没有配置时按安装包官方技能生成。`ads init` 只合并 OpenCode V2 的 `mcp.servers.e2e` 和 `skills` 数组，不安装依赖，不修改权限，不覆盖既有同名服务器或 Router。已有 JSONC 时在原文件合并，避免生成竞争配置。重启后实际验证 MCP 连接与 `e2e` 原生技能发现；配置存在不是兼容性结论。
+保留项目已有 `e2e.config.ts` 和测试；没有配置时按安装包官方技能生成。`ads init` 对普通 `opencode.json` 只合并 OpenCode V2 的 `mcp.servers.e2e` 和 `skills` 数组，不安装依赖，不修改权限，不覆盖既有同名服务器或 Router。若项目使用 `opencode.jsonc`，当前 CLI 会 fail-closed 并要求手动在原文件合并 MCP 与 skills 配置；不会自动解析或改写 JSONC，也不会另建竞争配置。`ads init --superpowers --e2e` 同样遵守此限制。重启后实际验证 MCP 连接与 `e2e` 原生技能发现；配置存在不是兼容性结论。
 
 OpenCode 负责开发与调用工具；Superpowers 提供复现、TDD 和完成前验证方法；e2e 负责操作实际应用并产出轨迹。已有 OpenSpec 要求不重复访谈。自愈可调整导航路径，关键预期仍由已确认要求给定。e2e MCP 不需要模型即可提供确定性工具，`agent.act/assert` 仍需要有额度的模型。
 

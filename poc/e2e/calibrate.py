@@ -117,6 +117,47 @@ def agent_status(agent_evidence, correct):
     return 'PASS'
 
 
+def validate_agent_repair_ledger(path):
+    if not path.is_file():
+        return None, 'MISSING', None
+    try:
+        raw = path.read_bytes()
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            return None, 'INVALID', hashlib.sha256(raw).hexdigest()
+        observations = data.get('observations')
+        if not isinstance(observations, list):
+            return data, 'INVALID', hashlib.sha256(raw).hexdigest()
+        first = observations[0] if len(observations) > 0 and isinstance(observations[0], dict) else {}
+        final = observations[-1] if len(observations) > 1 and isinstance(observations[-1], dict) else {}
+        valid = (
+            data.get('schema') == 'ads-agent-repair-ledger/v1'
+            and data.get('test_id') == 'agent-bounded-repair-save-refresh-export'
+            and data.get('max_repairs') == 1
+            and data.get('repair_attempts') == 1
+            and len(observations) == 2
+            and first.get('ok') is False
+            and first.get('code') == 'SAVE_HTTP_503'
+            and first.get('status') == 'Save failed: HTTP 503'
+            and first.get('attempts') == 1
+            and first.get('persisted') == ''
+            and final.get('ok') is True
+            and final.get('code') == 'SAVE_VERIFIED'
+            and final.get('status') == 'Saved'
+            and final.get('selectedProjectId') == '1'
+            and final.get('note') == 'Reviewed in M0'
+            and final.get('persisted') == 'Reviewed in M0'
+            and final.get('attempts') == 2
+            and data.get('save_attempts') == 3
+            and data.get('export_attempts') == 1
+            and data.get('final_persisted') == 'Reviewed in M0'
+            and data.get('final_exported') == 'Reviewed in M0'
+        )
+        return data, 'VALID' if valid else 'INVALID', hashlib.sha256(raw).hexdigest()
+    except (ValueError, OSError, TypeError, IndexError):
+        return None, 'INVALID', None
+
+
 def collect(project, run, expected, out, agent=False):
     check = run['checks'][0]
     report_path = project.root / check['report'] if check.get('report') else None
@@ -143,50 +184,11 @@ def collect(project, run, expected, out, agent=False):
     agent_evidence = check['cases'][0].get('agent_evidence') if agent and check.get('cases') else None
 
     repair_ledger_path = out / 'agent-repair-ledger.json'
-    repair_ledger = None
-    repair_ledger_sha256 = None
-    repair_ledger_status = 'NOT_APPLICABLE'
     if agent:
-        repair_ledger_status = 'MISSING'
-        if repair_ledger_path.is_file():
-            try:
-                repair_ledger = json.loads(repair_ledger_path.read_text())
-                if not isinstance(repair_ledger, dict):
-                    raise ValueError('repair ledger must be an object')
-                observations = repair_ledger.get('observations')
-                if not isinstance(observations, list):
-                    raise ValueError('repair ledger observations must be a list')
-                first = observations[0] if len(observations) > 0 and isinstance(observations[0], dict) else {}
-                final = observations[-1] if len(observations) > 1 and isinstance(observations[-1], dict) else {}
-                repair_ledger_valid = (
-                    repair_ledger.get('schema') == 'ads-agent-repair-ledger/v1'
-                    and repair_ledger.get('test_id') == 'agent-bounded-repair-save-refresh-export'
-                    and repair_ledger.get('max_repairs') == 1
-                    and repair_ledger.get('repair_attempts') == 1
-                    and len(observations) == 2
-                    and first.get('ok') is False
-                    and first.get('code') == 'SAVE_HTTP_503'
-                    and first.get('status') == 'Save failed: HTTP 503'
-                    and first.get('attempts') == 1
-                    and first.get('persisted') == ''
-                    and final.get('ok') is True
-                    and final.get('code') == 'SAVE_VERIFIED'
-                    and final.get('status') == 'Saved'
-                    and final.get('selectedProjectId') == '1'
-                    and final.get('note') == 'Reviewed in M0'
-                    and final.get('persisted') == 'Reviewed in M0'
-                    and final.get('attempts') == 2
-                    and repair_ledger.get('save_attempts') == 3
-                    and repair_ledger.get('export_attempts') == 1
-                    and repair_ledger.get('final_persisted') == 'Reviewed in M0'
-                    and repair_ledger.get('final_exported') == 'Reviewed in M0'
-                )
-                repair_ledger_status = 'VALID' if repair_ledger_valid else 'INVALID'
-                repair_ledger_sha256 = hashlib.sha256(repair_ledger_path.read_bytes()).hexdigest()
-                correct = correct and repair_ledger_valid
-            except (ValueError, OSError, TypeError, IndexError):
-                repair_ledger_status = 'INVALID'
-                correct = False
+        repair_ledger, repair_ledger_status, repair_ledger_sha256 = validate_agent_repair_ledger(repair_ledger_path)
+        correct = correct and repair_ledger_status == 'VALID'
+    else:
+        repair_ledger, repair_ledger_status, repair_ledger_sha256 = None, 'NOT_APPLICABLE', None
 
     state = agent_status(agent_evidence, correct) if agent else ('PASS' if correct else 'FAIL')
 

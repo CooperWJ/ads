@@ -159,11 +159,14 @@ async function writeTranscript(
       continue;
     }
     if (message.role === 'assistant') {
-      const calls = message.content.flatMap((part) =>
-        part.type === 'tool-call'
-          ? [{ id: part.toolCallId, name: part.toolName, input: part.input }]
-          : [],
-      );
+      const calls = message.content.flatMap((part) => {
+        if (part.type !== 'tool-call') return [];
+        let input: unknown = part.input;
+        if (typeof input === 'string') {
+          try { input = JSON.parse(input); } catch { /* preserve non-JSON tool input */ }
+        }
+        return [{ id: part.toolCallId, name: part.toolName, input }];
+      });
       const words = message.content.flatMap((part) => part.type === 'text' ? [part.text] : []).join('\n');
       lines.push('[ASSISTANT]');
       lines.push(calls.length > 0 ? JSON.stringify({ tool_calls: calls }) : words);

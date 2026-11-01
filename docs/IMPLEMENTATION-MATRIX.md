@@ -29,6 +29,7 @@
 | C05 | 缺陷路由、执行错误与报告分类 | 真实断言失败、缺报告、超时、skipped/flaky 拒绝 | 因果调试由原生 Agent 和项目测试负责；没有第二个修复循环 |
 | D01 | 容器外 Chromium 旅程 | 参考实际通过；菜单和错误状态故障被检出 | 虚构已确认范围，不推广为所有 UI 正确 |
 | D02 | JUnit/Playwright 标准报告、真实 SQLite/API | 两栈和多仓进程、原基准 DB 写入/权限/API 测试 | Java/Testcontainers 由项目 Profile 接入，未声称已测试所有技术栈 |
+| QA 用例与执行证据精确关联 | `ads qa evaluate` 的 `cases[].verification_evidence[]` | 每条用例绑定原始来源定位/哈希、预期、审查决定、QA run、输入快照和原始报告哈希；缺失/重复匹配阻断 | 本地执行不提供独立 QA 身份或 QA_ACCEPTED |
 | D03 | `ads qa import/evaluate/defects`、QA 独立 role | 多 Sheet/隐藏 Sheet、无 Requirement ID、缺预期、DEV 不能替代 QA、PASS+PENDING 阻断 | 只消费外部决策，不自签 QA_ACCEPTED；真实 QA 身份未提供 |
 | QA 先导入 | `ads qa import` | 缺契约仍保留原始用例与质量结果，对照明确 BLOCKED；evaluate 不借导入成功通过 | 导入不是需求一致性确认 |
 | D04 | 新运行目录、源码/输入/报告/日志绑定 | 旧报告、报告篡改、输入漂移、数量不符被拒绝 | 本地记录不是签名证明 |

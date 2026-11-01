@@ -74,6 +74,28 @@ def summarize_native_error(detail):
     return {'type': name, 'classification': classification, 'status_code': status,
             'code': code, 'provider_id': provider}
 
+
+def change_set(before, after):
+    """Summarize repository path changes without copying file contents."""
+    if not isinstance(after, dict):
+        return {'status': 'UNKNOWN', 'added': [], 'modified': [], 'deleted': [],
+                'counts': {'added': 0, 'modified': 0, 'deleted': 0}}
+    old_repos = {item['name']: item.get('files', {}) for item in before.get('repositories', [])}
+    new_repos = {item['name']: item.get('files', {}) for item in after.get('repositories', [])}
+    added, modified, deleted = [], [], []
+    for repo in sorted(set(old_repos) | set(new_repos)):
+        old = old_repos.get(repo, {})
+        new = new_repos.get(repo, {})
+        for path in sorted(set(new) - set(old)):
+            added.append({'repository': repo, 'path': path})
+        for path in sorted(set(old) - set(new)):
+            deleted.append({'repository': repo, 'path': path})
+        for path in sorted(set(old) & set(new)):
+            if old[path] != new[path]:
+                modified.append({'repository': repo, 'path': path})
+    return {'status': 'OBSERVED', 'added': added, 'modified': modified, 'deleted': deleted,
+            'counts': {'added': len(added), 'modified': len(modified), 'deleted': len(deleted)}}
+
 def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
     config = project.config.get('development', {})
@@ -154,6 +176,7 @@ def develop(project, model, execute=False, session=None):
               'exit_code': code, 'error_type': error, 'native_error': native_error,
               'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
+              'change_set': change_set(before, after),
               'native_sessions_observed': len(session_ids), 'session_confirmation': session_confirmation,
               'stream_tool_events': behavior['completed_tool_calls'],
               'behavior_evidence': behavior,

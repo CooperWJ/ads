@@ -131,6 +131,7 @@ def inspect_stream(data):
             "INDETERMINATE" if not ordering_trustworthy else
             "OBSERVED" if failed_before_edit and passed_after_edit else "NOT_OBSERVED"
         ),
+        "final_verification_after_last_direct_edit": final_verification,
         "evidence_limit": (
             "Event order and tool metadata only. This does not prove test intent, "
             "business correctness, complete file-change coverage, or that a skill's "

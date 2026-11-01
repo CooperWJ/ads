@@ -113,6 +113,14 @@ print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic'}))
         self.assertEqual(result['error_type'], 'NATIVE_ERROR')
         self.assertEqual(result['status'], 'BLOCKED')
 
+    def test_native_stream_error_name_is_preserved(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'error','error':{'name':'APIError','data':{'message':'rate limited','statusCode':429}}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'APIError')
+        self.assertEqual(result['status'], 'BLOCKED')
+
     def test_executable_start_error_is_recorded(self):
         project = self.configure('pass\n')
         (self.root / 'native-stub').write_text('not an executable format')

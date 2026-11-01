@@ -91,7 +91,7 @@ def develop(project, model, execute=False, session=None):
                 session_ids.add(event['sessionID'])
             if event.get('type') == 'error':
                 detail = event.get('error')
-                kind = detail.get('type') if isinstance(detail, dict) else None
+                kind = (detail.get('type') or detail.get('name')) if isinstance(detail, dict) else None
                 error = kind if isinstance(kind, str) and kind else 'NATIVE_ERROR'
             types.append(event.get('type'))
     try:

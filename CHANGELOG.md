@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.5 — 原始需求可直接启动开发
+
+- 初始化提供可编辑 TASK.md，保留用户已有任务；不要求先编写验收契约才能探索需求和调用 OpenCode。
+- 开发上下文记录尚未提供的契约、规格和评审文件，并在新增或变化时失效；正式 verify、QA 与交付判断继续核对确认要求。
+- 未增加审批或执行器，沿用原生 OpenCode 与 Superpowers。
+
 ## v0.6.4 — 官方 Superpowers 原生接入
 
 - 新增 `ads init --superpowers`：用 OpenCode V2 官方插件配置接入固定上游提交；已有项目只增量配置插件，保留 Profile、用户路由、OpenSpec 入口、模型和权限。

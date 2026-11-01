@@ -433,6 +433,9 @@ async function generate(
       mcp: {},
       policies: [
           { action: 'tool.use', resource: '*', effect: 'deny' },
+          { action: 'mcp.use', resource: '*', effect: 'deny' },
+          { action: 'skill.use', resource: '*', effect: 'deny' },
+          { action: 'plugin.use', resource: '*', effect: 'deny' },
           { action: 'provider.use', resource: '*', effect: 'deny' },
           { action: 'provider.use', resource: providerId, effect: 'allow' },
       ],

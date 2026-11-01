@@ -305,6 +305,7 @@ def decide(project):
                     'case_id': test_id,
                     'check_status': result['status'],
                     'case_status': case_status,
+                    'agent_evidence': case.get('agent_evidence', {'status': 'NOT_AVAILABLE'}),
                     'report': result['report'],
                     'report_sha256': result['report_sha256'],
                 }

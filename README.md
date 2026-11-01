@@ -14,7 +14,7 @@ ADS 面向多项目复用，连接原始需求、OpenCode 开发、专业测试�
 | `ads reconcile` | 核对独立来源决策与交付义务，识别遗漏、冲突及未知 |
 | `ads route` / `ads context` | 缺陷优先路由与多仓/来源/知识指纹失效 |
 | `ads develop` | 单次调用 OpenCode 原生 CLI，记录执行事实、可观察的 Skill/TDD 行为和阻断；行为证据边界见 [说明](docs/BEHAVIOR-EVIDENCE.md) |
-| `ads verify` / `ads status` | 运行项目测试器，消费 JUnit/Playwright 报告并逐项核对必验集合 |
+| `ads verify` / `ads status` | 运行项目测试器，消费 JUnit/Playwright 报告、核对必验集合，并绑定对应开发运行及行为证据 |
 | `ads qa` | 多 Sheet/CSV 质量检查、候选关联、既有 QA 决策与独立执行结果核对 |
 | `ads gate` / `ads attest` / `ads smoke` | 实际分支保护读取、标准出处校验、部署端点身份核对 |
 | `ads benchmark` / `ads doctor` | 三轴配对结果与成本比较、真实依赖可用性探测 |

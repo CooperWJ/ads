@@ -10,6 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ('app.py', 'web/index.html', 'web/app.js')
 PROMPT = '''请从 raw/ 全部原始资料独立核对要求，修复虚构项目的完整用户旅程。
+通过 OpenCode 原生 skill 工具加载 Superpowers systematic-debugging，先复现种子中的缺失行为；再用 test-driven-development 完成修复，完成前用 verification-before-completion 核对实际结果。已有明确要求不重复 brainstorming。技能不可用时如实报告，不假称执行成功。
 先列出资料范围、功能遗漏和未知，再实现页面菜单、七个只读持久化字段、加载失败提示、备注保存/刷新、保存后导出 XLSX、权限拒绝。
 不读取框架仓库、参考补丁或外部验收答案，不根据现有实现反推预期。
 修改交付代码仅限 app.py、web/index.html、web/app.js；可在 dev_tests/ 编写并运行开发自测。
@@ -27,6 +28,7 @@ def sha(path):
 
 
 def prepare(run):
+    from ads.integrations import SUPERPOWERS_PLUGIN
     run = Path(run).resolve()
     run.mkdir(parents=True, exist_ok=False)
     workspace = run / 'workspace'
@@ -37,6 +39,7 @@ def prepare(run):
     (workspace / '.gitignore').write_text('__pycache__/\n*.pyc\nruntime.sqlite*\n.ads-runtime/\n')
     (workspace / 'opencode.json').write_text(json.dumps({
         '$schema': 'https://opencode.ai/config.json', 'update': 'disable', 'share': 'disabled',
+        'plugins': [SUPERPOWERS_PLUGIN],
         'permissions': [
             {'action': '*', 'resource': '*', 'effect': 'ask'},
             {'action': 'read', 'resource': '*', 'effect': 'allow'},

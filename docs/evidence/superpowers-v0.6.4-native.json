@@ -1,0 +1,32 @@
+{
+  "opencode_version": "2.2.3",
+  "superpowers_commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "registered_skills": [
+    "opencode",
+    "report",
+    "executing-plans",
+    "dispatching-parallel-agents",
+    "finishing-a-development-branch",
+    "receiving-code-review",
+    "subagent-driven-development",
+    "brainstorming",
+    "diagnosing-superpowers",
+    "using-superpowers",
+    "using-git-worktrees",
+    "writing-plans",
+    "verification-before-completion",
+    "requesting-code-review",
+    "systematic-debugging",
+    "writing-skills",
+    "test-driven-development",
+    "browser"
+  ],
+  "activated_without_model": [
+    "systematic-debugging",
+    "test-driven-development",
+    "verification-before-completion"
+  ],
+  "message_count": 3,
+  "model_execution": "BLOCKED_PROVIDER_FREE_LIMIT",
+  "scope": "native registration and explicit activation, not autonomous model use or full development"
+}

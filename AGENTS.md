@@ -10,6 +10,8 @@
 
 优先使用 OpenCode 原生机制。复用 OpenSpec 和专业测试器。只补充已确认的适配缺口。保持一个规格权威。消费既有 QA 决策。执行事实记录不承担业务批准。
 
+Superpowers 通过官方 OpenCode V2 插件注册，使用原生 `skill` 工具加载。疑似缺陷先 `systematic-debugging`，实现采用 `test-driven-development`，完成前采用 `verification-before-completion`。已有确认规格不重复 `brainstorming`；实现计划不创建第二套规格权威。不要复制上游技能或强制串行执行全部技能。原生注册、显式激活与模型实际使用分别报告。
+
 ## 常用命令
 
 从仓库根目录运行：

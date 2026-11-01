@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.4 — 官方 Superpowers 原生接入
+
+- 新增 `ads init --superpowers`：用 OpenCode V2 官方插件配置接入固定上游提交；已有项目只增量配置插件，保留 Profile、用户路由、OpenSpec 入口、模型和权限。
+- 复用 systematic-debugging、test-driven-development 与 verification-before-completion；已有明确规格不重复需求访谈，不复制技能、不新增执行循环或审批流程。
+- 虚构开发切片也使用同一官方插件与原生技能路径；补充真实 OpenCode 的插件注册和无模型技能激活测试，复用现有 CI。
+- 模型实际调用仍被 provider.free-limit 阻断；原生注册和显式激活不冒充模型自主使用或完整开发通过。
+
 ## v0.6.3 — 按最终交付目标收敛后续工作
 
 - 将三项目标写入 Agent 操作说明：理解正确、开发可靠、独立证据证明满足确认要求。

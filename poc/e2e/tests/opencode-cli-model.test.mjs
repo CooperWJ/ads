@@ -28,7 +28,7 @@ async function setup() {
   const previous = {};
   const resetKeys = [
     'ADS_E2E_OPENCODE_BIN', 'ADS_E2E_OPENCODE_TEST_LOG', 'ADS_E2E_OPENCODE_CLI_MODEL',
-    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER', 'ADS_E2E_TEST_SESSION_ID', 'ADS_E2E_TEST_AGENT',
+    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER', 'ADS_E2E_TEST_SESSION_ID', 'ADS_E2E_TEST_AGENT', 'ADS_E2E_TEST_RETRY',
     'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
     'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL', 'ADS_E2E_TEST_CLI_VERSION',
   ];
@@ -154,6 +154,19 @@ test('provider identity mismatch fails closed and still deletes the OpenCode ses
     process.env.ADS_E2E_TEST_PROVIDER = 'another-provider';
     const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
     await assert.rejects(model.doGenerate(options()), /model identity did not match/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('hidden OpenCode model retries are rejected', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_RETRY = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /retried the model request/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
   } finally {

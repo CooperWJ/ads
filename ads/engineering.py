@@ -1,5 +1,6 @@
 """OpenCode 单次原生调用与上下文核对；不创建 Agent Loop。"""
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -66,6 +67,8 @@ def develop(project, model, execute=False, session=None):
     before = project.snapshot(development=True)
     directory = path_in(project.root, '.ads/development/' + uuid.uuid4().hex)
     directory.mkdir(parents=True, exist_ok=False)
+    if os.name == 'posix':
+        directory.chmod(0o700)
     started = time.monotonic()
     code, error = None, None
     with (directory / 'native-private.jsonl').open('wb') as out, (directory / 'stderr-private.log').open('wb') as err:
@@ -77,6 +80,9 @@ def develop(project, model, execute=False, session=None):
             error = 'INTERRUPTED'
         except OSError:
             error = 'EXECUTION_ERROR'
+    if os.name == 'posix':
+        (directory / 'native-private.jsonl').chmod(0o600)
+        (directory / 'stderr-private.log').chmod(0o600)
     stream = (directory / 'native-private.jsonl').read_text(errors='replace')
     behavior = inspect_stream(stream)
     write_json(directory / 'behavior.json', behavior)

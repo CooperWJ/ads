@@ -257,7 +257,7 @@ test('session cleanup failure blocks the model result', async () => {
   try {
     process.env.ADS_E2E_TEST_DELETE_FAIL = '1';
     const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
-    await assert.rejects(model.doGenerate(options()), /session cleanup failed/);
+    await assert.rejects(model.doGenerate(options()), /session cleanup failed for ses_fake/);
   } finally {
     await env.close();
   }

@@ -27,3 +27,14 @@ python3 -m unittest tests.test_develop_execution -v
 ```
 
 必须结合源代码/测试差异、独立 `ads verify`、真实 e2e 结果和人工介入记录判断交付。行为证据仅帮助复盘 Agent 实际做了什么，不能替代交付正确性证据。
+
+## 与独立验证运行的绑定
+
+每次 `ads develop --execute` 都有唯一 `run_id`，并在 `.ads/latest-development.json` 写入摘要与 `behavior.json` 的 SHA-256。`ads verify` 开始时读取当前代码/来源/契约快照，将最新开发运行绑定到同一验证记录：
+
+- `MATCHED`：开发输出快照与验证输入快照完全一致，且摘要、行为证据哈希和内容相互核对。
+- `STALE`：开发后输入发生变化；验证仍可独立执行，但不得声称验证覆盖了该次开发输出。
+- `INVALID`：开发摘要或行为证据缺失、格式错误或哈希不一致。
+- `NOT_LINKED`：没有可关联的 ADS 开发运行。QA 责任运行不继承开发行为声明。
+
+验证记录固定引用开发 `run_id` 和两份证据哈希。`ads verify` 后再修改行为文件，会使 `ads status` 在加载该验证记录时阻断。若开发后代码变化，新的验证会保留 `STALE` 关系，而不是把旧开发声明嫁接到新代码上。此关联只证明同一输入版本的对应关系，不证明 Skill 指导被遵循或业务需求已正确实现。

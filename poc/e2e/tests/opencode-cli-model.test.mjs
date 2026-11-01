@@ -10,7 +10,13 @@ const DEFAULT_REPLY = JSON.stringify({
   tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }],
 });
 
-const FAKE_CLI = "#!/usr/bin/env node\nimport fs from 'node:fs';\nimport path from 'node:path';\n\nconst args = process.argv.slice(2);\nconst logPath = process.env.ADS_E2E_OPENCODE_TEST_LOG;\nconst record = (value) => fs.appendFileSync(logPath, JSON.stringify(value) + '\\n');\nconst valueAfter = (flag) => {\n  const index = args.indexOf(flag);\n  return index >= 0 ? args[index + 1] : undefined;\n};\nconst defaultReply = JSON.stringify({\n  tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }]\n});\n\nif (args[0] === 'run') {\n  const directory = valueAfter('--dir') ?? process.cwd();\n  const files = [];\n  for (let i = 0; i < args.length; i += 1) {\n    if (args[i] === '--file' && args[i + 1]) files.push(args[i + 1]);\n  }\n  const config = JSON.parse(fs.readFileSync(path.join(directory, 'opencode.json'), 'utf8'));\n  const agent = fs.readFileSync(path.join(directory, '.opencode/agents/ads-e2e-model.md'), 'utf8');\n  const attachments = files.map((file) => ({\n    path: file,\n    name: path.basename(file),\n    content: file.endsWith('.md') ? fs.readFileSync(file, 'utf8') : undefined,\n    bytes: fs.statSync(file).size\n  }));\n  record({ command: 'run', directory, cwd: process.cwd(), args, config, agent, attachments });\n  if (process.env.ADS_E2E_TEST_NO_SESSION !== '1') {\n    console.log(JSON.stringify({ type: 'step_start', sessionID: 'ses_fake' }));\n    console.log(JSON.stringify({ type: 'text', sessionID: 'ses_fake', part: {\n      text: process.env.ADS_E2E_TEST_REPLY ?? defaultReply\n    }}));\n    console.log(JSON.stringify({ type: 'step_finish', sessionID: 'ses_fake', part: {\n      reason: 'stop',\n      cost: 0.002,\n      tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } }\n    }}));\n  }\n  process.exit(process.env.ADS_E2E_TEST_RUN_FAIL === '1' ? 1 : 0);\n}\n\nif (args[0] === 'session' && args[1] === 'export') {\n  record({ command: 'export', sessionID: args[2] });\n  if (process.env.ADS_E2E_TEST_EXPORT_FAIL === '1') {\n    process.stderr.write('PRIVATE EXPORT ERROR');\n    process.exit(1);\n  }\n  const reply = process.env.ADS_E2E_TEST_REPLY ?? defaultReply;\n  const data = {\n    messages: [{\n      info: {\n        type: 'assistant',\n        model: {\n          providerID: process.env.ADS_E2E_TEST_PROVIDER ?? 'opencode',\n          modelID: process.env.ADS_E2E_TEST_MODEL ?? 'deepseek-v4.1-flash-free'\n        },\n        tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } },\n        cost: 0.002,\n        finish: 'stop'\n      },\n      parts: [{ type: 'text', text: reply }]\n    }]\n  };\n  process.stdout.write(JSON.stringify(data));\n  process.exit(0);\n}\n\nif (args[0] === 'session' && args[1] === 'delete') {\n  record({ command: 'delete', sessionID: args[2] });\n  process.exit(process.env.ADS_E2E_TEST_DELETE_FAIL === '1' ? 1 : 0);\n}\n\nprocess.stderr.write('UNKNOWN FAKE COMMAND');\nprocess.exit(2);\n";
+const FAKE_CLI = "#!/usr/bin/env node\nimport fs from 'node:fs';\nimport path from 'node:path';\n\nconst args = process.argv.slice(2);\nconst logPath = process.env.ADS_E2E_OPENCODE_TEST_LOG;\nconst record = (value) => fs.appendFileSync(logPath, JSON.stringify(value) + '\\n');\nconst valueAfter = (flag) => {\n  const index = args.indexOf(flag);\n  return index >= 0 ? args[index + 1] : undefined;\n};\nconst defaultReply = JSON.stringify({\n  tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }]\n});\n\nif (args[0] === '--version') {
+  record({ command: 'version' });
+  console.log(process.env.ADS_E2E_TEST_CLI_VERSION ?? '2.2.3');
+  process.exit(0);
+}
+
+if (args[0] === 'run') {\n  const directory = valueAfter('--dir') ?? process.cwd();\n  const files = [];\n  for (let i = 0; i < args.length; i += 1) {\n    if (args[i] === '--file' && args[i + 1]) files.push(args[i + 1]);\n  }\n  const config = JSON.parse(fs.readFileSync(path.join(directory, 'opencode.json'), 'utf8'));\n  const agent = fs.readFileSync(path.join(directory, '.opencode/agents/ads-e2e-model.md'), 'utf8');\n  const attachments = files.map((file) => ({\n    path: file,\n    name: path.basename(file),\n    content: file.endsWith('.md') ? fs.readFileSync(file, 'utf8') : undefined,\n    bytes: fs.statSync(file).size\n  }));\n  record({ command: 'run', directory, cwd: process.cwd(), args, config, agent, attachments });\n  if (process.env.ADS_E2E_TEST_NO_SESSION !== '1') {\n    console.log(JSON.stringify({ type: 'step_start', sessionID: 'ses_fake' }));\n    console.log(JSON.stringify({ type: 'text', sessionID: 'ses_fake', part: {\n      text: process.env.ADS_E2E_TEST_REPLY ?? defaultReply\n    }}));\n    console.log(JSON.stringify({ type: 'step_finish', sessionID: 'ses_fake', part: {\n      reason: 'stop',\n      cost: 0.002,\n      tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } }\n    }}));\n  }\n  process.exit(process.env.ADS_E2E_TEST_RUN_FAIL === '1' ? 1 : 0);\n}\n\nif (args[0] === 'session' && args[1] === 'export') {\n  record({ command: 'export', sessionID: args[2] });\n  if (process.env.ADS_E2E_TEST_EXPORT_FAIL === '1') {\n    process.stderr.write('PRIVATE EXPORT ERROR');\n    process.exit(1);\n  }\n  const reply = process.env.ADS_E2E_TEST_REPLY ?? defaultReply;\n  const data = {\n    messages: [{\n      info: {\n        type: 'assistant',\n        model: {\n          providerID: process.env.ADS_E2E_TEST_PROVIDER ?? 'opencode',\n          modelID: process.env.ADS_E2E_TEST_MODEL ?? 'deepseek-v4.1-flash-free'\n        },\n        tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } },\n        cost: 0.002,\n        finish: 'stop'\n      },\n      parts: [{ type: 'text', text: reply }]\n    }]\n  };\n  process.stdout.write(JSON.stringify(data));\n  process.exit(0);\n}\n\nif (args[0] === 'session' && args[1] === 'delete') {\n  record({ command: 'delete', sessionID: args[2] });\n  process.exit(process.env.ADS_E2E_TEST_DELETE_FAIL === '1' ? 1 : 0);\n}\n\nprocess.stderr.write('UNKNOWN FAKE COMMAND');\nprocess.exit(2);\n";
 
 async function setup() {
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-cli-test-'));
@@ -24,7 +30,7 @@ async function setup() {
     'ADS_E2E_OPENCODE_BIN', 'ADS_E2E_OPENCODE_TEST_LOG', 'ADS_E2E_OPENCODE_CLI_MODEL',
     'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER', 'ADS_E2E_TEST_SESSION_ID',
     'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
-    'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL',
+    'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL', 'ADS_E2E_TEST_CLI_VERSION',
   ];
   for (const key of resetKeys) {
     previous[key] = process.env[key];
@@ -120,6 +126,7 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     assert.ok(run.attachments.some((file) => file.name === 'image-001.png' && file.bytes > 0));
     assert.ok(run.args.includes('opencode/deepseek-v4.1-flash-free'));
     assert.ok(run.args.includes('ads-e2e-model'));
+    assert.equal(calls.filter((call) => call.command === 'version').length, 1);
     assert.equal(calls.filter((call) => call.command === 'export').length, 1);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
     await assert.rejects(access(run.directory));
@@ -175,6 +182,19 @@ test('session export failure fails closed and still attempts cleanup', async () 
     await assert.rejects(model.doGenerate(options()), /session export failed/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('OpenCode CLI versions below v2.2.3 are blocked before model execution', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_CLI_VERSION = '2.2.2';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /v2.2.3 or newer is required/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
   } finally {
     await env.close();
   }

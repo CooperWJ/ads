@@ -77,7 +77,7 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
 
     def test_cli_verify_exposes_development_binding(self):
-        project = self.configure("pass\\n")
+        project = self.configure("pass" + chr(10))
         engineering.develop(project, 'synthetic/model', execute=True)
         output = io.StringIO()
         with redirect_stdout(output):
@@ -89,7 +89,7 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         project = self.configure("pass\\n")
         development = engineering.develop(project, 'synthetic/model', execute=True)
         with (self.root / 'app.py').open('a') as source:
-            source.write('\\n# changed after native development\\n')
+            source.write(chr(10) + '# changed after native development' + chr(10))
         run = test_ads_core.evidence.run_checks(project)
         self.assertEqual(run['status'], 'PASS')
         self.assertEqual(run['development_binding']['status'], 'STALE')

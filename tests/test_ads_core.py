@@ -315,7 +315,7 @@ class QATests(unittest.TestCase):
         self.assertTrue(all('requirement_id' not in c['fields'] for c in imported['cases']))
 
     def test_dev_pass_cannot_substitute_qa_and_pending_blocks(self):
-        project, _ = self.configure_qa()
+        project, imported = self.configure_qa()
         evidence.run_checks(project)
         with self.assertRaises((Blocked, FileNotFoundError)):
             qa.evaluate(project)

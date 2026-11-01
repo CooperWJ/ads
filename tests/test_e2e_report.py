@@ -73,6 +73,28 @@ class E2EReportTests(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(Blocked):
                 self.outcome(doc)
 
+    def test_serial_runtime_skip_is_not_run_even_when_upstream_executed_count_undercounts(self):
+        doc = report()
+        run = doc['run']
+        skipped = dict(run['results'][0])
+        skipped.update(testId='tests/flow.e2e.ts::runtime-skip', status='skipped',
+                       serialGroupId='serial', attempts=[])
+        passed = dict(run['results'][0])
+        passed.update(testId='tests/flow.e2e.ts::body-ran', serialGroupId='serial', attempts=[])
+        run['results'] = [skipped, passed]
+        run['summary'].update(discovered=2, selected=2, executed=1, passed=1, skipped=1)
+        run['serialGroups'] = [{
+            'id':'serial', 'status':'passed', 'attempts':[{
+                'status':'passed', 'cleanup':'complete', 'secondaryErrors':[],
+                'members':[
+                    {'testId':skipped['testId'], 'status':'skipped', 'skip':{'cause':'explicit','reason':'not applicable'}, 'steps':[]},
+                    {'testId':passed['testId'], 'status':'passed', 'steps':[]},
+                ],
+            }],
+        }]
+        outcomes = self.outcome(doc)
+        self.assertEqual([x['status'] for x in outcomes], ['NOT_RUN', 'PASS'])
+
     def test_serial_group_member_and_group_cleanup_both_matter(self):
         doc = report()
         item = doc['run']['results'][0]

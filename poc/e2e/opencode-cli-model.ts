@@ -319,6 +319,7 @@ function assistantResult(
   const message = assistants[0];
   const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
   if (info.agent !== expectedAgent) throw new Error('OpenCode session used an unexpected agent profile.');
+  if (info.retry) throw new Error('OpenCode CLI retried the model request; execution cannot be counted as one call.');
   if (info.error) throw new Error('OpenCode assistant message contains a provider or execution error.');
   const parts = Array.isArray(message.parts) ? message.parts as JsonRecord[]
     : Array.isArray(info.content) ? info.content as JsonRecord[] : [];

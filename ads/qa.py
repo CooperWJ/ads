@@ -164,6 +164,7 @@ def evaluate(project):
                     'case_id': target['case'],
                     'check_status': check['status'],
                     'case_status': case_status,
+                    'agent_evidence': observed.get('agent_evidence', {'status': 'NOT_AVAILABLE'}),
                     'report': check['report'],
                     'report_sha256': check['report_sha256'],
                 }

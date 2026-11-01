@@ -26,6 +26,7 @@
 | 需求义务与测试结果精确关联 | `ads verify` 的 `obligations[].verification_evidence[]` | 每项义务输出预期/实际状态，并绑定 run ID、输入快照 SHA-256、检查/用例 ID、原始报告路径及 SHA-256；缺失/重复用例引用阻断 | 本地证据引用不是签名证明；测试通过不证明需求语义正确或绝对完备 |
 | QA 用例与执行证据精确关联 | `ads qa evaluate` 的 `cases[].verification_evidence[]` | 每条用例绑定原始来源定位/哈希、预期、审查决定、QA run、输入快照和原始报告哈希；缺失/重复匹配阻断 | 本地执行不提供独立 QA 身份或 QA_ACCEPTED |
 | OpenCode CLI Agent 模型适配 | `poc/e2e/opencode-cli-model.ts`、`e2e.agent.opencode-cli.config.ts` | fake CLI 验证临时项目隔离、tool/MCP/plugin 硬禁、指定 Provider allowlist、session 导出身份核对、Token/成本投影与 session 清理；真实模型运行 NOT_VERIFIED | 额度/认证沿用用户 OpenCode CLI；不复制凭证、不自动换模；本机 `provider.free-limit` 仍为外部阻断 |
+| 有界 Agent repair 与独立重验 | `poc/e2e/agent-repair.ts`、`tests/agent-journey.e2e.ts` | helper 测试覆盖成功、一次 repair、预算耗尽、零预算和异常；虚构应用注入首轮 HTTP 503，记录 save/export 次数，oracle 验证 UI/SQLite、刷新及 XLSX；repair ledger 做语义校验并 SHA-256 绑定摘要 | 真实模型 repair 效果 NOT_VERIFIED；CI 不调用模型；repair 只允许 1 次，硬上限 2 次 |
 | OpenCode Console Agent 模型适配 | `e2e.agent.config.ts` | 使用 e2e 官方 OAuth provider；模型 ID 必须显式选择；默认 CI 不调用模型 | 部分 Zen 免费模型不向第三方客户端开放；Go 模型需要对应订阅；不自动回退 |
 | 同快照本地交付就绪核对 | `ads status --gate release` | 开发义务与 QA 用例必须均为当前运行且引用同一完整快照；开发运行需绑定成功的 OpenCode Session、无损事件流和最终 stop；运行清单/进程/报告状态重新核对 | 只报告 LOCAL READY；独立 QA 身份、语义完备、出处签名与发布授权仍 NOT_VERIFIED/NOT_GRANTED |
 | 开发行为证据与验证绑定 | `behavior.json`、`.ads/latest-development.json`、`ads verify` 的 `development_binding` | 唯一开发运行 ID、输出快照、行为证据与摘要 SHA-256 精确绑定；匹配、代码漂移、证据无效和无关联分别分类 | 只证明版本/证据关联，不证明 Skill 遵循、测试意图或业务语义正确 |

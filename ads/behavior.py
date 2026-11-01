@@ -122,6 +122,11 @@ def inspect_stream(data):
         "test_driven_development_invoked": observed("test-driven-development" in skills),
         "verification_before_completion_invoked": observed("verification-before-completion" in skills),
         "test_commands_observed": len(test_runs),
+        "test_command_process_results": {
+            "exit_zero": sum(o["exit_code"] == 0 for o in test_runs),
+            "nonzero": sum(o["exit_code"] is not None and o["exit_code"] != 0 for o in test_runs),
+            "unknown": sum(o["exit_code"] is None for o in test_runs),
+        },
         "direct_edit_tools_observed": len(edits),
         "test_before_first_direct_edit": (
             "INDETERMINATE" if not ordering_trustworthy or first_test is None or first_edit is None

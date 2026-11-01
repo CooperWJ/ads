@@ -110,7 +110,18 @@ def agent_status(agent_evidence, correct):
 
 def collect(project, run, expected, out, agent=False):
     check = run['checks'][0]
-    report_path = project.root / check['report']
+    report_path = project.root / check['report'] if check.get('report') else None
+    if agent and (report_path is None or not report_path.is_file() or not check.get('cases')):
+        run_dir = project.root / '.ads/runs' / run['run_id']
+        if run_dir.is_dir():
+            shutil.copytree(run_dir, out / 'evidence')
+        return {
+            'expected': expected, 'actual': run['status'],
+            'subject_sha256': run['subject']['sha256'],
+            'report_sha256': check.get('report_sha256'),
+            'agent_evidence': None, 'status': 'BLOCKED',
+            'reason': 'AGENT_REPORT_OR_CASE_EVIDENCE_UNAVAILABLE',
+        }
     native = json.loads(report_path.read_text())['run']
     statuses = [r['status'] for r in native['results']]
     decision = evidence.decide(project)

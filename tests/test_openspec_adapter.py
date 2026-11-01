@@ -1,9 +1,11 @@
 """派生视图不漏整条规格；业务变化与机械来源重绑定分开。"""
+import copy
 import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 from test_ads_core import fixture
@@ -53,8 +55,68 @@ class OpenSpecAdapterTests(unittest.TestCase):
         self.assertEqual(result['status'], 'COMPILED_DERIVED')
         self.assertFalse(result['approval_created'])
         self.assertEqual(len(self.project.contract()['obligations']), 2)
-        self.assertEqual(evidence.run_checks(self.project)['status'], 'PASS')
-        self.assertEqual(evidence.decide(self.project)['development'], 'DEV_VERIFIED_LOCAL')
+        run = evidence.run_checks(self.project)
+        self.assertEqual(run['status'], 'PASS')
+        decision = evidence.decide(self.project)
+        self.assertEqual(decision['development'], 'DEV_VERIFIED_LOCAL')
+        self.assertEqual(decision['verification_run_id'], run['run_id'])
+        self.assertEqual(decision['verification_run_status'], 'PASS')
+        self.assertEqual(len(decision['obligations']), 2)
+        for obligation, scenario in zip(decision['obligations'], openspec.scenarios(self.project)):
+            self.assertEqual(obligation['status'], 'PASS')
+            self.assertEqual(obligation['requirement'], scenario['requirement'])
+            self.assertEqual(obligation['scenario'], scenario['scenario'])
+            self.assertEqual(obligation['sources'], scenario['sources'])
+            self.assertEqual(len(obligation['verification_evidence']), 1)
+            evidence_ref = obligation['verification_evidence'][0]
+            self.assertEqual(evidence_ref['expected'], 'PASS')
+            self.assertEqual(evidence_ref['observed'], 'PASS')
+            self.assertEqual(evidence_ref['status'], 'PASS')
+            self.assertEqual(evidence_ref['reference']['run_id'], run['run_id'])
+            self.assertEqual(evidence_ref['reference']['subject_sha256'], run['subject']['sha256'])
+            self.assertTrue(evidence_ref['reference']['report_sha256'])
+
+
+    def test_failed_case_keeps_expected_result_and_exact_failed_report_reference(self):
+        openspec.compile_contract(self.project)
+        (self.root/'app.py').write_text('def normalize(value):\n    return value\n')
+        run = evidence.run_checks(self.project)
+        self.assertEqual(run['status'], 'FAIL')
+        decision = evidence.decide(self.project)
+        self.assertEqual(decision['development'], 'BLOCKED')
+        failed = next(x for x in decision['obligations'] if x['id'] == openspec.scenarios(self.project)[0]['id'])
+        ref = failed['verification_evidence'][0]
+        self.assertEqual(ref['expected'], 'PASS')
+        self.assertEqual(ref['observed'], 'FAIL')
+        self.assertEqual(ref['status'], 'NOT_VERIFIED')
+        self.assertEqual(ref['reference']['run_id'], run['run_id'])
+        self.assertEqual(ref['reference']['report_sha256'], run['checks'][0]['report_sha256'])
+        sibling = next(x for x in decision['obligations'] if x['id'] == openspec.scenarios(self.project)[1]['id'])
+        self.assertEqual(sibling['verification_evidence'][0]['observed'], 'CHECK_FAILED')
+
+    def test_missing_and_ambiguous_test_evidence_never_pass(self):
+        openspec.compile_contract(self.project)
+        run = evidence.run_checks(self.project)
+
+        missing = copy.deepcopy(run)
+        missing['checks'][0]['cases'] = []
+        with patch('ads.evidence.load_current', return_value=missing):
+            decision = evidence.decide(self.project)
+        first = decision['obligations'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'MISSING')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(decision['development'], 'BLOCKED')
+
+        ambiguous = copy.deepcopy(run)
+        ambiguous['checks'][0]['cases'].append(copy.deepcopy(ambiguous['checks'][0]['cases'][0]))
+        with patch('ads.evidence.load_current', return_value=ambiguous):
+            decision = evidence.decide(self.project)
+        first = decision['obligations'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'AMBIGUOUS')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(decision['development'], 'BLOCKED')
 
     def test_missing_whole_scenario_is_a_gap_not_empty_success(self):
         self.mapping['bindings'].pop()

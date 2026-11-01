@@ -1,0 +1,45 @@
+name: Upstream e2e real product journey
+on:
+  pull_request:
+    paths: ['ads/**', 'poc/e2e/**', 'tests/**', '.github/workflows/e2e-journey.yml', 'VERSION']
+  push:
+    branches: [main]
+    paths: ['ads/**', 'poc/e2e/**', '.github/workflows/e2e-journey.yml', 'VERSION']
+permissions:
+  contents: read
+jobs:
+  e2e-journey:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      E2E_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install exact upstream runtime and browser
+        working-directory: poc/e2e
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify real saved data, browser download and rejection probes
+        run: python3 poc/e2e/calibrate.py --out "$RUNNER_TEMP/e2e-calibration"
+      - name: Verify native OpenCode MCP and original upstream skill activation
+        run: |
+          npm install --prefix "$RUNNER_TEMP/opencode" --no-audit --no-fund '@opencode/cli@2.2.3'
+          python3 poc/e2e/native_probe.py --executable "$RUNNER_TEMP/opencode/node_modules/.bin/opencode" --out "$RUNNER_TEMP/e2e-native"
+      - name: Retain original upstream reports, traces, downloads and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-e2e-journey
+          path: |
+            ${{ runner.temp }}/e2e-calibration/summary.json
+            ${{ runner.temp }}/e2e-calibration/*/evidence/**
+            ${{ runner.temp }}/e2e-calibration/*/app.log
+            ${{ runner.temp }}/e2e-native/native-summary.json
+          if-no-files-found: error

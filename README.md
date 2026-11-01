@@ -21,6 +21,8 @@ ADS 面向多项目复用，连接原始需求、OpenCode 开发、专业测试�
 
 ## 安装
 
+真实浏览器旅程可复用上游 e2e；使用 `ads init --superpowers --e2e` 配置原生入口。固定依赖、项目检查与可运行校准见 [e2e 接入说明](docs/E2E-JOURNEY.md)。模型额度不足时仍可运行确定性旅程；模型执行与独立验收分别报告。
+
 ```bash
 python3 -m venv /tmp/ads-env
 /tmp/ads-env/bin/pip install '.[sheets,pdf]'

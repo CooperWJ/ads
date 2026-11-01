@@ -52,3 +52,7 @@
 ## Superpowers 原生复用
 
 官方固定提交通过 OpenCode V2 插件注册，不复制 Skills。`ads init --superpowers` 支持新旧项目增量接入；原生冒烟已验证插件 active、技能注册及三个技能的会话激活。使用 `resume=false`，不能将其计为模型自主技能调用。模型实测仍返回 provider.free-limit。复用官方技能替代自研调试/TDD/完成检查工作流，未新增审批或执行循环。详情与可重跑命令见 [Superpowers 接入](SUPERPOWERS.md)。
+
+## 上游 e2e 接入
+
+固定 e2e 0.22.0、web 0.15.4 实际运行原虚构案例的保存/刷新/DB/下载旅程，并复用 ads verify 消费原生报告；不自研另一套浏览器执行器。首次 CI 41262125347 参考通过、假保存和缺导出列失败；OpenCode 原生 MCP/技能发现与显式激活已本测。模型实际开发仍额度阻断。详见 [运行说明](E2E-JOURNEY.md) 与 [结果索引](evidence/e2e-v0.6.7-first-validation.json)。这是一条已确认范围的真实旅程，不升级为所有 ADS 能力或独立 QA 验收完成。

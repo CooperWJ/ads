@@ -1,0 +1,7 @@
+{
+  "name": "ads-e2e-journey",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "e2e run"},
+  "devDependencies": {"e2e": "0.22.0", "@e2e-dev/web": "0.15.4"}
+}

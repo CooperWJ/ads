@@ -1,0 +1,18 @@
+{
+  "authority_unchanged": true,
+  "completion": "NOT_VERIFIED",
+  "duration_seconds": 6.093454612000187,
+  "error_type": "provider.free-limit",
+  "exit_code": 1,
+  "independent_acceptance": "NOT_RUN",
+  "model": "opencode/glm-5.3-flash-free",
+  "native_sessions_observed": 1,
+  "provider_credentials_inherited": false,
+  "source_changed": false,
+  "status": "BLOCKED",
+  "stream_tool_events": 0,
+  "superpowers_commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "schema": "ads-opencode-development-attempt/v1",
+  "framework_source_commit": "7cdcd027f0b3864267de1cb786af0353a14ee834",
+  "note": "Fresh raw-input development attempt. Same anonymous model, isolated XDG paths, no inherited provider credentials; no tool calls or candidate changes occurred."
+}

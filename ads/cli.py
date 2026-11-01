@@ -9,14 +9,20 @@ from .project import Blocked, Project, require, path_in, write_json
 from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment, integrations
 
 
-def init(root, superpowers=False):
+def init(root, superpowers=False, e2e=False):
     root = Path(root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     target = path_in(root, 'ads.project.json')
     if superpowers and target.exists():
-        return integrations.superpowers(root)
+        result = integrations.superpowers(root)
+        if e2e:
+            result['e2e'] = integrations.e2e(root)
+        return result
+    if e2e and target.exists():
+        return integrations.e2e(root)
     require(not target.exists(), '已有 Profile 不可覆盖，请增量修改')
     integration = integrations.superpowers(root) if superpowers else None
+    e2e_integration = integrations.e2e(root) if e2e else None
     write_json(target, {'schema': 'ads-project/v1', 'repositories': [{'name': 'main', 'path': '.'}],
                         'source_dirs': ['docs/project/sources'], 'contract': '.ads/contract.json',
                         'spec_root': 'openspec/specs', 'verification_map': 'docs/project/verification-map.json',
@@ -37,7 +43,7 @@ def init(root, superpowers=False):
         if not path.exists():
             path.write_text('---\ndescription: "ADS 项目原生薄入口"\nagent: build\n---\n\n' + body + '\n')
     return {'status': 'INITIALIZED', 'next': '将原始资料放入 docs/project/sources，编辑 TASK.md 后开始探索与开发；正式验收另用确认契约和项目测试',
-            'contract_created_or_approved': False, 'superpowers': integration}
+            'contract_created_or_approved': False, 'superpowers': integration, 'e2e': e2e_integration}
 
 
 def main(argv=None):
@@ -46,6 +52,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest='command', required=True)
     initialize = sub.add_parser('init')
     initialize.add_argument('--superpowers', action='store_true', help='接入官方 OpenCode V2 Superpowers 插件；保留已有配置')
+    initialize.add_argument('--e2e', action='store_true', help='注册已安装的官方 e2e MCP 和技能；不自动安装依赖')
     route = sub.add_parser('route')
     route.add_argument('description')
     sub.add_parser('discover')
@@ -77,7 +84,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'init':
-            result = init(args.root, args.superpowers)
+            result = init(args.root, args.superpowers, args.e2e)
         elif args.command == 'doctor':
             result = gates.doctor()
         elif args.command == 'route':

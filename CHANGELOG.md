@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.21 — 有界 Agent 修复与独立重验
+
+- 新增通用 `runWithBoundedRepair`：Agent 动作后必须执行结构化确定性 oracle；只有 `ok:false` 才能触发 repair，默认最多 1 次、硬上限 2 次；Agent 调用异常或 oracle 异常不自动重试。
+- 虚构 Project Board 增加一次性 HTTP 503 故障注入与保存/导出计数器；Agent 必须先观察保存失败，再按独立反馈修复，不能在单次 act 内重试或提前导出。
+- repair 后重新检查选中项目、UI 状态、SQLite 持久化；刷新后再次验证，并由独立 oracle 检查 XLSX。
+- 生成 `agent-repair-ledger.json`，校验首轮失败、恰好一次 repair、最终 DB/XLSX 值与导出次数，并将 ledger SHA-256 纳入校准摘要和证据目录。
+- 增加 repair helper 的成功、单次修复、预算耗尽、零预算、非法观察及异常 fail-closed 测试；CI 不调用真实模型。
+
 ## v0.6.20 — OpenCode CLI 原生模型接入
 
 - 增加本机 OpenCode CLI 的 LanguageModelV4 适配器，复用用户已有 CLI 登录与模型配置；不复制凭证、不另建认证协议。

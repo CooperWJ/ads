@@ -51,6 +51,25 @@ print(json.dumps({'type': 'step_finish', 'sessionID': 'synthetic-session'}))
         self.assertEqual(len(summaries), 1)
         self.assertEqual(json.loads(summaries[0].read_text()), report)
 
+    def test_behavior_evidence_is_projected_into_run_summary(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
+ 'type':'tool','tool':'skill','state':{'status':'completed','input':{'name':'systematic-debugging'},'metadata':{'exit':0}}}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['behavior_evidence']['systematic_debugging_invoked'], 'OBSERVED')
+        evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
+        self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
+
+    @unittest.skipUnless(os.name == 'posix', 'POSIX permissions only')
+    def test_raw_native_evidence_is_private_to_current_user(self):
+        project = self.configure("print('{}')\\n")
+        engineering.develop(project, 'synthetic/model', execute=True)
+        directory = next((self.root / '.ads/development').iterdir())
+        self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+        self.assertEqual((directory / 'native-private.jsonl').stat().st_mode & 0o777, 0o600)
+        self.assertEqual((directory / 'stderr-private.log').stat().st_mode & 0o777, 0o600)
+
     def test_native_failure_is_recorded_and_blocked(self):
         project = self.configure('import sys\nsys.exit(7)\n')
         result = engineering.develop(project, 'synthetic/model', execute=True)
@@ -101,6 +120,14 @@ print(json.dumps({'type':'step_finish','sessionID':'ses_synthetic'}))
         project = self.configure('print(\'{"type":"error","error":"synthetic failure"}\')\n')
         result = engineering.develop(project, 'synthetic/model', execute=True)
         self.assertEqual(result['error_type'], 'NATIVE_ERROR')
+        self.assertEqual(result['status'], 'BLOCKED')
+
+    def test_native_stream_error_name_is_preserved(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'error','error':{'name':'APIError','data':{'message':'rate limited','statusCode':429}}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['error_type'], 'APIError')
         self.assertEqual(result['status'], 'BLOCKED')
 
     def test_executable_start_error_is_recorded(self):

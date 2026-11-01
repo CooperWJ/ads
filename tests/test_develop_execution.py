@@ -60,6 +60,7 @@ print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
         self.assertEqual(result['behavior_evidence']['systematic_debugging_invoked'], 'OBSERVED')
         evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
         self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
+        self.assertEqual(result['change_set']['counts'], {'added': 0, 'modified': 0, 'deleted': 0})
 
     def test_verification_binds_exact_development_and_behavior_artifacts(self):
         project = self.configure('''import json
@@ -75,6 +76,21 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(binding['behavior_sha256'], development['behavior_sha256'])
         self.assertEqual(test_ads_core.evidence.load_current(project)['development_binding'], binding)
         self.assertEqual(test_ads_core.evidence.decide(project)['development_binding'], binding)
+
+    def test_verification_binding_carries_observed_change_scope(self):
+        project = self.configure('''from pathlib import Path
+app = Path('app.py')
+app.write_text(app.read_text() + chr(10) + '# scoped change' + chr(10))
+Path('scope-note.txt').write_text('observed addition')
+''')
+        development = engineering.develop(project, 'synthetic/model', execute=True)
+        run = test_ads_core.evidence.run_checks(project)
+        binding = run['development_binding']
+        self.assertEqual(binding['status'], 'MATCHED')
+        self.assertEqual(binding['run_id'], development['run_id'])
+        self.assertEqual(binding['change_set']['counts'], {'added': 1, 'modified': 1, 'deleted': 0})
+        self.assertEqual(binding['change_set']['added'], [{'repository': 'code', 'path': 'scope-note.txt'}])
+        self.assertEqual(binding['change_set']['modified'], [{'repository': 'code', 'path': 'app.py'}])
 
     def test_cli_verify_exposes_development_binding(self):
         project = self.configure("pass" + chr(10))
@@ -122,6 +138,21 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
         self.assertEqual((directory / 'native-private.jsonl').stat().st_mode & 0o777, 0o600)
         self.assertEqual((directory / 'stderr-private.log').stat().st_mode & 0o777, 0o600)
+
+    def test_development_summary_lists_added_and_modified_paths(self):
+        project = self.configure('''from pathlib import Path
+app = Path('app.py')
+app.write_text(app.read_text() + chr(10) + '# synthetic change' + chr(10))
+Path('new-note.txt').write_text('synthetic addition')
+Path('runner.py').unlink()
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['change_set']['status'], 'OBSERVED')
+        self.assertEqual(result['change_set']['coverage'], 'git-tracked-and-unignored-files')
+        self.assertEqual(result['change_set']['counts'], {'added': 1, 'modified': 1, 'deleted': 1})
+        self.assertEqual(result['change_set']['added'], [{'repository': 'code', 'path': 'new-note.txt'}])
+        self.assertEqual(result['change_set']['modified'], [{'repository': 'code', 'path': 'app.py'}])
+        self.assertEqual(result['change_set']['deleted'], [{'repository': 'code', 'path': 'runner.py'}])
 
     def test_native_failure_is_recorded_and_blocked(self):
         project = self.configure('import sys\nsys.exit(7)\n')
@@ -187,6 +218,8 @@ print(json.dumps({'type':'text','part':{'type':'text','text':'synthetic'}}))
         self.assertEqual(result['error_type'], 'CONTEXT_UNREADABLE')
         self.assertIsNone(result['output_subject'])
         self.assertFalse(result['authority_unchanged'])
+        self.assertEqual(result['change_set']['status'], 'UNKNOWN')
+        self.assertEqual(result['change_set']['counts'], {'added': None, 'modified': None, 'deleted': None})
 
     def test_non_object_native_error_is_not_lost(self):
         project = self.configure('print(\'{"type":"error","error":"synthetic failure"}\')\n')

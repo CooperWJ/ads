@@ -28,6 +28,9 @@ def init(root, superpowers=False, e2e=False):
                         'spec_root': 'openspec/specs', 'verification_map': 'docs/project/verification-map.json',
                         'knowledge_files': [], 'checks': []})
     path_in(root, 'docs/project/sources').mkdir(parents=True, exist_ok=True)
+    task = path_in(root, 'TASK.md')
+    if not task.exists():
+        task.write_text('读取 docs/project/sources/ 原始资料和已有 OpenSpec。先说明要交付的用户行为及关键歧义；沿用已有确认，不从实现反推预期。按一个可操作功能切片实现、启动、调试和自测。缺陷优先使用 Superpowers systematic-debugging，实现使用 test-driven-development，完成前使用 verification-before-completion。仅对影响实现的业务选择提问；未知不得假称确认。记录真实结果与未验证项，不替代独立 QA 或发布授权。\n')
     # 原生入口只委托同一 CLI，不复制 OpenSpec/QA 生命周期，不覆盖任何已有路由。
     commands = path_in(root, '.opencode/commands')
     commands.mkdir(parents=True, exist_ok=True)
@@ -39,7 +42,7 @@ def init(root, superpowers=False, e2e=False):
         path = commands / (name + '.md')
         if not path.exists():
             path.write_text('---\ndescription: "ADS 项目原生薄入口"\nagent: build\n---\n\n' + body + '\n')
-    return {'status': 'INITIALIZED', 'next': '提供已确认规格派生的只读契约和项目测试命令；空配置不放行',
+    return {'status': 'INITIALIZED', 'next': '将原始资料放入 docs/project/sources，编辑 TASK.md 后开始探索与开发；正式验收另用确认契约和项目测试',
             'contract_created_or_approved': False, 'superpowers': integration, 'e2e': e2e_integration}
 
 

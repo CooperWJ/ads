@@ -109,17 +109,20 @@ class Project:
                 require(digest(material.read_bytes()) == source['sha256'] and bool(source.get('locator')), '义务来源指纹或定位无效')
         return data
 
-    def snapshot(self):
+    def snapshot(self, *, development=False):
         files = {str(self.profile_path.relative_to(self.root)): digest(self.profile_path.read_bytes())}
-        contract = path_in(self.root, self.config['contract'], exists=True)
-        files[str(contract.relative_to(self.root))] = digest(contract.read_bytes())
-        contract_data = json.loads(contract.read_text())
+        contract = path_in(self.root, self.config['contract'], exists=not development)
+        require(contract.is_file() or (development and not contract.exists()), '契约必须为文件')
+        files[str(contract.relative_to(self.root))] = digest(contract.read_bytes()) if contract.is_file() else 'MISSING'
+        contract_data = json.loads(contract.read_text()) if contract.is_file() else {}
         for obligation in contract_data.get('obligations', []):
             for source in obligation.get('sources', []):
                 path = path_in(self.root, source['path'], exists=True)
                 files[str(path.relative_to(self.root))] = digest(path.read_bytes())
         if self.config.get('spec_root'):
-            specs = path_in(self.root, self.config['spec_root'], exists=True)
+            specs = path_in(self.root, self.config['spec_root'], exists=not development)
+            if not specs.exists():
+                files[self.config['spec_root']] = 'MISSING'
             for path in sorted(specs.rglob('spec.md')):
                 require(not path.is_symlink(), '规格不得为符号链接')
                 files[str(path.relative_to(self.root))] = digest(path.read_bytes())
@@ -131,8 +134,9 @@ class Project:
                     files[str(path.relative_to(self.root))] = digest(path.read_bytes())
         review_paths = [self.config[key] for key in ('source_review', 'verification_map') if self.config.get(key)]
         for name in self.config.get('knowledge_files', []) + self.config.get('data_files', []) + review_paths + [self.config['qa'][key] for key in ('source', 'review') if key in self.config.get('qa', {})]:
-            path = path_in(self.root, name, exists=True)
-            files[name] = digest(path.read_bytes())
+            path = path_in(self.root, name, exists=not development)
+            require(path.is_file() or (development and not path.exists()), '声明的上下文材料必须为文件')
+            files[name] = digest(path.read_bytes()) if path.is_file() else 'MISSING'
         repositories = []
         for entry in self.config['repositories']:
             repo = path_in(self.root, entry['path'], exists=True)

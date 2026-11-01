@@ -30,7 +30,7 @@ jobs:
         run: python3 poc/e2e/calibrate.py --out "$RUNNER_TEMP/e2e-calibration"
       - name: Verify native OpenCode MCP and original upstream skill activation
         run: |
-          npm install --prefix "$RUNNER_TEMP/opencode" --ignore-scripts --no-audit --no-fund '@opencode/cli@2.2.3'
+          npm install --prefix "$RUNNER_TEMP/opencode" --no-audit --no-fund '@opencode/cli@2.2.3'
           python3 poc/e2e/native_probe.py --executable "$RUNNER_TEMP/opencode/node_modules/.bin/opencode" --out "$RUNNER_TEMP/e2e-native"
       - name: Retain original upstream reports, traces, downloads and screenshots
         if: always()

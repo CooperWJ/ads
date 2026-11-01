@@ -7,14 +7,14 @@ ADS 在 `ads develop --execute` 完成后，从 OpenCode `run --format json` 的
 - systematic-debugging、test-driven-development、verification-before-completion 是否通过原生 `skill` 工具被调用。
 - 是否观察到测试命令、直接 `write/edit/apply_patch` 工具调用。
 - 测试命令是否早于第一次直接编辑工具调用。
-- 是否观察到“非零测试命令 → 直接编辑工具 → 后续零退出码测试命令”的顺序。
+- 是否观察到“非零测试命令 → 直接编辑工具 → 后续零退出码测试命令”的顺序；只有事件流无解析错误且末尾出现 `step_finish: stop` 时才给出顺序结论。
 
 ## 不能据此推断
 
 - Skill 被调用不等于 Agent 遵循了 Skill 的全部指导。
 - 测试命令不证明测试正确、失败是业务红灯或通过代表需求正确。
 - 当前只能识别直接编辑工具；经 shell、子代理、IDE 或其他工具发生的修改可能无法识别。
-- `run --format json` 是事件流投影，不是完整的持久会话审计记录；事件缺失或格式变化会降低证据完整度。
+- `run --format json` 是事件流投影，不是完整的持久会话审计记录；事件缺失、格式变化或缺少终止事件时，顺序结论降为 `INDETERMINATE`。
 - 未观察到某行为不等于该行为没有发生；可能由宿主版本、工具链或输出协议造成。
 
 因此报告使用 `OBSERVED` / `NOT_OBSERVED` / `INDETERMINATE`，不提供“行为合规 PASS”。原始事件流与 stderr 留在运行目录的私有文件中；对外摘要不复制提示词、命令、源代码和工具输出。

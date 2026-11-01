@@ -1,6 +1,7 @@
 """读取上游 e2e report-1，保留执行结果并投影低敏 Agent 行为事实。"""
 import json
 import math
+import re
 
 from .project import require
 
@@ -41,8 +42,10 @@ def _agent_evidence(result, attempts):
             if model is not None:
                 require(isinstance(model, dict)
                         and isinstance(model.get('provider'), str) and model['provider']
-                        and isinstance(model.get('model'), str) and model['model'],
-                        'Agent 模型出处无效')
+                        and isinstance(model.get('model'), str) and model['model']
+                        and re.fullmatch(r'[A-Za-z0-9._:/@+-]{1,128}', model['provider'])
+                        and re.fullmatch(r'[A-Za-z0-9._:/@+-]{1,128}', model['model']),
+                        'Agent 模型出处无效或包含非安全字符')
                 for key in ('inputTokens', 'outputTokens', 'calls'):
                     if key in model:
                         require(type(model[key]) is int and model[key] >= 0, 'Agent token/call 计数无效')
@@ -76,6 +79,9 @@ def _agent_evidence(result, attempts):
     model_calls = sum(metrics['modelCalls'] for _, metrics, _, _ in agent_steps)
     input_tokens = output_tokens = 0
     costs = []
+    model_steps = 0
+    missing_model_steps = 0
+    missing_cost_steps = 0
     models = set()
     cache_modes = {'self-finalized': 0, 'agent-concluded': 0, 'missed': 0, 'unobserved': 0}
     for _, metrics, cache, model in agent_steps:
@@ -83,12 +89,17 @@ def _agent_evidence(result, attempts):
             cache_modes['unobserved'] += 1
         else:
             cache_modes[cache['mode']] += 1
+        if metrics['modelCalls'] > 0 and model is None:
+            missing_model_steps += 1
         if model is not None:
+            model_steps += 1
             models.add((model['provider'], model['model']))
             input_tokens += model.get('inputTokens', 0)
             output_tokens += model.get('outputTokens', 0)
             if 'estimatedCostUsd' in model:
                 costs.append(model['estimatedCostUsd'])
+            elif model.get('calls', 0) > 0:
+                missing_cost_steps += 1
     mixed = act_steps > 0 and deterministic > 0
     return {
         'status': 'OBSERVED',
@@ -102,9 +113,15 @@ def _agent_evidence(result, attempts):
         'model_calls': model_calls,
         'input_tokens': input_tokens,
         'output_tokens': output_tokens,
-        'estimated_cost_usd': sum(costs) if costs else None,
+        'estimated_cost_usd': sum(costs) if costs and missing_cost_steps == 0 and missing_model_steps == 0 else None,
         'models': [{'provider': provider, 'model': model} for provider, model in sorted(models)],
         'model_provenance': 'OBSERVED' if models else ('NOT_REPORTED' if model_calls else 'NO_MODEL_CALLS'),
+        'model_usage_status': 'NO_MODEL_CALLS' if not model_calls else
+                              ('NOT_REPORTED' if not model_steps else
+                               ('PARTIAL' if missing_model_steps else 'OBSERVED')),
+        'model_cost_status': 'NO_MODEL_CALLS' if not model_calls else
+                             ('NOT_REPORTED' if not model_steps or missing_cost_steps == model_steps else
+                              ('PARTIAL' if missing_cost_steps else 'OBSERVED')),
         'cache_modes': cache_modes,
     }
 

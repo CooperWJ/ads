@@ -1,0 +1,89 @@
+{
+  "schema": "ads-upstream-e2e-integration/v1",
+  "tested_source_commit": "7cdcd027f0b3864267de1cb786af0353a14ee834",
+  "ci_run": 41262125347,
+  "ci_job": 124717348573,
+  "artifact_id": 13065866532,
+  "actual_upstream_summary": {
+    "browser_journeys": [
+      {
+        "actual": "PASS",
+        "development": "DEV_VERIFIED_LOCAL",
+        "expected": "PASS",
+        "native_exit_code": 0,
+        "native_statuses": [
+          "passed"
+        ],
+        "report_sha256": "1d1e2295ce3b9fa5de2a1850f9707dfe684d12340650504c6141463a4feb3c4a",
+        "status": "PASS",
+        "subject_sha256": "56c0c2899ef818ce9ecff0e8da53bce33537c6cac9969ed8b7dea93e85846459",
+        "variant": "reference"
+      },
+      {
+        "actual": "FAIL",
+        "development": "BLOCKED",
+        "expected": "FAIL",
+        "native_exit_code": 1,
+        "native_statuses": [
+          "failed"
+        ],
+        "report_sha256": "855684ac96c2f4f01933149e87cbad82dfdf8efe0ca099e83e33b73e61087f8d",
+        "status": "PASS",
+        "subject_sha256": "554973e8ec3197a321df66d07ab80cb056a1065c9810e314ac10a4fae843da5c",
+        "variant": "no_persistence"
+      },
+      {
+        "actual": "FAIL",
+        "development": "BLOCKED",
+        "expected": "FAIL",
+        "native_exit_code": 1,
+        "native_statuses": [
+          "failed"
+        ],
+        "report_sha256": "ccf86c408f377ecacffb859d91e4b6fb15020ca605e58225a307c302326016bd",
+        "status": "PASS",
+        "subject_sha256": "45985ecd2389d2695de89092e297e592c594889df3751862eae2d9f26415d52b",
+        "variant": "bad_export"
+      }
+    ],
+    "framework": "e2e@0.22.0 / @e2e-dev/web@0.15.4",
+    "model_execution": "NOT_RUN",
+    "native_report_probes": [
+      {
+        "ads_status": "PASS",
+        "native_exit_code": 0,
+        "native_status": "passed",
+        "probe": "passed",
+        "status": "PASS"
+      },
+      {
+        "ads_status": "FAIL",
+        "native_exit_code": 0,
+        "native_status": "flaky",
+        "probe": "flaky",
+        "status": "PASS"
+      },
+      {
+        "ads_status": "FAIL",
+        "native_exit_code": 0,
+        "native_status": "skipped",
+        "probe": "skipped",
+        "status": "PASS"
+      }
+    ],
+    "protected_execution": "NOT_VERIFIED",
+    "scope": "known fictional variants and real upstream execution; not independent QA identity or model-generated code",
+    "status": "PASS"
+  },
+  "native_opencode": {
+    "activation": "OBSERVED",
+    "activation_message_count": 1,
+    "mcp": "CONNECTED",
+    "model_execution": "NOT_RUN",
+    "opencode_version": "opencode v2.2.3",
+    "scope": "native transport and explicit skill activation; not autonomous model use",
+    "skill": "e2e",
+    "status": "PASS"
+  },
+  "scope": "First verified browser calibration and locally observed native transport/explicit activation. Subsequent changes require fresh CI. Not complete ADS acceptance."
+}

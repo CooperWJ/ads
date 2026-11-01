@@ -28,6 +28,10 @@ jobs:
           node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Verify real saved data, browser download and rejection probes
         run: python3 poc/e2e/calibrate.py --out "$RUNNER_TEMP/e2e-calibration"
+      - name: Verify native OpenCode MCP and original upstream skill activation
+        run: |
+          npm install --prefix "$RUNNER_TEMP/opencode" --ignore-scripts --no-audit --no-fund '@opencode/cli@2.2.3'
+          python3 poc/e2e/native_probe.py --executable "$RUNNER_TEMP/opencode/node_modules/.bin/opencode" --out "$RUNNER_TEMP/e2e-native"
       - name: Retain original upstream reports, traces, downloads and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,4 +41,5 @@ jobs:
             ${{ runner.temp }}/e2e-calibration/summary.json
             ${{ runner.temp }}/e2e-calibration/*/evidence/**
             ${{ runner.temp }}/e2e-calibration/*/app.log
+            ${{ runner.temp }}/e2e-native/native-summary.json
           if-no-files-found: error

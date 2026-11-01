@@ -1,5 +1,4 @@
 """上游报告语义的正常/故障反例；真实运行另由 e2e PoC 校准。"""
-import copy
 import json
 import unittest
 
@@ -60,7 +59,7 @@ class E2EReportTests(unittest.TestCase):
                 self.assertEqual(self.outcome(doc)[0]['status'], 'FAIL')
 
     def test_run_errors_unknown_protocol_missing_cases_and_carried_work_block(self):
-        for mutation in ('error','schema','summary','empty','carried','explore','duplicate'):
+        for mutation in ('error','schema','summary','empty','carried','explore','duplicate','boolean','repeat'):
             doc = report()
             if mutation == 'error': doc['run']['errors'] = [{'code':'APP_UNREACHABLE'}]
             if mutation == 'schema': doc['schemaVersion'] = 'report-999'
@@ -69,6 +68,8 @@ class E2EReportTests(unittest.TestCase):
             if mutation == 'carried': doc['run']['carried'] = {'results':[{'status':'failed'}]}
             if mutation == 'explore': doc['run']['explore'] = {'goal':'explore'}
             if mutation == 'duplicate': doc['run']['results'] *= 2
+            if mutation == 'boolean': doc['run']['summary']['selected'] = True
+            if mutation == 'repeat': doc['run']['results'][0]['repeat'] = True
             with self.subTest(mutation=mutation), self.assertRaises(Blocked):
                 self.outcome(doc)
 
@@ -81,5 +82,8 @@ class E2EReportTests(unittest.TestCase):
              'members':[{'testId':item['testId'],'status':'passed','steps':[]}]}]}]
         item['attempts'] = []
         self.assertEqual(self.outcome(doc)[0]['status'], 'PASS')
+        doc['run']['serialGroups'][0]['status'] = 'failed'
+        self.assertEqual(self.outcome(doc)[0]['status'], 'FAIL')
+        doc['run']['serialGroups'][0]['status'] = 'passed'
         doc['run']['serialGroups'][0]['attempts'][0]['members'][0]['status'] = 'failed'
         self.assertEqual(self.outcome(doc)[0]['status'], 'FAIL')

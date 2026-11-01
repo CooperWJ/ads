@@ -58,3 +58,15 @@ python3 poc/e2e/calibrate.py --out /tmp/ads-e2e-run
 - [i-have-adhd](https://github.com/ayghri/i-have-adhd)：吸收成果可见与简洁交互原则，不默认安装持续注入插件，不推断使用者健康状况。
 
 模型开发、真实浏览器、MCP 连接、技能发现和最终授权分别报告。本集成不把参考补丁冒充 OpenCode 开发，不通过其他账户或模型绕开额度。
+
+## 已观察结果
+
+首次真实旅程运行 41262125347 的参考通过，no_persistence 在刷新值断言失败，bad_export 在解析下载文件时因缺列失败；原始产物见对应 Actions Artifact。OpenCode 2.2.3 的 MCP 已连接，官方 e2e 技能被发现并显式激活。原生配置/连接是异步过程，立即读取空列表不能直接认定不支持；冒烟入口会有界等待真实状态。
+
+```bash
+python3 poc/e2e/native_probe.py --executable /绝对路径/opencode --out /tmp/ads-e2e-native
+```
+
+该入口隔离 XDG、不给模型发送提示，仅验证真实连接与显式技能激活。不要公开 native-private.log 或 private/，其中可能含服务临时凭据；CI 只保留 native-summary.json。首次结果索引见 docs/evidence/e2e-v0.6.7-first-validation.json。
+
+同轮实际原始需求开发仍被匿名模型额度拒绝，0 工具调用且源码未变化，摘要见 docs/evidence/opencode-v0.6.7-attempt.json。本轮未把参考工程、模型配置或技能加载计为完整模型开发成功。

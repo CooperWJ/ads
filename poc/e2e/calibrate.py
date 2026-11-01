@@ -87,14 +87,18 @@ def collect(project, run, expected, out):
     native = json.loads(report_path.read_text())['run']
     statuses = [r['status'] for r in native['results']]
     decision = evidence.decide(project)
+    errors = [a.get('error', {}) for r in native['results'] for a in r['attempts'] if a.get('error')]
+    marker = {'no_persistence':'expect.toHaveValue failed', 'bad_export':'AssertionError: 导出缺列或列序错误'}.get(out.name)
+    expected_failure = any(e.get('category') == 'test' and marker in e.get('message', '') for e in errors) if marker else False
     correct = ((expected == 'PASS' and run['status'] == 'PASS' and decision['development'] == 'DEV_VERIFIED_LOCAL')
                or (expected == 'FAIL' and run['status'] == 'FAIL' and check['exit_code'] == 1
-                   and 'failed' in statuses and not native['errors'] and check['failure'] is None))
+                   and 'failed' in statuses and not native['errors'] and check['failure'] is None and expected_failure))
     # 原始报告、下载、截图、轨迹、日志均保留；不把基础设施错误算作检错成功。
     destination = out / 'evidence'
     shutil.copytree(project.root / '.ads/runs' / run['run_id'], destination)
     return {'expected':expected,'actual':run['status'],'development':decision['development'],
             'native_exit_code':check['exit_code'],'native_statuses':statuses,
+            'expected_failure_marker':marker,'expected_failure_observed':expected_failure,
             'subject_sha256':run['subject']['sha256'],'report_sha256':check['report_sha256'],
             'status':'PASS' if correct else 'FAIL'}
 

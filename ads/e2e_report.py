@@ -20,6 +20,8 @@ def e2e(data):
     statuses = ('passed', 'failed', 'timed-out', 'interrupted', 'flaky', 'skipped')
     selected = [r for r in results if r.get('selected') is True]
     summary = run['summary']
+    require(all(type(summary.get(k)) is int and summary[k] >= 0 for k in
+                ('discovered','selected','executed','passed','failed','interrupted','flaky','skipped')), 'e2e 计数必须为非负整数')
     require(summary.get('discovered') == len(results) and summary.get('selected') == len(selected), 'e2e 报告分母不符')
     for state in ('passed', 'interrupted', 'flaky', 'skipped'):
         require(type(summary.get(state)) is int and summary[state] == sum(r['status'] == state for r in selected), 'e2e 状态计数不符')
@@ -28,6 +30,7 @@ def e2e(data):
     run_clean = run.get('status') == 'passed' and type(run.get('exitCode')) is int and run['exitCode'] == 0
     for result in results:
         require(result.get('status') in statuses and type(result.get('selected')) is bool, '未知 e2e 用例状态')
+        require(type(result.get('repeat')) is int and result['repeat'] >= 0, 'e2e 重复轮次必须为非负整数')
         parts = [result['testId'], result['targetId'], result['agent'], str(result['repeat'])]
         require(all(isinstance(x, str) and x for x in parts), 'e2e 用例身份缺失')
         ident = json.dumps(parts, ensure_ascii=False, separators=(',', ':'))
@@ -37,6 +40,7 @@ def e2e(data):
         group_clean = True
         if result.get('serialGroupId'):
             group = groups[result['serialGroupId']]
+            group_clean = group.get('status') == 'passed'
             attempts = group['attempts']
             for attempt in attempts:
                 members = [m for m in attempt['members'] if m['testId'] == result['testId']]

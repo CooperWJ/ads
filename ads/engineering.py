@@ -6,7 +6,7 @@ import subprocess
 import time
 import uuid
 
-from .project import require, path_in, write_json, digest
+from .project import Blocked, require, path_in, write_json, digest
 from .process import execute as execute_process
 
 
@@ -39,7 +39,7 @@ def context(project, freeze=False):
             'automatic_side_effect_replay': False}
 
 
-def develop(project, model, execute=False):
+def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')
     config = project.config.get('development', {})
     native = config.get('executable', 'opencode')
@@ -47,8 +47,13 @@ def develop(project, model, execute=False):
     prompt_path = path_in(project.root, config.get('prompt', 'TASK.md'), exists=True)
     prompt = prompt_path.read_text()
     argv = [native, 'run', '--standalone', '--model', model, '--agent', 'build', '--format', 'json', prompt]
+    if session is not None:
+        require(isinstance(session, str) and session.startswith('ses_') and session.isascii()
+                and all(c.isalnum() or c in '_-' for c in session), '必须使用原生 Session ID')
+        argv[-1:-1] = ['--session', session]
     plan = {'status': 'PLANNED', 'host': 'OpenCode native CLI', 'model': model,
             'prompt_sha256': digest(prompt.encode()), 'budget_seconds': config.get('timeout_seconds', 600),
+            'requested_session': session, 'automatic_side_effect_replay': False,
             'next': '显式 --execute 仅运行一次，不自动切换模型、权限或付费账户'}
     if not execute:
         return plan
@@ -67,6 +72,10 @@ def develop(project, model, execute=False):
             code = execute_process(argv, cwd=project.root, stdout=out, stderr=err, timeout=timeout)
         except subprocess.TimeoutExpired:
             error = 'TIMEOUT'
+        except KeyboardInterrupt:
+            error = 'INTERRUPTED'
+        except OSError:
+            error = 'EXECUTION_ERROR'
     types, tools, session_ids = [], 0, set()
     for line in (directory / 'native-private.jsonl').read_text(errors='replace').splitlines():
         try:
@@ -77,17 +86,24 @@ def develop(project, model, execute=False):
             if isinstance(event.get('sessionID'), str):
                 session_ids.add(event['sessionID'])
             if event.get('type') == 'error':
-                error = (event.get('error') or {}).get('type', 'NATIVE_ERROR')
+                detail = event.get('error')
+                kind = detail.get('type') if isinstance(detail, dict) else None
+                error = kind if isinstance(kind, str) and kind else 'NATIVE_ERROR'
             part = event.get('part') or {}
             if isinstance(part, dict) and part.get('type') == 'tool':
                 tools += 1
             types.append(event.get('type'))
-    after = project.snapshot(development=True)
-    authority_unchanged = before['files'] == after['files']
+    try:
+        after = project.snapshot(development=True)
+    except (Blocked, OSError, ValueError):
+        after = None
+        error = error or 'CONTEXT_UNREADABLE'
+    authority_unchanged = after is not None and before['files'] == after['files']
     report = {**plan, 'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
               'exit_code': code, 'error_type': error, 'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
               'native_sessions_observed': len(session_ids), 'stream_tool_events': tools,
+              'session_id': next(iter(session_ids)) if len(session_ids) == 1 else None,
               'completion': 'NOT_VERIFIED', 'verification': '必须运行外部 ads verify 和 QA，不能凭原生退出 0 认可完成'}
     write_json(directory / 'summary.json', report)
     return report

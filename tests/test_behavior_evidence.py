@@ -34,7 +34,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
             tool("bash", {"command": "pytest -q"}, 0),
             tool("skill", {"name": "verification-before-completion"}),
         ))
-        self.assertEqual(result["stream_status"], "COMPLETE")
+        self.assertEqual(result["stream_status"], "PARSE_CLEAN")
         self.assertEqual(result["systematic_debugging_invoked"], "OBSERVED")
         self.assertEqual(result["test_driven_development_invoked"], "OBSERVED")
         self.assertEqual(result["verification_before_completion_invoked"], "OBSERVED")

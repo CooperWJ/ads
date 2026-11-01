@@ -16,7 +16,7 @@ import unittest
 from unittest.mock import patch
 
 from ads.project import Project, Blocked, digest, write_json
-from ads import evidence, engineering, qa, sources, benchmark, assurance, gates
+from ads import evidence, engineering, qa, sources, benchmark, assurance, gates, delivery
 from ads.process import execute
 from ads.cli import main, init
 
@@ -123,6 +123,15 @@ class CoreTests(unittest.TestCase):
         run = evidence.run_checks(self.project)
         log = next(iter(run['checks'][0]['logs']))
         (self.root / log).write_text('altered log')
+        with self.assertRaises(Blocked):
+            evidence.load_current(self.project)
+
+    def test_run_manifest_status_must_match_execution_facts(self):
+        run = evidence.run_checks(self.project)
+        manifest = self.root/'.ads'/'runs'/run['run_id']/'run.json'
+        value = json.loads(manifest.read_text())
+        value['checks'][0]['exit_code'] = 7
+        write_json(manifest, value)
         with self.assertRaises(Blocked):
             evidence.load_current(self.project)
 
@@ -307,6 +316,24 @@ class QATests(unittest.TestCase):
         write_json(self.root/'ads.project.json', config)
         return Project(self.root), imported
 
+    def bind_native_development(self, project):
+        run_id = 'a' * 32
+        directory = self.root/'.ads'/'development'/run_id
+        directory.mkdir(parents=True)
+        behavior = {}
+        behavior_path = directory/'behavior.json'
+        write_json(behavior_path, behavior)
+        summary = {'schema': 'ads-development-run/v1', 'run_id': run_id,
+                   'behavior_path': str(behavior_path.relative_to(self.root)),
+                   'behavior_sha256': digest(behavior_path.read_bytes()),
+                   'behavior_evidence': behavior,
+                   'output_subject': project.snapshot(development=True)}
+        summary_path = directory/'summary.json'
+        write_json(summary_path, summary)
+        write_json(self.root/'.ads'/'latest-development.json', {
+            'run_id': run_id, 'summary_sha256': digest(summary_path.read_bytes()),
+            'behavior_sha256': digest(behavior_path.read_bytes())})
+
     def test_modules_without_requirement_ids_and_extra_columns(self):
         _, imported = self.configure_qa()
         self.assertEqual(imported['sheets'], ['模块甲', '模块乙'])
@@ -373,6 +400,42 @@ class QATests(unittest.TestCase):
         self.assertEqual(first['observed'], 'CHECK_FAILED')
         self.assertEqual(first['status'], 'NOT_VERIFIED')
         self.assertEqual(result['case_execution'], 'BLOCKED')
+
+    def test_duplicate_qa_test_mapping_is_rejected(self):
+        project, _ = self.configure_qa()
+        review = json.loads((self.root/'qa-review.json').read_text())
+        target = review['decisions'][0]['tests'][0]
+        review['decisions'][0]['tests'].append(copy.deepcopy(target))
+        write_json(self.root/'qa-review.json', review)
+        with self.assertRaises(Blocked):
+            qa.reviewed_baseline(project)
+
+    def test_release_readiness_requires_both_tracks_on_exact_snapshot(self):
+        project, _ = self.configure_qa()
+        self.bind_native_development(project)
+        evidence.run_checks(project, 'dev')
+        evidence.run_checks(project, 'qa')
+        result = delivery.evaluate(project)
+        self.assertEqual(result['local_delivery_readiness'], 'READY')
+        self.assertEqual(result['status'], 'NOT_VERIFIED')
+        self.assertTrue(result['subject_binding']['same_exact_snapshot'])
+        self.assertEqual(result['development']['native_development_binding'], 'MATCHED')
+        self.assertEqual(result['qa']['case_execution'], 'PASS_LOCAL')
+        self.assertEqual(result['independent_qa_identity'], 'NOT_VERIFIED')
+        self.assertEqual(result['release_authorization'], 'NOT_GRANTED')
+
+    def test_release_readiness_blocks_without_qa_and_after_subject_drift(self):
+        project, _ = self.configure_qa()
+        self.bind_native_development(project)
+        evidence.run_checks(project, 'dev')
+        missing_qa = delivery.evaluate(project)
+        self.assertEqual(missing_qa['local_delivery_readiness'], 'BLOCKED')
+        self.assertIn('QA_EVIDENCE_UNAVAILABLE', missing_qa['reason_codes'])
+        evidence.run_checks(project, 'qa')
+        (self.root/'app.py').write_text('def normalize(value):\n    return value.lower().strip()\n')
+        stale = delivery.evaluate(project)
+        self.assertEqual(stale['local_delivery_readiness'], 'BLOCKED')
+        self.assertIn('DEVELOPMENT_EVIDENCE_UNAVAILABLE', stale['reason_codes'])
 
     def test_changed_qa_source_needs_external_review_again(self):
         project, _ = self.configure_qa()

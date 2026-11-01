@@ -71,7 +71,7 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
     buildRepairPrompt: (observation, repairNumber) =>
       [
         `The independent deterministic verifier reports repair ${repairNumber} is required.`,
-        `Observed code: ${observation.code}; UI status: ${observation.status}; database note: ${JSON.stringify(observation.persisted)}; save requests: ${observation.attempts}.`,
+        `Observed code: ${String(observation.code)}; UI status: ${String(observation.status)}; database note: ${JSON.stringify(observation.persisted)}; save requests: ${String(observation.attempts)}.`,
         'The first Save notes request was rejected with HTTP 503 and the database remains unchanged.',
         'Project Echo is still selected and Editable notes must remain exactly "Reviewed in M0". Click Save notes exactly once more. Do not change another field or project. Do not export. Stop after the retry.',
       ].join(' '),

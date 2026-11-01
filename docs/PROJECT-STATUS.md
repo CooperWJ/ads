@@ -12,6 +12,7 @@
 | 最小受信执行与受保护评分 | NOT_VERIFIED | 当前工作流为自测；本轮读取分支保护被连接权限拒绝，不能据此认定配置存在或不存在 |
 | Harbor 独立导出 verifier | PASS（导出产物边界） | Harbor 0.25.0 / Docker 三例校准通过；运行 41208957430，原生摘要见 docs/evidence/harbor-v0.5.8-calibration.json；不代表完整交付 |
 | Playwright Test Agents | PARTIAL | 原生识别三个子 Agent；MCP 状态未显示已配置服务器，模型执行未验证 |
+| OpenCode 开发行为证据与验证绑定 | 已实现，确定性 CI 已测 | `behavior.json` 记录原生 Skill/工具/测试顺序；`ads verify` 绑定开发 run ID、输出快照及行为摘要哈希，区分 MATCHED/STALE/INVALID/NOT_LINKED；不把行为观察等同于 TDD 合规或需求正确 |
 | Superpowers 原生集成 | 原生注册与显式激活通过；模型使用未验证 | OpenCode 2.2.3，官方固定提交；调试/TDD/完成核验三技能已通过原生 API 激活，resume=false 不调用模型；真实模型请求仍为 provider.free-limit |
 | 多来源需求发现 | PARTIAL | MD/SVG/XLSX、PDF 文本层及 Docling/Figma 导出适配；嵌入附件/图形明确 UNKNOWN，固定样本不证明陌生需求语义召回率 |
 | 原始需求到 OpenCode 实现切片 | BLOCKED（模型额度） | 已实际启动 @opencode/cli 2.2.3，匿名模型返回 provider.free-limit/429；未生成候选 |
@@ -22,6 +23,8 @@
 | 框架效果对照 | 报告适配已测；实际实验未完成 | 缺模型额度、holdout/fresh 独立样本与因果结论 |
 
 ## 当前迭代
+
+v0.6.9 将 OpenCode 单次开发记录与后续 `ads verify` 结果建立精确关联：开发运行写入唯一 ID、输出快照及行为摘要哈希；验证记录引用对应运行，并在加载时重新核对摘要/行为文件。开发后代码变化标记 STALE，证据篡改阻断旧验证记录。该机制只解决证据错配，不证明 Agent 遵循了技能，也不替代业务断言和独立 QA。
 
 当前接入固定版本 e2e 的原生 report-1 与真实产品旅程，复用同一 `ads verify`。运行 41262125347 已完成真实保存/刷新/SQLite/XLSX 下载，假保存与缺导出列均失败；OpenCode 2.2.3 已实际连接 MCP 并显式激活 e2e 技能。模型开发新尝试仍返回 provider.free-limit，0 工具调用、0 候选变更；不替换账户或冒充模型完成。见 [e2e 接入说明](E2E-JOURNEY.md)。
 

@@ -10,8 +10,10 @@ def _agent_evidence(result, attempts):
     """只投影 Agent/断言计数与模型用量；不复制指令、事件详情、屏幕或对话。"""
     step_groups = []
     for attempt in attempts:
+        require(isinstance(attempt, dict), 'e2e attempt 结构无效')
         members = attempt.get('members')
         if isinstance(members, list):
+            require(all(isinstance(member, dict) for member in members), '串行组成员结构无效')
             selected = [member for member in members if member.get('testId') == result['testId']]
             require(len(selected) == 1, '串行组 Agent 证据成员缺失或重复')
             step_groups.append(selected[0].get('steps', []))
@@ -19,10 +21,13 @@ def _agent_evidence(result, attempts):
             current = attempt.get('steps', [])
             require(isinstance(current, list), 'e2e attempt steps 必须为数组')
             step_groups.append(current)
+    require(all(isinstance(group, list) for group in step_groups), 'e2e step group 必须为数组')
 
     agent_steps, deterministic = [], 0
     deterministic_after_act = 0
     steps = [step for group in step_groups for step in group]
+    require(all(isinstance(step, dict) and isinstance(step.get('api'), str) for step in steps),
+            'e2e step 结构无效')
     for group in step_groups:
         last_act = max((i for i, step in enumerate(group)
                         if isinstance(step, dict) and step.get('api') == 'agent.act'), default=-1)
@@ -32,7 +37,6 @@ def _agent_evidence(result, attempts):
                 for step in group[last_act + 1:] if isinstance(step, dict)
             )
     for step in steps:
-        require(isinstance(step, dict) and isinstance(step.get('api'), str), 'e2e step 结构无效')
         if step.get('kind') == 'assertion' or step['api'].startswith('expect.'):
             deterministic += 1
         if step.get('kind') == 'agent' or step['api'].startswith('agent.'):

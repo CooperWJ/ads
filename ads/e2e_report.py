@@ -8,19 +8,29 @@ from .project import require
 
 def _agent_evidence(result, attempts):
     """只投影 Agent/断言计数与模型用量；不复制指令、事件详情、屏幕或对话。"""
-    steps = []
+    step_groups = []
     for attempt in attempts:
         members = attempt.get('members')
         if isinstance(members, list):
             selected = [member for member in members if member.get('testId') == result['testId']]
             require(len(selected) == 1, '串行组 Agent 证据成员缺失或重复')
-            steps.extend(selected[0].get('steps', []))
+            step_groups.append(selected[0].get('steps', []))
         else:
             current = attempt.get('steps', [])
             require(isinstance(current, list), 'e2e attempt steps 必须为数组')
-            steps.extend(current)
+            step_groups.append(current)
 
     agent_steps, deterministic = [], 0
+    deterministic_after_act = 0
+    steps = [step for group in step_groups for step in group]
+    for group in step_groups:
+        last_act = max((i for i, step in enumerate(group)
+                        if isinstance(step, dict) and step.get('api') == 'agent.act'), default=-1)
+        if last_act >= 0:
+            deterministic_after_act += sum(
+                step.get('kind') == 'assertion' or step.get('api', '').startswith('expect.')
+                for step in group[last_act + 1:] if isinstance(step, dict)
+            )
     for step in steps:
         require(isinstance(step, dict) and isinstance(step.get('api'), str), 'e2e step 结构无效')
         if step.get('kind') == 'assertion' or step['api'].startswith('expect.'):
@@ -63,6 +73,7 @@ def _agent_evidence(result, attempts):
             'act_steps': 0,
             'assert_steps': 0,
             'deterministic_assertions': deterministic,
+            'deterministic_assertions_after_act': 0,
             'action_steps': 0,
             'model_calls': 0,
             'input_tokens': 0,
@@ -70,6 +81,8 @@ def _agent_evidence(result, attempts):
             'estimated_cost_usd': None,
             'models': [],
             'model_provenance': 'NO_MODEL_CALLS',
+            'model_usage_status': 'NO_MODEL_CALLS',
+            'model_cost_status': 'NO_MODEL_CALLS',
             'cache_modes': {'self-finalized': 0, 'agent-concluded': 0, 'missed': 0, 'unobserved': 0},
         }
 
@@ -100,7 +113,7 @@ def _agent_evidence(result, attempts):
                 costs.append(model['estimatedCostUsd'])
             elif model.get('calls', 0) > 0:
                 missing_cost_steps += 1
-    mixed = act_steps > 0 and deterministic > 0
+    mixed = act_steps > 0 and deterministic_after_act > 0
     return {
         'status': 'OBSERVED',
         'mode': 'AGENT_PLUS_DETERMINISTIC' if mixed else
@@ -109,6 +122,7 @@ def _agent_evidence(result, attempts):
         'act_steps': act_steps,
         'assert_steps': assert_steps,
         'deterministic_assertions': deterministic,
+        'deterministic_assertions_after_act': deterministic_after_act,
         'action_steps': action_steps,
         'model_calls': model_calls,
         'input_tokens': input_tokens,

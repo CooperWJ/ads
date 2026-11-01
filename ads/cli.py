@@ -6,7 +6,7 @@ import sys
 import subprocess
 
 from .project import Blocked, Project, require, path_in, write_json
-from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment, integrations
+from . import assurance, benchmark, engineering, evidence, qa, sources, gates, openspec, alignment, integrations, delivery
 
 
 def init(root, superpowers=False, e2e=False):
@@ -116,10 +116,11 @@ def main(argv=None):
             elif args.command == 'gate':
                 result = gates.audit(project)
             elif args.command == 'status':
-                result = evidence.decide(project)
-                result['selected_gate'] = args.gate
                 if args.gate == 'release':
-                    result['status'] = 'NOT_VERIFIED'
+                    result = delivery.evaluate(project)
+                else:
+                    result = evidence.decide(project)
+                result['selected_gate'] = args.gate
             elif args.command == 'qa':
                 if args.action == 'defects':
                     result = qa.defects(project)

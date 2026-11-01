@@ -112,7 +112,14 @@ def reviewed_baseline(project):
         if decision['disposition'] == 'EXCLUDED':
             require(bool(decision.get('reason')), '排除 QA 用例必须保留明确理由')
         else:
-            require(isinstance(decision.get('tests'), list) and bool(decision['tests']), 'QA 用例缺少必验集合')
+            tests = decision.get('tests')
+            require(isinstance(tests, list) and bool(tests), 'QA 用例缺少必验集合')
+            identities = []
+            for target in tests:
+                require(isinstance(target, dict) and isinstance(target.get('check'), str) and target['check']
+                        and isinstance(target.get('case'), str) and target['case'], 'QA 必验映射结构无效')
+                identities.append((target['check'], target['case']))
+            require(len(identities) == len(set(identities)), 'QA 必验集合包含重复测试映射')
     return imported, by_id
 
 

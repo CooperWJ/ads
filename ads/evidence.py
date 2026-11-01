@@ -95,6 +95,22 @@ def development_binding(project, subject, run_id=None):
         behavior = json.loads(behavior_bytes)
         require(summary.get('schema') == 'ads-development-run/v1'
                 and summary.get('run_id') == run_id, '开发摘要身份不符')
+        requested_session = summary.get('requested_session')
+        session_id = summary.get('session_id')
+        require(summary.get('status') == 'EXECUTED_UNVERIFIED'
+                and summary.get('exit_code') == 0 and summary.get('error_type') is None
+                and summary.get('authority_unchanged') is True,
+                '原生开发进程未成功完成或执行期间权威输入发生变化')
+        require(isinstance(session_id, str) and session_id.startswith('ses_')
+                and session_id.isascii() and summary.get('native_sessions_observed', 0) >= 1,
+                '未观察到唯一可绑定的原生 OpenCode Session')
+        require(summary.get('session_confirmation') ==
+                ('CONFIRMED' if requested_session is not None else 'NOT_REQUESTED')
+                and (requested_session is None or requested_session == session_id),
+                '原生 Session 续接身份未确认')
+        require(behavior.get('stream_status') == 'PARSE_CLEAN'
+                and behavior.get('terminal_event_observed') is True,
+                '原生 OpenCode 事件流不完整或缺少最终 stop')
         require(summary.get('behavior_path') == str(behavior_path.relative_to(project.root))
                 and summary.get('behavior_sha256') == behavior_sha
                 and summary.get('behavior_evidence') == behavior, '行为证据与开发摘要不一致')
@@ -200,18 +216,60 @@ def run_checks(project, role='dev'):
 
 def load_current(project, role='dev'):
     pointer = json.loads(path_in(project.root, f'.ads/latest-{role}.json', exists=True).read_text())
-    run = json.loads(path_in(project.root, f'.ads/runs/{pointer["run_id"]}/run.json', exists=True).read_text())
-    require(run.get('schema') == 'ads-project-run/v1' and run.get('role') == role, '运行记录身份不符')
-    require(run.get('subject') == project.snapshot() and run.get('subject_unchanged') is True, '代码、来源、契约或配置已经漂移')
+    run_id = pointer.get('run_id')
+    require(isinstance(run_id, str) and len(run_id) == 32
+            and all(ch in '0123456789abcdef' for ch in run_id), '运行指针 ID 无效')
+    run_dir = path_in(project.root, f'.ads/runs/{run_id}', exists=True)
+    run = json.loads(path_in(project.root, f'.ads/runs/{run_id}/run.json', exists=True).read_text())
+    require(run.get('schema') == 'ads-project-run/v1' and run.get('role') == role
+            and run.get('run_id') == run_id, '运行记录身份不符')
+    require(run.get('subject') == project.snapshot() and run.get('subject_unchanged') is True,
+            '代码、来源、契约或配置已经漂移')
     if role == 'dev':
         validate_development_binding(project, run.get('development_binding', {'status': 'NOT_LINKED'}), run['subject'])
-    for check in run['checks']:
+    configured = {item['id']: item for item in project.config['checks'] if item['role'] == role}
+    checks = run.get('checks')
+    require(isinstance(checks, list) and len(checks) == len(configured), '运行检查集合缺失或数量不符')
+    check_ids = [item.get('check_id') for item in checks if isinstance(item, dict)]
+    require(len(check_ids) == len(checks) and len(check_ids) == len(set(check_ids))
+            and set(check_ids) == set(configured), '运行检查 ID 缺失、重复或不属于当前 Profile')
+    for check in checks:
+        config = configured[check['check_id']]
+        require(check.get('role') == role and check.get('status') in ('PASS', 'FAIL'),
+                '检查责任或状态无效')
+        require(type(check.get('exit_code')) is int or check.get('exit_code') is None,
+                '测试进程退出码无效')
+        require(check.get('failure') is None or isinstance(check.get('failure'), str),
+                '测试失败分类无效')
+        cases = check.get('cases')
+        require(isinstance(cases, list), '测试用例结果结构无效')
+        computed_pass = (check['exit_code'] == 0 and check['failure'] is None
+                         and bool(cases) and all(isinstance(case, dict) and case.get('status') == 'PASS'
+                                                 for case in cases))
+        require((check['status'] == 'PASS') == bool(computed_pass),
+                '检查状态与进程退出/用例结果不一致')
+        expected_report = config['report']['path'].replace('{run_id}', run_id)
+        require(check.get('report') == expected_report, '报告路径与 Profile 不一致')
         report = path_in(project.root, check['report'], exists=True)
-        require(digest(report.read_bytes()) == check['report_sha256'], '原始测试报告已被修改')
-        actual = parse(next(x for x in project.config['checks'] if x['id'] == check['check_id'])['report']['kind'], report.read_bytes())
-        require(actual == check['cases'], '运行记录与原始报告不一致')
-        for name, sha in check['logs'].items():
-            require(digest(path_in(project.root, name, exists=True).read_bytes()) == sha, '执行日志已被修改')
+        require(report.is_relative_to(run_dir), '报告路径越出本次运行目录')
+        raw = report.read_bytes()
+        require(isinstance(check.get('report_sha256'), str)
+                and digest(raw) == check['report_sha256'], '原始测试报告已被修改')
+        actual = parse(config['report']['kind'], raw)
+        require(actual == cases, '运行记录与原始报告不一致')
+        logs = check.get('logs')
+        require(isinstance(logs, dict) and bool(logs), '执行日志索引缺失')
+        for name, sha in logs.items():
+            log = path_in(project.root, name, exists=True)
+            require(log.is_relative_to(run_dir) and isinstance(sha, str)
+                    and digest(log.read_bytes()) == sha, '执行日志路径越界或内容已被修改')
+    expected_run_status = ('PASS' if run['subject_unchanged'] is True
+                            and all(item['status'] == 'PASS' for item in checks) else 'FAIL')
+    require(run.get('status') == expected_run_status and run.get('trust') == 'LOCAL_EXECUTION',
+            '运行汇总状态与检查事实不一致')
+    if role == 'qa':
+        require(run.get('independent_qa_identity') == 'NOT_VERIFIED',
+                '本地 QA 运行不得声明独立身份')
     return run
 
 

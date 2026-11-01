@@ -1,6 +1,8 @@
 import json
 import unittest
+from unittest.mock import patch
 
+from ads import evidence, qa
 from ads.e2e_report import e2e
 from ads.project import Blocked
 
@@ -192,6 +194,101 @@ class E2EAgentEvidenceTests(unittest.TestCase):
         doc['run']['results'][0]['attempts'][0]['steps'] = [step]
         with self.assertRaises(Blocked):
             self.evaluate(doc)
+
+    def test_requirement_decision_exposes_report_bound_agent_evidence(self):
+        ident = json.dumps(
+            ['tests/agent-flow.e2e.ts::save-refresh', 'chromium', 'default', '0'],
+            separators=(',', ':'),
+        )
+        summary = self.evaluate({
+            **report(),
+            'run': {
+                **report()['run'],
+                'results': [{
+                    **report()['run']['results'][0],
+                    'attempts': [{
+                        'status': 'passed', 'cleanup': 'complete', 'secondaryErrors': [],
+                        'steps': [agent_step(), deterministic_assertion()],
+                    }],
+                }],
+            },
+        })['agent_evidence']
+        run = {
+            'run_id': 'a' * 32,
+            'subject': {'sha256': 'b' * 64},
+            'status': 'PASS',
+            'checks': [{
+                'check_id': 'e2e', 'status': 'PASS', 'report': '.ads/runs/run/e2e/report.json',
+                'report_sha256': 'c' * 64,
+                'cases': [{'id': ident, 'status': 'PASS', 'agent_evidence': summary}],
+            }],
+        }
+
+        class ProjectStub:
+            config = {}
+
+            def contract(self):
+                return {'obligations': [{
+                    'id': 'save-refresh',
+                    'tests': [{'check': 'e2e', 'case': ident}],
+                }]}
+
+        with patch.object(evidence, 'load_current', return_value=run), \
+             patch('ads.sources.discover', return_value={'status': 'INVENTORIED'}):
+            decision = evidence.decide(ProjectStub())
+        reference = decision['obligations'][0]['verification_evidence'][0]['reference']
+        self.assertEqual(reference['agent_evidence'], summary)
+        self.assertEqual(reference['report_sha256'], 'c' * 64)
+        self.assertEqual(reference['subject_sha256'], 'b' * 64)
+
+    def test_qa_execution_exposes_the_same_report_bound_agent_evidence(self):
+        case_id = 'module/save-refresh'
+        case_hash = 'd' * 64
+        summary = {
+            'status': 'OBSERVED',
+            'mode': 'AGENT_PLUS_DETERMINISTIC',
+            'agent_steps': 1,
+            'act_steps': 1,
+            'deterministic_assertions_after_act': 1,
+            'model_calls': 2,
+        }
+        imported = {
+            'cases': [{
+                'id': case_id,
+                'module': 'module',
+                'source_locator': 'Cases!R2',
+                'case_sha256': case_hash,
+                'fields': {'expected': 'notes remain after refresh'},
+            }],
+            'source_sha256': 'e' * 64,
+        }
+        review = {
+            case_id: {
+                'case_sha256': case_hash,
+                'reviewer': 'independent-qa',
+                'decision_ref': 'review-001',
+                'disposition': 'CONFIRMED',
+                'tests': [{'check': 'e2e', 'case': 'native-case'}],
+            },
+        }
+        run = {
+            'run_id': 'f' * 32,
+            'subject': {'sha256': 'a' * 64},
+            'status': 'PASS',
+            'checks': [{
+                'check_id': 'e2e', 'status': 'PASS', 'failure': None,
+                'report': '.ads/runs/run/e2e/report.json',
+                'report_sha256': 'b' * 64,
+                'cases': [{'id': 'native-case', 'status': 'PASS', 'agent_evidence': summary}],
+            }],
+        }
+        with patch.object(qa, 'reviewed_baseline', return_value=(imported, review)), \
+             patch.object(qa, 'load_current', return_value=run):
+            result = qa.evaluate(object())
+        reference = result['cases'][0]['verification_evidence'][0]['reference']
+        self.assertEqual(reference['agent_evidence'], summary)
+        self.assertEqual(reference['report_sha256'], 'b' * 64)
+        self.assertEqual(reference['subject_sha256'], 'a' * 64)
 
     def test_serial_group_agent_evidence_uses_the_exact_member_steps(self):
         doc = report()

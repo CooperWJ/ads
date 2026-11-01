@@ -193,6 +193,17 @@ test('unsupported tool names never become e2e tool calls', async () => {
   }
 });
 
+test('session cleanup failure blocks the model result', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_DELETE_FAIL = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /session cleanup failed/);
+  } finally {
+    await env.close();
+  }
+});
+
 test('OpenCode CLI nonzero exit is not accepted even if a session was created', async () => {
   const env = await setup();
   try {

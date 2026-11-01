@@ -84,14 +84,6 @@ def inspect_stream(data):
     )
     last_edit = max(edits, key=lambda o: o["ordinal"], default=None)
     last_test = max(test_runs, key=lambda o: o["ordinal"], default=None)
-    if not ordering_trustworthy or last_edit is None or last_test is None or last_test["exit_code"] is None:
-        final_verification = "INDETERMINATE"
-    elif last_test["ordinal"] <= last_edit["ordinal"]:
-        final_verification = "NOT_OBSERVED"
-    elif last_test["exit_code"] == 0:
-        final_verification = "OBSERVED"
-    else:
-        final_verification = "FAILED"
     skills = sorted({o["skill"] for o in observations if o["skill"]})
     final_part = events[-1].get("part") if events else None
     terminal_event = (bool(events) and events[-1].get("type") == "step_finish"
@@ -103,6 +95,14 @@ def inspect_stream(data):
     else:
         stream_status = "PARSE_CLEAN"
     ordering_trustworthy = stream_status == "PARSE_CLEAN" and terminal_event
+    if not ordering_trustworthy or last_edit is None or last_test is None or last_test["exit_code"] is None:
+        final_verification = "INDETERMINATE"
+    elif last_test["ordinal"] <= last_edit["ordinal"]:
+        final_verification = "NOT_OBSERVED"
+    elif last_test["exit_code"] == 0:
+        final_verification = "OBSERVED"
+    else:
+        final_verification = "FAILED"
 
     def observed(value):
         return "OBSERVED" if value else "NOT_OBSERVED"

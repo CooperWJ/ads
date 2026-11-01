@@ -44,3 +44,7 @@ python3 -m unittest tests.test_develop_execution -v
 OpenCode 原生 error event 会投影有限的结构化字段：错误类型、HTTP 状态码、格式受限的错误代码和 Provider ID。原始 `message`、请求内容、响应正文及凭据不会写入公开摘要；原始事件仍只保存在本地私有运行目录。
 
 分类规则保守处理：`provider.free-limit`/quota 代码为 `MODEL_QUOTA`，HTTP 429 但无配额代码为 `RATE_LIMITED`，401/403 为 `AUTH_OR_PERMISSION`，408/504 为 `UPSTREAM_TIMEOUT`，5xx 为 `UPSTREAM_FAILURE`，其他为 `UNKNOWN`。分类只辅助诊断，不自动重试、不切换模型/账户，也不更改权限。未知字段不会被猜测。
+
+## 原生 Session 续接确认
+
+当调用方显式提供 `--session` 时，ADS 不仅记录传入参数，还核对 OpenCode JSONL 事件中的原生 `sessionID`：出现目标 ID 才标记 `CONFIRMED`；出现其他 ID 标记 `MISMATCH` 并阻断；没有可观察 ID 标记 `NOT_OBSERVED` 并阻断。未请求续接时标记 `NOT_REQUESTED`。这可防止 CLI 忽略或未能确认续接时，ADS 仍将本轮报告为已续接。该确认依赖原生事件流，不能证明远程副作用恰好一次。

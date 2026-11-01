@@ -9,14 +9,7 @@ import { opencodeCli } from '../opencode-cli-model.ts';
 const DEFAULT_REPLY = JSON.stringify({
   tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }],
 });
-
-const FAKE_CLI = "#!/usr/bin/env node\nimport fs from 'node:fs';\nimport path from 'node:path';\n\nconst args = process.argv.slice(2);\nconst logPath = process.env.ADS_E2E_OPENCODE_TEST_LOG;\nconst record = (value) => fs.appendFileSync(logPath, JSON.stringify(value) + '\\n');\nconst valueAfter = (flag) => {\n  const index = args.indexOf(flag);\n  return index >= 0 ? args[index + 1] : undefined;\n};\nconst defaultReply = JSON.stringify({\n  tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }]\n});\n\nif (args[0] === '--version') {
-  record({ command: 'version' });
-  console.log(process.env.ADS_E2E_TEST_CLI_VERSION ?? '2.2.3');
-  process.exit(0);
-}
-
-if (args[0] === 'run') {\n  const directory = valueAfter('--dir') ?? process.cwd();\n  const files = [];\n  for (let i = 0; i < args.length; i += 1) {\n    if (args[i] === '--file' && args[i + 1]) files.push(args[i + 1]);\n  }\n  const config = JSON.parse(fs.readFileSync(path.join(directory, 'opencode.json'), 'utf8'));\n  const agent = fs.readFileSync(path.join(directory, '.opencode/agents/ads-e2e-model.md'), 'utf8');\n  const attachments = files.map((file) => ({\n    path: file,\n    name: path.basename(file),\n    content: file.endsWith('.md') ? fs.readFileSync(file, 'utf8') : undefined,\n    bytes: fs.statSync(file).size\n  }));\n  record({ command: 'run', directory, cwd: process.cwd(), args, config, agent, attachments });\n  if (process.env.ADS_E2E_TEST_NO_SESSION !== '1') {\n    console.log(JSON.stringify({ type: 'step_start', sessionID: 'ses_fake' }));\n    console.log(JSON.stringify({ type: 'text', sessionID: 'ses_fake', part: {\n      text: process.env.ADS_E2E_TEST_REPLY ?? defaultReply\n    }}));\n    console.log(JSON.stringify({ type: 'step_finish', sessionID: 'ses_fake', part: {\n      reason: 'stop',\n      cost: 0.002,\n      tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } }\n    }}));\n  }\n  process.exit(process.env.ADS_E2E_TEST_RUN_FAIL === '1' ? 1 : 0);\n}\n\nif (args[0] === 'session' && args[1] === 'export') {\n  record({ command: 'export', sessionID: args[2] });\n  if (process.env.ADS_E2E_TEST_EXPORT_FAIL === '1') {\n    process.stderr.write('PRIVATE EXPORT ERROR');\n    process.exit(1);\n  }\n  const reply = process.env.ADS_E2E_TEST_REPLY ?? defaultReply;\n  const data = {\n    messages: [{\n      info: {\n        type: 'assistant',\n        model: {\n          providerID: process.env.ADS_E2E_TEST_PROVIDER ?? 'opencode',\n          modelID: process.env.ADS_E2E_TEST_MODEL ?? 'deepseek-v4.1-flash-free'\n        },\n        tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } },\n        cost: 0.002,\n        finish: 'stop'\n      },\n      parts: [{ type: 'text', text: reply }]\n    }]\n  };\n  process.stdout.write(JSON.stringify(data));\n  process.exit(0);\n}\n\nif (args[0] === 'session' && args[1] === 'delete') {\n  record({ command: 'delete', sessionID: args[2] });\n  process.exit(process.env.ADS_E2E_TEST_DELETE_FAIL === '1' ? 1 : 0);\n}\n\nprocess.stderr.write('UNKNOWN FAKE COMMAND');\nprocess.exit(2);\n";
+const FAKE_CLI = "#!/usr/bin/env node\nimport fs from 'node:fs';\nimport path from 'node:path';\n\nconst args = process.argv.slice(2);\nconst logPath = process.env.ADS_E2E_OPENCODE_TEST_LOG;\nconst record = (value) => fs.appendFileSync(logPath, JSON.stringify(value) + '\\n');\nconst valueAfter = (flag) => {\n  const index = args.indexOf(flag);\n  return index >= 0 ? args[index + 1] : undefined;\n};\nconst defaultReply = JSON.stringify({\n  tool_calls: [{ name: 'browser.click', input: { selector: '#save' } }]\n});\n\nif (args[0] === '--version') {\n  record({ command: 'version' });\n  console.log(process.env.ADS_E2E_TEST_CLI_VERSION ?? '2.2.3');\n  process.exit(0);\n}\n\nif (args[0] === 'run') {\n  const directory = valueAfter('--dir') ?? process.cwd();\n  const files = [];\n  for (let i = 0; i < args.length; i += 1) {\n    if (args[i] === '--file' && args[i + 1]) files.push(args[i + 1]);\n  }\n  const config = JSON.parse(fs.readFileSync(path.join(directory, 'opencode.json'), 'utf8'));\n  const agent = fs.readFileSync(path.join(directory, '.opencode/agents/ads-e2e-model.md'), 'utf8');\n  const attachments = files.map((file) => ({\n    path: file,\n    name: path.basename(file),\n    content: file.endsWith('.md') ? fs.readFileSync(file, 'utf8') : undefined,\n    bytes: fs.statSync(file).size\n  }));\n  record({ command: 'run', directory, cwd: process.cwd(), args, config, agent, attachments });\n  if (process.env.ADS_E2E_TEST_NO_SESSION !== '1') {\n    console.log(JSON.stringify({ type: 'step_start', sessionID: 'ses_fake' }));\n    console.log(JSON.stringify({ type: 'text', sessionID: 'ses_fake', part: {\n      text: process.env.ADS_E2E_TEST_REPLY ?? defaultReply\n    }}));\n    console.log(JSON.stringify({ type: 'step_finish', sessionID: 'ses_fake', part: {\n      reason: 'stop',\n      cost: 0.002,\n      tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } }\n    }}));\n  }\n  process.exit(process.env.ADS_E2E_TEST_RUN_FAIL === '1' ? 1 : 0);\n}\n\nif (args[0] === 'session' && args[1] === 'export') {\n  record({ command: 'export', sessionID: args[2] });\n  if (process.env.ADS_E2E_TEST_EXPORT_FAIL === '1') {\n    process.stderr.write('PRIVATE EXPORT ERROR');\n    process.exit(1);\n  }\n  const reply = process.env.ADS_E2E_TEST_REPLY ?? defaultReply;\n  const messages = [];\n  if (process.env.ADS_E2E_TEST_NATIVE_TOOL === '1') {\n    messages.push({ info: { type: 'shell', command: 'unexpected' }, parts: [] });\n  }\n  messages.push({\n    info: {\n      type: 'assistant',\n      agent: process.env.ADS_E2E_TEST_AGENT ?? 'ads-e2e-model',\n      model: {\n        providerID: process.env.ADS_E2E_TEST_PROVIDER ?? 'opencode',\n        modelID: process.env.ADS_E2E_TEST_MODEL ?? 'deepseek-v4.1-flash-free'\n      },\n      tokens: { input: 100, output: 40, reasoning: 10, cache: { read: 20, write: 5 } },\n      cost: 0.002,\n      finish: 'stop',\n      ...(process.env.ADS_E2E_TEST_RETRY === '1' ? { retry: { attempt: 2 } } : {})\n    },\n    parts: [{ type: 'text', text: reply }]\n  });\n  const data = {\n    info: { id: process.env.ADS_E2E_TEST_SESSION_ID ?? 'ses_fake' },\n    messages\n  };\n  process.stdout.write(JSON.stringify(data));\n  process.exit(0);\n}\n\nif (args[0] === 'session' && args[1] === 'delete') {\n  record({ command: 'delete', sessionID: args[2] });\n  process.exit(process.env.ADS_E2E_TEST_DELETE_FAIL === '1' ? 1 : 0);\n}\n\nprocess.stderr.write('UNKNOWN FAKE COMMAND');\nprocess.exit(2);\n";
 
 async function setup() {
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-cli-test-'));
@@ -25,13 +18,14 @@ async function setup() {
   await writeFile(binary, FAKE_CLI, 'utf8');
   await chmod(binary, 0o755);
   await writeFile(log, '', 'utf8');
-  const previous = {};
   const resetKeys = [
     'ADS_E2E_OPENCODE_BIN', 'ADS_E2E_OPENCODE_TEST_LOG', 'ADS_E2E_OPENCODE_CLI_MODEL',
-    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER', 'ADS_E2E_TEST_SESSION_ID', 'ADS_E2E_TEST_AGENT', 'ADS_E2E_TEST_RETRY', 'ADS_E2E_TEST_NATIVE_TOOL',
-    'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
+    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER',
+    'ADS_E2E_TEST_SESSION_ID', 'ADS_E2E_TEST_AGENT', 'ADS_E2E_TEST_RETRY',
+    'ADS_E2E_TEST_NATIVE_TOOL', 'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
     'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL', 'ADS_E2E_TEST_CLI_VERSION',
   ];
+  const previous = {};
   for (const key of resetKeys) {
     previous[key] = process.env[key];
     delete process.env[key];
@@ -112,14 +106,15 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     assert.deepEqual(run.config.instructions, []);
     assert.deepEqual(run.config.skills, []);
     assert.deepEqual(run.config.references, {});
-    assert.ok(run.config.permissions.some((rule) => rule.action === '*' && rule.resource === '*' && rule.effect === 'deny'));
+    assert.ok(run.config.permissions.some((rule) =>
+      rule.action === '*' && rule.resource === '*' && rule.effect === 'deny'));
     for (const action of ['tool.use', 'mcp.use', 'skill.use', 'plugin.use']) {
       assert.ok(run.config.policies.some((rule) =>
         rule.action === action && rule.resource === '*' && rule.effect === 'deny'));
     }
-    assert.ok(run.config.experimental.policies.some((rule) =>
+    assert.ok(run.config.policies.some((rule) =>
       rule.action === 'provider.use' && rule.resource === '*' && rule.effect === 'deny'));
-    assert.ok(run.config.experimental.policies.some((rule) =>
+    assert.ok(run.config.policies.some((rule) =>
       rule.action === 'provider.use' && rule.resource === 'opencode' && rule.effect === 'allow'));
     assert.match(run.agent, /steps: 1/);
     assert.match(run.agent, /action: "\*"/);
@@ -164,32 +159,6 @@ test('provider identity mismatch fails closed and still deletes the OpenCode ses
   }
 });
 
-test('native shell execution in the OpenCode session is rejected', async () => {
-  const env = await setup();
-  try {
-    process.env.ADS_E2E_TEST_NATIVE_TOOL = '1';
-    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
-    await assert.rejects(model.doGenerate(options()), /forbidden native execution message type: shell/);
-    const calls = await records(env.log);
-    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
-  } finally {
-    await env.close();
-  }
-});
-
-test('hidden OpenCode model retries are rejected', async () => {
-  const env = await setup();
-  try {
-    process.env.ADS_E2E_TEST_RETRY = '1';
-    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
-    await assert.rejects(model.doGenerate(options()), /retried the model request/);
-    const calls = await records(env.log);
-    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
-  } finally {
-    await env.close();
-  }
-});
-
 test('unexpected OpenCode agent profile fails closed', async () => {
   const env = await setup();
   try {
@@ -211,6 +180,32 @@ test('session export id mismatch fails closed and still deletes the created sess
     await assert.rejects(model.doGenerate(options()), /export id did not match/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'delete' && call.sessionID === 'ses_fake').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('native shell execution in the OpenCode session is rejected', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_NATIVE_TOOL = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /forbidden native execution message type: shell/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('hidden OpenCode model retries are rejected', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_RETRY = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /retried the model request/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
   } finally {
     await env.close();
   }

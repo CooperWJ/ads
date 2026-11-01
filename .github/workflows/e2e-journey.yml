@@ -24,8 +24,12 @@ jobs:
       - name: Install exact upstream runtime and browser
         working-directory: poc/e2e
         run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --ignore-scripts --no-audit --no-fund
           node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify OpenCode Console agent profile wiring without login or model calls
+        working-directory: poc/e2e
+        run: npm run test:agent-config
       - name: Verify real saved data, browser download and rejection probes
         run: python3 poc/e2e/calibrate.py --out "$RUNNER_TEMP/e2e-calibration"
       - name: Verify native OpenCode MCP and original upstream skill activation
@@ -42,4 +46,5 @@ jobs:
             ${{ runner.temp }}/e2e-calibration/*/evidence/**
             ${{ runner.temp }}/e2e-calibration/*/app.log
             ${{ runner.temp }}/e2e-native/native-summary.json
+            poc/e2e/package-lock.json
           if-no-files-found: error

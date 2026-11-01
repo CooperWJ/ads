@@ -86,17 +86,19 @@ def change_set(before, after):
     for repo in sorted(set(old_repos) | set(new_repos)):
         old = old_repos.get(repo, {})
         new = new_repos.get(repo, {})
-        for path in sorted(set(new) - set(old)):
-            added.append({'repository': repo, 'path': path})
-        for path in sorted(set(old) - set(new)):
-            deleted.append({'repository': repo, 'path': path})
-        for path in sorted(set(old) & set(new)):
-            if old[path] != new[path]:
-                modified.append({'repository': repo, 'path': path})
+        for path in sorted(set(old) | set(new)):
+            old_exists = path in old and old[path] != 'MISSING'
+            new_exists = path in new and new[path] != 'MISSING'
+            item = {'repository': repo, 'path': path}
+            if not old_exists and new_exists:
+                added.append(item)
+            elif old_exists and not new_exists:
+                deleted.append(item)
+            elif old_exists and new_exists and old[path] != new[path]:
+                modified.append(item)
     return {'status': 'OBSERVED', 'coverage': 'git-tracked-and-unignored-files',
             'added': added, 'modified': modified, 'deleted': deleted,
             'counts': {'added': len(added), 'modified': len(modified), 'deleted': len(deleted)}}
-
 
 def develop(project, model, execute=False, session=None):
     require(isinstance(model, str) and '/' in model, '必须明确选择已授权模型')

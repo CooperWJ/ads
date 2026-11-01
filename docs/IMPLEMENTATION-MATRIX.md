@@ -41,3 +41,8 @@
 ## 已验证构建
 
 核心源码提交 `d6971135869204a60e3291c00d9a2a0043f22959` 对应 171 项测试、四条 PR CI、主分支冷安装和标准 Sigstore 出处验证。完整索引见 [core-v0.6.0-validation.json](evidence/core-v0.6.0-validation.json)。wheel/源码 ZIP/patch/统计/哈希保存在运行 41215258915；验证只适用于记录中的准确产物和源码提交，后续文档提交不自动继承同一签名。
+
+## 原生开发执行修复补充
+
+`tests/test_develop_execution.py` 使用真实合成子进程覆盖 CLI 单次执行、摘要持久化、非零退出、超时与预览。修复前执行路径因布尔参数遮蔽函数而 TypeError；修复后调用共用有界执行器。此证据不包含真实模型、OpenCode 原生会话或独立 QA 验收。
+

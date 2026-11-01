@@ -83,12 +83,14 @@ def inspect_stream(data):
         for o in test_runs
     )
     skills = sorted({o["skill"] for o in observations if o["skill"]})
+    terminal_event = bool(events) and events[-1].get("type") == "step_finish" and (events[-1].get("part") or {}).get("reason") == "stop"
     if malformed:
         stream_status = "PARTIAL"
     elif not data.strip():
         stream_status = "EMPTY"
     else:
         stream_status = "PARSE_CLEAN"
+    ordering_trustworthy = stream_status == "PARSE_CLEAN" and terminal_event
 
     def observed(value):
         return "OBSERVED" if value else "NOT_OBSERVED"
@@ -96,6 +98,7 @@ def inspect_stream(data):
     return {
         "schema": "ads-opencode-behavior/v1",
         "stream_status": stream_status,
+        "terminal_event_observed": terminal_event,
         "malformed_event_lines": malformed,
         "completed_tool_calls": len(observations),
         "tool_counts": {
@@ -109,10 +112,11 @@ def inspect_stream(data):
         "test_commands_observed": len(test_runs),
         "direct_edit_tools_observed": len(edits),
         "test_before_first_direct_edit": (
-            "INDETERMINATE" if first_test is None or first_edit is None
+            "INDETERMINATE" if not ordering_trustworthy or first_test is None or first_edit is None
             else "OBSERVED" if first_test < first_edit else "NOT_OBSERVED"
         ),
         "observed_red_green_sequence": (
+            "INDETERMINATE" if not ordering_trustworthy else
             "OBSERVED" if failed_before_edit and passed_after_edit else "NOT_OBSERVED"
         ),
         "evidence_limit": (

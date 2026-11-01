@@ -1,5 +1,6 @@
 """OpenCode 单次原生调用与上下文核对；不创建 Agent Loop。"""
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ import uuid
 
 from .project import Blocked, require, path_in, write_json, digest
 from .process import execute as execute_process
+from .behavior import inspect_stream
 
 
 def route(description):
@@ -65,6 +67,8 @@ def develop(project, model, execute=False, session=None):
     before = project.snapshot(development=True)
     directory = path_in(project.root, '.ads/development/' + uuid.uuid4().hex)
     directory.mkdir(parents=True, exist_ok=False)
+    if os.name == 'posix':
+        directory.chmod(0o700)
     started = time.monotonic()
     code, error = None, None
     with (directory / 'native-private.jsonl').open('wb') as out, (directory / 'stderr-private.log').open('wb') as err:
@@ -76,8 +80,14 @@ def develop(project, model, execute=False, session=None):
             error = 'INTERRUPTED'
         except OSError:
             error = 'EXECUTION_ERROR'
-    types, tools, session_ids = [], 0, set()
-    for line in (directory / 'native-private.jsonl').read_text(errors='replace').splitlines():
+    if os.name == 'posix':
+        (directory / 'native-private.jsonl').chmod(0o600)
+        (directory / 'stderr-private.log').chmod(0o600)
+    stream = (directory / 'native-private.jsonl').read_text(errors='replace')
+    behavior = inspect_stream(stream)
+    write_json(directory / 'behavior.json', behavior)
+    types, session_ids = [], set()
+    for line in stream.splitlines():
         try:
             event = json.loads(line)
         except ValueError:
@@ -87,11 +97,8 @@ def develop(project, model, execute=False, session=None):
                 session_ids.add(event['sessionID'])
             if event.get('type') == 'error':
                 detail = event.get('error')
-                kind = detail.get('type') if isinstance(detail, dict) else None
+                kind = (detail.get('type') or detail.get('name')) if isinstance(detail, dict) else None
                 error = kind if isinstance(kind, str) and kind else 'NATIVE_ERROR'
-            part = event.get('part') or {}
-            if isinstance(part, dict) and part.get('type') == 'tool':
-                tools += 1
             types.append(event.get('type'))
     try:
         after = project.snapshot(development=True)
@@ -102,7 +109,8 @@ def develop(project, model, execute=False, session=None):
     report = {**plan, 'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
               'exit_code': code, 'error_type': error, 'duration_seconds': time.monotonic()-started,
               'input_subject': before, 'output_subject': after, 'authority_unchanged': authority_unchanged,
-              'native_sessions_observed': len(session_ids), 'stream_tool_events': tools,
+              'native_sessions_observed': len(session_ids), 'stream_tool_events': behavior['completed_tool_calls'],
+              'behavior_evidence': behavior,
               'session_id': next(iter(session_ids)) if len(session_ids) == 1 else None,
               'completion': 'NOT_VERIFIED', 'verification': '必须运行外部 ads verify 和 QA，不能凭原生退出 0 认可完成'}
     write_json(directory / 'summary.json', report)

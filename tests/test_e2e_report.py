@@ -87,7 +87,7 @@ class E2EReportTests(unittest.TestCase):
             'id':'serial', 'status':'passed', 'attempts':[{
                 'status':'passed', 'cleanup':'complete', 'secondaryErrors':[],
                 'members':[
-                    {'testId':skipped['testId'], 'status':'skipped', 'steps':[]},
+                    {'testId':skipped['testId'], 'status':'skipped', 'skip':{'cause':'explicit','reason':'not applicable'}, 'steps':[]},
                     {'testId':passed['testId'], 'status':'passed', 'steps':[]},
                 ],
             }],

@@ -472,6 +472,9 @@ async function generate(
       update: 'disable',
       plugins: [],
       mcp: {},
+      instructions: [],
+      skills: [],
+      references: {},
       permissions: [{ action: '*', resource: '*', effect: 'deny' }],
       policies: [
           { action: 'tool.use', resource: '*', effect: 'deny' },

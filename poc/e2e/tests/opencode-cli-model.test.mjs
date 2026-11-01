@@ -22,7 +22,7 @@ async function setup() {
   const previous = {};
   const resetKeys = [
     'ADS_E2E_OPENCODE_BIN', 'ADS_E2E_OPENCODE_TEST_LOG', 'ADS_E2E_OPENCODE_CLI_MODEL',
-    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER',
+    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER', 'ADS_E2E_TEST_SESSION_ID',
     'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
     'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL',
   ];
@@ -136,6 +136,19 @@ test('model identity mismatch fails closed and still deletes the OpenCode sessio
     await assert.rejects(model.doGenerate(options()), /model identity did not match/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('session export id mismatch fails closed and still deletes the created session', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_SESSION_ID = 'another-session';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /export id did not match/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete' && call.sessionID === 'ses_fake').length, 1);
   } finally {
     await env.close();
   }

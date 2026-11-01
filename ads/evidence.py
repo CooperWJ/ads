@@ -220,14 +220,48 @@ def decide(project):
     run = load_current(project)
     obligations = []
     for obligation in contract['obligations']:
-        required = obligation['tests']
-        outcomes = []
-        for target in required:
+        evidence_refs, outcomes = [], []
+        for target in obligation['tests']:
             check_id, test_id = target['check'], target['case']
-            matching = [c['status'] for result in run['checks'] if result['check_id'] == check_id
-                        and result['status'] == 'PASS' for c in result['cases'] if c['id'] == test_id]
-            outcomes.append(bool(matching) and all(status == 'PASS' for status in matching))
-        obligations.append({'id': obligation['id'], 'status': 'PASS' if all(outcomes) else 'NOT_VERIFIED'})
+            matches = [
+                (result, case)
+                for result in run['checks'] if result['check_id'] == check_id
+                for case in result['cases'] if case['id'] == test_id
+            ]
+            if len(matches) != 1:
+                observed = 'MISSING' if not matches else 'AMBIGUOUS'
+                passed = False
+                reference = None
+            else:
+                result, case = matches[0]
+                case_status = case['status']
+                if result['status'] != 'PASS':
+                    observed = 'CHECK_FAILED' if case_status == 'PASS' else case_status
+                else:
+                    observed = case_status
+                passed = result['status'] == 'PASS' and case_status == 'PASS'
+                reference = {
+                    'run_id': run['run_id'],
+                    'subject_sha256': run['subject']['sha256'],
+                    'check_id': check_id,
+                    'case_id': test_id,
+                    'check_status': result['status'],
+                    'case_status': case_status,
+                    'report': result['report'],
+                    'report_sha256': result['report_sha256'],
+                }
+            outcomes.append(passed)
+            evidence_refs.append({
+                'expected': 'PASS',
+                'observed': observed,
+                'status': 'PASS' if passed else 'NOT_VERIFIED',
+                'reference': reference,
+            })
+        obligations.append({
+            'id': obligation['id'],
+            'status': 'PASS' if outcomes and all(outcomes) else 'NOT_VERIFIED',
+            'verification_evidence': evidence_refs,
+        })
     from .sources import discover
     discovered = discover(project)
     good = run['status'] == 'PASS' and all(x['status'] == 'PASS' for x in obligations) and discovered['status'] == 'INVENTORIED'
@@ -238,6 +272,8 @@ def decide(project):
         good = good and alignment_state == 'SCOPED_RECONCILED_LOCAL'
     return {'schema': 'ads-project-decision/v1', 'development': 'DEV_VERIFIED_LOCAL' if good else 'BLOCKED',
             'obligations': obligations, 'subject_sha256': run['subject']['sha256'],
+            'verification_run_id': run['run_id'],
+            'verification_run_status': run['status'],
             'development_binding': run.get('development_binding', {'status': 'NOT_LINKED'}),
             'source_inventory': discovered['status'], 'requirements_alignment': alignment_state,
             'semantic_completeness': 'NOT_VERIFIED',

@@ -42,6 +42,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
         self.assertEqual(result["verification_before_completion_invoked"], "OBSERVED")
         self.assertEqual(result["test_before_first_direct_edit"], "OBSERVED")
         self.assertEqual(result["observed_red_green_sequence"], "OBSERVED")
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "OBSERVED")
         serialized = json.dumps(result)
         self.assertNotIn("pytest -q", serialized)
         self.assertNotIn("private output", serialized)
@@ -51,6 +52,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
         only_test = inspect_stream(self.stream(tool("bash", {"command": "npm test"}, 0)))
         self.assertEqual(only_test["test_before_first_direct_edit"], "INDETERMINATE")
         self.assertEqual(only_test["observed_red_green_sequence"], "INDETERMINATE")
+        self.assertEqual(only_test["final_verification_after_last_direct_edit"], "INDETERMINATE")
         only_edit = inspect_stream(self.stream(tool("edit", {"filePath": "x.py"})))
         self.assertEqual(only_edit["test_before_first_direct_edit"], "INDETERMINATE")
 
@@ -62,6 +64,23 @@ class BehaviorEvidenceTests(unittest.TestCase):
         ))
         self.assertEqual(result["observed_red_green_sequence"], "INDETERMINATE")
         self.assertEqual(result["test_before_first_direct_edit"], "INDETERMINATE")
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "INDETERMINATE")
+
+    def test_final_test_failure_after_last_edit_is_visible(self):
+        result = inspect_stream(self.stream(
+            tool("edit", {"filePath": "src/app.py"}),
+            tool("bash", {"command": "pytest -q"}, 1),
+            {"type": "step_finish", "part": {"reason": "stop"}},
+        ))
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "FAILED")
+
+    def test_later_edit_invalidates_final_verification_observation(self):
+        result = inspect_stream(self.stream(
+            tool("bash", {"command": "pytest -q"}, 0),
+            tool("edit", {"filePath": "src/app.py"}),
+            {"type": "step_finish", "part": {"reason": "stop"}},
+        ))
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "NOT_OBSERVED")
 
     def test_shell_edit_is_not_claimed_as_direct_edit(self):
         result = inspect_stream(self.stream(
@@ -70,6 +89,7 @@ class BehaviorEvidenceTests(unittest.TestCase):
         ))
         self.assertEqual(result["direct_edit_tools_observed"], 0)
         self.assertEqual(result["test_before_first_direct_edit"], "INDETERMINATE")
+        self.assertEqual(result["final_verification_after_last_direct_edit"], "INDETERMINATE")
 
     def test_malformed_lines_are_partial_and_empty_stream_is_empty(self):
         partial = inspect_stream('{"type":"text"}\nnot-json')

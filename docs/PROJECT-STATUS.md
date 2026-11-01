@@ -14,6 +14,7 @@
 | Playwright Test Agents | PARTIAL | 原生识别三个子 Agent；MCP 状态未显示已配置服务器，模型执行未验证 |
 | 开发变更范围记录 | 已实现，确定性回归已测 | 从执行前后 Git 快照记录跟踪及未忽略文件的 added/modified/deleted 路径及计数；不把变更事实等同于范围合规 |
 | OpenCode 原生错误分类 | 已实现，确定性回归已测 | 安全摘要区分 MODEL_QUOTA、RATE_LIMITED、AUTH_OR_PERMISSION、UPSTREAM_TIMEOUT、UPSTREAM_FAILURE；不保留原始 message，不自动重试/换模 |
+| 最后编辑后的验证观察 | `behavior.json.final_verification_after_last_direct_edit` | 观察最后一次直接编辑之后是否出现成功/失败测试；缺少完整终止证据为 INDETERMINATE | 不证明测试意图、需求覆盖或间接编辑已被识别 |
 | OpenCode 开发行为证据与验证绑定 | 已实现，确定性 CI 已测 | `behavior.json` 记录原生 Skill/工具/测试顺序；`ads verify` 绑定开发 run ID、输出快照及行为摘要哈希，区分 MATCHED/STALE/INVALID/NOT_LINKED；不把行为观察等同于 TDD 合规或需求正确 |
 | Superpowers 原生集成 | 原生注册与显式激活通过；模型使用未验证 | OpenCode 2.2.3，官方固定提交；调试/TDD/完成核验三技能已通过原生 API 激活，resume=false 不调用模型；真实模型请求仍为 provider.free-limit |
 | 多来源需求发现 | PARTIAL | MD/SVG/XLSX、PDF 文本层及 Docling/Figma 导出适配；嵌入附件/图形明确 UNKNOWN，固定样本不证明陌生需求语义召回率 |
@@ -25,6 +26,8 @@
 | 框架效果对照 | 报告适配已测；实际实验未完成 | 缺模型额度、holdout/fresh 独立样本与因果结论 |
 
 ## 当前迭代
+
+v0.6.13 增加最后一次直接编辑后的验证观察：记录最后可识别测试命令与最后直接编辑的顺序及退出结果；缺少最终 stop 事件或测试/编辑证据时保持 INDETERMINATE。它不等同于需求符合性证明。
 
 v0.6.12 为每次原生开发运行生成实际文件变更清单（新增/修改/删除），来源于执行前后 Git 快照，覆盖跟踪及未忽略文件；忽略文件不在清单内，不可读取时显式 UNKNOWN。它为后续与任务范围、需求义务的对照提供事实，不自行判断改动是否合理。
 

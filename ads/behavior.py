@@ -82,6 +82,8 @@ def inspect_stream(data):
         o["exit_code"] == 0 and first_edit is not None and o["ordinal"] > first_edit
         for o in test_runs
     )
+    last_edit = max(edits, key=lambda o: o["ordinal"], default=None)
+    last_test = max(test_runs, key=lambda o: o["ordinal"], default=None)
     skills = sorted({o["skill"] for o in observations if o["skill"]})
     final_part = events[-1].get("part") if events else None
     terminal_event = (bool(events) and events[-1].get("type") == "step_finish"
@@ -93,6 +95,14 @@ def inspect_stream(data):
     else:
         stream_status = "PARSE_CLEAN"
     ordering_trustworthy = stream_status == "PARSE_CLEAN" and terminal_event
+    if not ordering_trustworthy or last_edit is None or last_test is None or last_test["exit_code"] is None:
+        final_verification = "INDETERMINATE"
+    elif last_test["ordinal"] <= last_edit["ordinal"]:
+        final_verification = "NOT_OBSERVED"
+    elif last_test["exit_code"] == 0:
+        final_verification = "OBSERVED"
+    else:
+        final_verification = "FAILED"
 
     def observed(value):
         return "OBSERVED" if value else "NOT_OBSERVED"
@@ -121,6 +131,7 @@ def inspect_stream(data):
             "INDETERMINATE" if not ordering_trustworthy else
             "OBSERVED" if failed_before_edit and passed_after_edit else "NOT_OBSERVED"
         ),
+        "final_verification_after_last_direct_edit": final_verification,
         "evidence_limit": (
             "Event order and tool metadata only. This does not prove test intent, "
             "business correctness, complete file-change coverage, or that a skill's "

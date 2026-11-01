@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -20,16 +20,22 @@ async function setup() {
   await chmod(binary, 0o755);
   await writeFile(log, '', 'utf8');
   const previous = {};
-  const values = {
+  const resetKeys = [
+    'ADS_E2E_OPENCODE_BIN', 'ADS_E2E_OPENCODE_TEST_LOG', 'ADS_E2E_OPENCODE_CLI_MODEL',
+    'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER',
+    'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
+    'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL',
+  ];
+  for (const key of resetKeys) {
+    previous[key] = process.env[key];
+    delete process.env[key];
+  }
+  Object.assign(process.env, {
     ADS_E2E_OPENCODE_BIN: binary,
     ADS_E2E_OPENCODE_TEST_LOG: log,
     ADS_E2E_OPENCODE_CLI_MODEL: 'opencode/deepseek-v4.1-flash-free',
     ADS_E2E_TEST_REPLY: DEFAULT_REPLY,
-  };
-  for (const [key, value] of Object.entries(values)) {
-    previous[key] = process.env[key];
-    process.env[key] = value;
-  }
+  });
   return {
     directory,
     log,
@@ -113,9 +119,7 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     assert.ok(run.args.includes('ads-e2e-model'));
     assert.equal(calls.filter((call) => call.command === 'export').length, 1);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
-    assert.equal(await (async () => {
-      try { await readFile(run.directory); return true; } catch { return false; }
-    })(), false);
+    await assert.rejects(access(run.directory));
   } finally {
     await env.close();
   }

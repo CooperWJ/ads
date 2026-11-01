@@ -225,7 +225,7 @@ async function assertCliVersion(binary: string, cwd: string, env: NodeJS.Process
       if (result.error || result.code !== 0) {
         throw new Error('OpenCode CLI version preflight failed.');
       }
-      const version = `${result.stdout} ${result.stderr}`.match(/(?:^|\\s)v?(\\d+)\\.(\\d+)\\.(\\d+)(?:\\s|$)/);
+      const version = `${result.stdout} ${result.stderr}`.match(/(?:^|\s)v?(\d+)\.(\d+)\.(\d+)(?:\s|$)/);
       if (!version) throw new Error('OpenCode CLI version could not be determined.');
       const actual = version.slice(1).map(Number);
       const minimum = [2, 2, 3];

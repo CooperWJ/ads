@@ -91,6 +91,23 @@ def prepare(workspace, variant, probe=None, agent=False):
     return Project(workspace)
 
 
+def agent_status(agent_evidence, correct):
+    if not isinstance(agent_evidence, dict) or agent_evidence.get('status') == 'BLOCKED':
+        return 'BLOCKED'
+    cache_modes = agent_evidence.get('cache_modes', {})
+    if (agent_evidence.get('model_calls', 0) == 0
+            or cache_modes.get('self-finalized', 0) > 0
+            or agent_evidence.get('model_provenance') != 'OBSERVED'):
+        return 'BLOCKED'
+    if (agent_evidence.get('status') != 'OBSERVED'
+            or agent_evidence.get('mode') != 'AGENT_PLUS_DETERMINISTIC'
+            or agent_evidence.get('act_steps', 0) == 0
+            or agent_evidence.get('deterministic_assertions_after_act', 0) == 0
+            or not correct):
+        return 'FAIL'
+    return 'PASS'
+
+
 def collect(project, run, expected, out, agent=False):
     check = run['checks'][0]
     report_path = project.root / check['report']
@@ -104,23 +121,8 @@ def collect(project, run, expected, out, agent=False):
                or (expected == 'FAIL' and run['status'] == 'FAIL' and check['exit_code'] == 1
                    and 'failed' in statuses and not native['errors'] and check['failure'] is None and expected_failure))
     agent_evidence = check['cases'][0].get('agent_evidence') if agent and check.get('cases') else None
-    if agent:
-        cache_modes = (agent_evidence or {}).get('cache_modes', {})
-        agent_observed = (agent_evidence or {}).get('status') == 'OBSERVED'
-        model_calls = (agent_evidence or {}).get('model_calls', 0)
-        if (not agent_observed or model_calls == 0 or cache_modes.get('self-finalized', 0) > 0
-                or (agent_evidence or {}).get('model_provenance') != 'OBSERVED'
-                or (agent_evidence or {}).get('status') == 'BLOCKED'):
-            state = 'BLOCKED'
-        elif (agent_evidence.get('mode') != 'AGENT_PLUS_DETERMINISTIC'
-              or agent_evidence.get('act_steps', 0) == 0
-              or agent_evidence.get('deterministic_assertions_after_act', 0) == 0
-              or not correct):
-            state = 'FAIL'
-        else:
-            state = 'PASS'
-    else:
-        state = 'PASS' if correct else 'FAIL'
+    state = agent_status(agent_evidence, correct) if agent else ('PASS' if correct else 'FAIL')
+
     # 原始报告、下载、截图、轨迹、日志均保留；不把基础设施错误算作检错成功。
     destination = out / 'evidence'
     shutil.copytree(project.root / '.ads/runs' / run['run_id'], destination)

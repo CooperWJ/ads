@@ -261,6 +261,7 @@ function parseJsonOutput(stdout: string): JsonRecord {
 function assistantResult(
   exported: JsonRecord,
   stepFinish: JsonRecord | undefined,
+  expectedSessionId: string,
   expectedProvider: string,
   expectedModel: string,
 ): {
@@ -271,6 +272,12 @@ function assistantResult(
   providerId: string;
   modelId: string;
 } {
+  const sessionInfo = (exported.info && typeof exported.info === 'object' ? exported.info
+    : exported.session && typeof exported.session === 'object' ? exported.session : {}) as JsonRecord;
+  const exportedSessionId = sessionInfo.id ?? sessionInfo.sessionID;
+  if (exportedSessionId !== expectedSessionId) {
+    throw new Error('OpenCode session export id did not match the created session.');
+  }
   const messages = Array.isArray(exported.messages) ? exported.messages as JsonRecord[] : [];
   const assistants = messages.filter((message) => {
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
@@ -470,7 +477,7 @@ async function generate(
     }
     const exported = parseJsonOutput(exportedRun.stdout);
     const stepFinish = [...events].reverse().find((event) => event.type === 'step_finish');
-    const assistant = assistantResult(exported, stepFinish, providerId, modelId);
+    const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId);
 
     if (run.error || run.code !== 0 || run.signal) {
       throw new Error('OpenCode CLI model execution did not complete successfully.');

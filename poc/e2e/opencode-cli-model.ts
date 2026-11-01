@@ -429,15 +429,13 @@ async function generate(
     const config = {
       '$schema': 'https://opencode.ai/config.json',
       update: 'disable',
-      plugin: [],
+      plugins: [],
       mcp: {},
-      experimental: {
-        policies: [
+      policies: [
           { action: 'tool.use', resource: '*', effect: 'deny' },
           { action: 'provider.use', resource: '*', effect: 'deny' },
           { action: 'provider.use', resource: providerId, effect: 'allow' },
-        ],
-      },
+      ],
     };
     await writeFile(join(directory, 'opencode.json'), JSON.stringify(config, null, 2), 'utf8');
 

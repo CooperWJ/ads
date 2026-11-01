@@ -72,3 +72,22 @@ python3 poc/e2e/native_probe.py --executable /绝对路径/opencode --out /tmp/a
 该入口隔离 XDG、不给模型发送提示，仅验证真实连接与显式技能激活。不要公开 native-private.log 或 private/，其中可能含服务临时凭据；CI 只保留 native-summary.json。首次结果索引见 docs/evidence/e2e-v0.6.7-first-validation.json。
 
 同轮实际原始需求开发仍被匿名模型额度拒绝，0 工具调用且源码未变化，摘要见 docs/evidence/opencode-v0.6.7-attempt.json。本轮未把参考工程、模型配置或技能加载计为完整模型开发成功。
+
+
+## OpenCode Console Agent profile
+
+默认 `e2e.config.ts` 只执行确定性旅程。Agent 混合旅程位于独立的 `e2e.agent.config.ts`，避免普通 CI 在没有用户授权或模型额度时偷偷发起模型请求。
+
+准备与运行：
+
+```bash
+cd poc/e2e
+npm ci
+npm run login:agent
+npm run models:agent
+ADS_E2E_OPENCODE_MODEL='<models 命令返回的精确模型 ID>' python3 calibrate.py --agent --out /tmp/ads-e2e-agent
+```
+
+该 profile 使用 e2e 官方 `opencode-console` OAuth provider；通过设备授权登录 OpenCode Console，并且只使用显式指定的模型。模型列表以 `npm run models:agent` 的实际结果为准。OpenCode Zen 免费模型不向第三方客户端开放时，不应尝试绕过限制，也不会自动切换到其他模型或账号；无可用模型、凭证缺失或额度不可达时，结果保持 BLOCKED。
+
+Agent 只负责在 UI 中选择 Project Echo、输入指定内容并保存。保存后的状态、刷新后的持久化值、数据库记录和 XLSX 导出由确定性断言与独立 oracle 检查。Agent profile 继承 `cache: 'off'`，限制最大 8 步、12 次模型调用和 32k 输入 token。CI 只验证 profile 配置，不登录、不调用真实模型；真实执行结果必须由显式运行产生的 report 与模型用量证据确认。

@@ -1,5 +1,6 @@
 """运行已知虚构参考/坏变体，复用 e2e 和 ads verify，不调度模型或签署 QA。"""
 import argparse
+import hashlib
 from contextlib import contextmanager
 import json
 import os
@@ -140,16 +141,64 @@ def collect(project, run, expected, out, agent=False):
                or (expected == 'FAIL' and run['status'] == 'FAIL' and check['exit_code'] == 1
                    and 'failed' in statuses and not native['errors'] and check['failure'] is None and expected_failure))
     agent_evidence = check['cases'][0].get('agent_evidence') if agent and check.get('cases') else None
+
+    repair_ledger_path = out / 'agent-repair-ledger.json'
+    repair_ledger = None
+    repair_ledger_sha256 = None
+    repair_ledger_status = 'NOT_APPLICABLE'
+    if agent:
+        repair_ledger_status = 'MISSING'
+        if repair_ledger_path.is_file():
+            try:
+                repair_ledger = json.loads(repair_ledger_path.read_text())
+                observations = repair_ledger.get('observations', [])
+                first = observations[0] if len(observations) > 0 else {}
+                final = observations[-1] if len(observations) > 1 else {}
+                repair_ledger_valid = (
+                    repair_ledger.get('schema') == 'ads-agent-repair-ledger/v1'
+                    and repair_ledger.get('test_id') == 'agent-bounded-repair-save-refresh-export'
+                    and repair_ledger.get('max_repairs') == 1
+                    and repair_ledger.get('repair_attempts') == 1
+                    and len(observations) == 2
+                    and first.get('ok') is False
+                    and first.get('code') == 'SAVE_HTTP_503'
+                    and first.get('status') == 'Save failed: HTTP 503'
+                    and first.get('attempts') == 1
+                    and first.get('persisted') == ''
+                    and final.get('ok') is True
+                    and final.get('code') == 'SAVE_VERIFIED'
+                    and final.get('status') == 'Saved'
+                    and final.get('selectedProjectId') == '1'
+                    and final.get('note') == 'Reviewed in M0'
+                    and final.get('persisted') == 'Reviewed in M0'
+                    and final.get('attempts') == 2
+                    and repair_ledger.get('save_attempts') == 3
+                    and repair_ledger.get('export_attempts') == 1
+                    and repair_ledger.get('final_persisted') == 'Reviewed in M0'
+                    and repair_ledger.get('final_exported') == 'Reviewed in M0'
+                )
+                repair_ledger_status = 'VALID' if repair_ledger_valid else 'INVALID'
+                repair_ledger_sha256 = hashlib.sha256(repair_ledger_path.read_bytes()).hexdigest()
+                correct = correct and repair_ledger_valid
+            except (ValueError, OSError, TypeError, IndexError):
+                repair_ledger_status = 'INVALID'
+                correct = False
+
     state = agent_status(agent_evidence, correct) if agent else ('PASS' if correct else 'FAIL')
 
     # 原始报告、下载、截图、轨迹、日志均保留；不把基础设施错误算作检错成功。
     destination = out / 'evidence'
     shutil.copytree(project.root / '.ads/runs' / run['run_id'], destination)
+    if agent and repair_ledger_path.is_file():
+        shutil.copyfile(repair_ledger_path, destination / 'agent-repair-ledger.json')
     return {'expected':expected,'actual':run['status'],'development':decision['development'],
             'native_exit_code':check['exit_code'],'native_statuses':statuses,
             'expected_failure_marker':marker,'expected_failure_observed':expected_failure,
             'subject_sha256':run['subject']['sha256'],'report_sha256':check['report_sha256'],
             'agent_evidence':agent_evidence,
+            'agent_repair_ledger_status':repair_ledger_status,
+            'agent_repair_ledger_sha256':repair_ledger_sha256,
+            'agent_repair_attempts':repair_ledger.get('repair_attempts') if repair_ledger else None,
             'status':state}
 
 
@@ -198,7 +247,8 @@ def calibrate(out, browser=True, agent=False, agent_backend='opencode-cli'):
             with environment({'ADS_E2E_FAIL_FIRST_SAVE':'1'}):
                 with service(project.root / 'app', location) as url, environment({
                     'ADS_E2E_URL':url, 'ADS_PYTHON':sys.executable, 'ADS_DB_PATH':str(project.root / 'app/runtime.sqlite'),
-                    'E2E_TELEMETRY_DISABLED':'1', 'CI':'1'}):
+                    'E2E_TELEMETRY_DISABLED':'1', 'CI':'1',
+                    'ADS_E2E_REPAIR_LEDGER_PATH':str(location / 'agent-repair-ledger.json')}):
                     agent_row = collect(project, evidence.run_checks(project), 'PASS', location, agent=True)
     overall = 'FAIL' if any(r['status'] == 'FAIL' for r in rows+probes) else (
         'BLOCKED' if agent_row and agent_row['status'] == 'BLOCKED' else

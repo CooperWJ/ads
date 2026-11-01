@@ -544,7 +544,7 @@ async function generate(
     if (sessionId) {
       const deleted = await capture(binary, ['session', 'delete', sessionId], directory, { ...process.env });
       if (deleted.error || deleted.code !== 0) {
-        failure = new Error('OpenCode session cleanup failed; the run is not accepted.');
+        failure = new Error(`OpenCode session cleanup failed for ${sessionId}; manually run: opencode session delete ${sessionId}`);
         result = undefined;
       }
     }

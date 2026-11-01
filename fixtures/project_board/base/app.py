@@ -115,6 +115,18 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, KeyError, json.JSONDecodeError):
             self.json(400, {'error': 'invalid payload'})
             return
+        if os.environ.get('ADS_E2E_FAIL_FIRST_SAVE') == '1':
+            # Test-only transient fault: fail the first save request, then allow recovery.
+            attempts_file = HERE / '.ads-e2e-save-attempts'
+            try:
+                attempts = int(attempts_file.read_text())
+            except (FileNotFoundError, ValueError):
+                attempts = 0
+            attempts += 1
+            attempts_file.write_text(str(attempts))
+            if attempts == 1:
+                self.json(503, {'error': 'injected transient save failure'})
+                return
         with database() as db:
             result = db.execute('UPDATE projects SET notes=? WHERE id=?', (notes, int(parts[2])))
             db.commit()

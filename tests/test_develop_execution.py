@@ -100,7 +100,11 @@ Path('scope-note.txt').write_text('observed addition')
         self.assertEqual(binding['behavior_summary']['test_command_process_results'], {
             'exit_zero': 0, 'nonzero': 0, 'unknown': 0,
         })
-        self.assertNotIn('command', json.dumps(binding['behavior_summary']))
+        serialized_behavior = json.dumps(binding['behavior_summary'])
+        # Field names may legitimately contain "command"; assert that private command
+        # contents are absent rather than rejecting the public metric's name.
+        self.assertNotIn('python -m unittest', serialized_behavior)
+        self.assertNotIn('native-stub', serialized_behavior)
 
     def test_cli_verify_exposes_development_binding(self):
         project = self.configure("pass" + chr(10))

@@ -33,8 +33,10 @@ class BehaviorEvidenceTests(unittest.TestCase):
             tool("edit", {"filePath": "src/app.py"}),
             tool("bash", {"command": "pytest -q"}, 0),
             tool("skill", {"name": "verification-before-completion"}),
+            {"type": "step_finish", "part": {"reason": "stop"}},
         ))
         self.assertEqual(result["stream_status"], "PARSE_CLEAN")
+        self.assertTrue(result["terminal_event_observed"])
         self.assertEqual(result["systematic_debugging_invoked"], "OBSERVED")
         self.assertEqual(result["test_driven_development_invoked"], "OBSERVED")
         self.assertEqual(result["verification_before_completion_invoked"], "OBSERVED")
@@ -51,6 +53,15 @@ class BehaviorEvidenceTests(unittest.TestCase):
         self.assertEqual(only_test["observed_red_green_sequence"], "NOT_OBSERVED")
         only_edit = inspect_stream(self.stream(tool("edit", {"filePath": "x.py"})))
         self.assertEqual(only_edit["test_before_first_direct_edit"], "INDETERMINATE")
+
+    def test_ordering_is_indeterminate_without_terminal_event(self):
+        result = inspect_stream(self.stream(
+            tool("bash", {"command": "pytest -q"}, 1),
+            tool("edit", {"filePath": "src/app.py"}),
+            tool("bash", {"command": "pytest -q"}, 0),
+        ))
+        self.assertEqual(result["observed_red_green_sequence"], "INDETERMINATE")
+        self.assertEqual(result["test_before_first_direct_edit"], "INDETERMINATE")
 
     def test_shell_edit_is_not_claimed_as_direct_edit(self):
         result = inspect_stream(self.stream(

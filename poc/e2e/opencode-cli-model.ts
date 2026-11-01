@@ -289,6 +289,7 @@ function assistantResult(
   expectedSessionId: string,
   expectedProvider: string,
   expectedModel: string,
+  expectedAgent: string,
 ): {
   text: string;
   tokens: JsonRecord;
@@ -314,6 +315,8 @@ function assistantResult(
 
   const message = assistants[0];
   const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
+  if (info.agent !== expectedAgent) throw new Error('OpenCode session used an unexpected agent profile.');
+  if (info.error) throw new Error('OpenCode assistant message contains a provider or execution error.');
   const parts = Array.isArray(message.parts) ? message.parts as JsonRecord[]
     : Array.isArray(info.content) ? info.content as JsonRecord[] : [];
   const text = parts.filter((part) => part.type === 'text' && typeof part.text === 'string')
@@ -503,7 +506,7 @@ async function generate(
     }
     const exported = parseJsonOutput(exportedRun.stdout);
     const stepFinish = [...events].reverse().find((event) => event.type === 'step_finish');
-    const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId);
+    const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId, 'ads-e2e-model');
 
     if (run.error || run.code !== 0 || run.signal) {
       throw new Error('OpenCode CLI model execution did not complete successfully.');

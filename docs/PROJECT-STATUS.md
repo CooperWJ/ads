@@ -19,7 +19,7 @@
 | OpenCode 开发行为证据与验证绑定 | 已实现，确定性 CI 已测 | `behavior.json` 记录原生 Skill/工具/测试顺序；`ads verify` 绑定开发 run ID、输出快照及行为摘要哈希，区分 MATCHED/STALE/INVALID/NOT_LINKED；不把行为观察等同于 TDD 合规或需求正确 |
 | Superpowers 原生集成 | 原生注册与显式激活通过；模型使用未验证 | OpenCode 2.2.3，官方固定提交；调试/TDD/完成核验三技能已通过原生 API 激活，resume=false 不调用模型；真实模型请求仍为 provider.free-limit |
 | 多来源需求发现 | PARTIAL | MD/SVG/XLSX、PDF 文本层及 Docling/Figma 导出适配；嵌入附件/图形明确 UNKNOWN，固定样本不证明陌生需求语义召回率 |
-| 原始需求到 OpenCode 实现切片 | BLOCKED（模型额度） | 已实际启动 @opencode/cli 2.2.3，匿名模型返回 provider.free-limit/429；未生成候选 |
+| 原始需求到 OpenCode 实现切片 | 真实执行已开始；完整切片自测通过 | 本地已配额度，`opencode/deepseek-v4.1-flash-free` 经 `ads develop --execute` 真实执行（Session `ses_e6a5c0bc…`，续接 CONFIRMED）；修改 3 个交付文件并新增 dev_tests，7 项集成自测通过。**含人工介入**：修正一处匿名写测试预期（`save()` 默认 editor 角色）；未做容器外独立验收，不构成完整交付或 QA |
 | 容器外 UI/API/DB 旅程验收 | PASS（虚构契约范围） | 运行 41210486664 的参考/故障变体及实际 Docker 边界核对通过；不计作 OpenCode 开发通过 |
 | QA 多 Sheet 与标准执行适配 | 本地适配已测 | 多 Sheet/隐藏 Sheet、必验集合和只读缺陷回流已测；不签署独立身份或 QA_ACCEPTED |
 | 发布/部署证据适配 | 已实现，外部集成分开验收 | 运行 41215258915 已签署并核对 wheel 摘要、源码提交和主分支工作流身份；部署探测已本测，无生产发布授权 |
@@ -27,6 +27,8 @@
 | 框架效果对照 | 报告适配已测；实际实验未完成 | 缺模型额度、holdout/fresh 独立样本与因果结论 |
 
 ## 当前迭代
+
+本轮在真实模型额度可用后重试 `ads develop --execute`，突破了此前持续标注的 MODEL_QUOTA 阻断：`opencode/deepseek-v4.1-flash-free` 在虚构开发切片上真实执行（原生 Session `ses_e6a5c0bc…`，第二次 `--session` 续接身份 CONFIRMED），修改 `app.py`、`web/index.html`、`web/app.js` 三个交付文件并新增 `dev_tests/test_user_journey.py` 集成自测，7 项自测全部通过（导航/七字段持久化/加载失败/越权写拒绝/保存持久化/XLSX 导出/非法载荷）。须如实记录：失败定位中发现一处自测预期错误（"匿名写"经 `save()` 默认 editor 角色发请求，未能触发服务端 403），由人工修正后才全绿——即**应用权限逻辑本身正确，是测试预期 bug**。本轮未做容器外独立验收，`ads develop` 仍如实标为 `EXECUTED_UNVERIFIED`，不构成完整交付、QA 或独立验证。
 
 v0.6.15 将每项已确认义务的预期结果与本次实际用例结果并列输出，引用验证 run、输入快照、检查/用例 ID 和原始报告哈希；缺失或重复用例证据不通过。它提升了结果可追溯性，不证明义务语义正确、需求绝对完备或 QA 独立性。
 

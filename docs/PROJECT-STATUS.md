@@ -18,6 +18,7 @@
 | 验证回执低敏行为摘要 | `ads verify` 的 `development_binding.behavior_summary` | 在验证回执展示经哈希绑定的 Skill/测试/编辑计数与顺序状态，不包含原始命令或内容 | 仍是行为观察，不证明技能遵循、测试意图或业务正确性 |
 | OpenCode 开发行为证据与验证绑定 | 已实现，确定性 CI 已测 | `behavior.json` 记录原生 Skill/工具/测试顺序；`ads verify` 绑定开发 run ID、输出快照及行为摘要哈希，区分 MATCHED/STALE/INVALID/NOT_LINKED；不把行为观察等同于 TDD 合规或需求正确 |
 | Superpowers 原生集成 | 原生注册与显式激活通过；模型使用未验证 | OpenCode 2.2.3，官方固定提交；调试/TDD/完成核验三技能已通过原生 API 激活，resume=false 不调用模型；真实模型请求仍为 provider.free-limit |
+| e2e Agent 行为证据投影 | 确定性解析测试；真实 Agent 运行 NOT_VERIFIED | 从 report-1 按用例汇总 Agent step、确定性断言、动作数、模型调用/token/成本和缓存模式；敏感指令/对话/事件细节不进入摘要；不能把缓存重放计为模型调用 |
 | 多来源需求发现 | PARTIAL | MD/SVG/XLSX、PDF 文本层及 Docling/Figma 导出适配；嵌入附件/图形明确 UNKNOWN，固定样本不证明陌生需求语义召回率 |
 | 原始需求到 OpenCode 实现切片 | 真实执行已开始；完整切片自测通过 | 本地已配额度，`opencode/deepseek-v4.1-flash-free` 经 `ads develop --execute` 真实执行（Session `ses_e6a5c0bc…`，续接 CONFIRMED）；修改 3 个交付文件并新增 dev_tests，7 项集成自测通过。**含人工介入**：修正一处匿名写测试预期（`save()` 默认 editor 角色）；未做容器外独立验收，不构成完整交付或 QA |
 | 容器外 UI/API/DB 旅程验收 | PASS（虚构契约范围） | 运行 41210486664 的参考/故障变体及实际 Docker 边界核对通过；不计作 OpenCode 开发通过 |
@@ -27,6 +28,8 @@
 | 框架效果对照 | 报告适配已测；实际实验未完成 | 缺模型额度、holdout/fresh 独立样本与因果结论 |
 
 ## 当前迭代
+
+v0.6.18 为 e2e 原生 report-1 增加低敏 Agent 行为摘要，并补上普通 attempt 内失败 step 不得被外层 PASS 掩盖的核对。报告可区分 Agent 操作、确定性断言、模型调用/用量和缓存重放；不复制提示词、模型对话、事件详情或屏幕内容。当前只通过合成报告夹具验证解析逻辑，尚未执行真实 agent.act 模型旅程，也未验证缓存关闭、Agent 定位失败、修复和重验闭环。
 
 本轮在真实模型额度可用后重试 `ads develop --execute`，突破了此前持续标注的 MODEL_QUOTA 阻断：`opencode/deepseek-v4.1-flash-free` 在虚构开发切片上真实执行（原生 Session `ses_e6a5c0bc…`，第二次 `--session` 续接身份 CONFIRMED），修改 `app.py`、`web/index.html`、`web/app.js` 三个交付文件并新增 `dev_tests/test_user_journey.py` 集成自测，7 项自测全部通过（导航/七字段持久化/加载失败/越权写拒绝/保存持久化/XLSX 导出/非法载荷）。须如实记录：失败定位中发现一处自测预期错误（"匿名写"经 `save()` 默认 editor 角色发请求，未能触发服务端 403），由人工修正后才全绿——即**应用权限逻辑本身正确，是测试预期 bug**。本轮未做容器外独立验收，`ads develop` 仍如实标为 `EXECUTED_UNVERIFIED`，不构成完整交付、QA 或独立验证。
 

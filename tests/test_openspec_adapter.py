@@ -91,7 +91,8 @@ class OpenSpecAdapterTests(unittest.TestCase):
         self.assertEqual(ref['status'], 'NOT_VERIFIED')
         self.assertEqual(ref['reference']['run_id'], run['run_id'])
         self.assertEqual(ref['reference']['report_sha256'], run['checks'][0]['report_sha256'])
-        self.assertEqual(failed['verification_evidence'][1]['observed'], 'CHECK_FAILED')
+        sibling = next(x for x in decision['obligations'] if x['id'] == openspec.scenarios(self.project)[1]['id'])
+        self.assertEqual(sibling['verification_evidence'][0]['observed'], 'CHECK_FAILED')
 
     def test_missing_and_ambiguous_test_evidence_never_pass(self):
         openspec.compile_contract(self.project)

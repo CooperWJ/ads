@@ -132,16 +132,56 @@ def evaluate(project):
             continue
         tests = decision.get('tests')
         require(isinstance(tests, list) and bool(tests), '已确认 QA 用例没有必验执行集合')
-        outcomes = []
+        outcomes, evidence_refs = [], []
         for target in tests:
-            found = [c['status'] for check in run['checks'] if check['check_id'] == target['check']
-                     and check['status'] == 'PASS' for c in check['cases'] if c['id'] == target['case']]
-            outcomes.append(bool(found) and all(x == 'PASS' for x in found))
-        cases.append({'id': case['id'], 'status': 'PASS' if all(outcomes) else 'NOT_VERIFIED'})
+            matches = [
+                (check, observed)
+                for check in run['checks'] if check['check_id'] == target['check']
+                for observed in check['cases'] if observed['id'] == target['case']
+            ]
+            if len(matches) != 1:
+                observed_status = 'MISSING' if not matches else 'AMBIGUOUS'
+                passed, reference = False, None
+            else:
+                check, observed = matches[0]
+                case_status = observed['status']
+                if check['status'] != 'PASS' and case_status == 'PASS':
+                    observed_status = 'CHECK_FAILED'
+                else:
+                    observed_status = case_status
+                passed = check['status'] == 'PASS' and case_status == 'PASS'
+                reference = {
+                    'run_id': run['run_id'],
+                    'subject_sha256': run['subject']['sha256'],
+                    'check_id': target['check'],
+                    'case_id': target['case'],
+                    'check_status': check['status'],
+                    'case_status': case_status,
+                    'report': check['report'],
+                    'report_sha256': check['report_sha256'],
+                }
+            outcomes.append(passed)
+            evidence_refs.append({
+                'expected': 'PASS',
+                'observed': observed_status,
+                'status': 'PASS' if passed else 'NOT_VERIFIED',
+                'reference': reference,
+            })
+        cases.append({
+            'id': case['id'], 'module': case['module'],
+            'source_locator': case['source_locator'],
+            'case_sha256': case['case_sha256'],
+            'expected': case['fields']['expected'],
+            'decision_ref': decision['decision_ref'],
+            'reviewer': decision['reviewer'],
+            'status': 'PASS' if outcomes and all(outcomes) else 'NOT_VERIFIED',
+            'verification_evidence': evidence_refs,
+        })
     required = [case for case in cases if case['status'] != 'EXCLUDED']
     complete = bool(required) and run['status'] == 'PASS' and all(c['status'] == 'PASS' for c in required)
     return {'schema': 'ads-qa-execution/v1', 'case_execution': 'PASS_LOCAL' if complete else 'BLOCKED',
-            'cases': cases, 'source_sha256': imported['source_sha256'],
+            'run_id': run['run_id'], 'subject_sha256': run['subject']['sha256'],
+            'run_status': run['status'], 'cases': cases, 'source_sha256': imported['source_sha256'],
             'independence': 'NOT_VERIFIED', 'qa_acceptance': 'NOT_GRANTED',
             'note': '复用外部评审决定；本机执行不提供独立 QA 身份或验收授权'}
 

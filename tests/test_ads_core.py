@@ -315,7 +315,7 @@ class QATests(unittest.TestCase):
         self.assertTrue(all('requirement_id' not in c['fields'] for c in imported['cases']))
 
     def test_dev_pass_cannot_substitute_qa_and_pending_blocks(self):
-        project, _ = self.configure_qa()
+        project, imported = self.configure_qa()
         evidence.run_checks(project)
         with self.assertRaises((Blocked, FileNotFoundError)):
             qa.evaluate(project)
@@ -323,9 +323,55 @@ class QATests(unittest.TestCase):
         result = qa.evaluate(project)
         self.assertEqual(result['case_execution'], 'PASS_LOCAL')
         self.assertEqual(result['qa_acceptance'], 'NOT_GRANTED')
+        self.assertEqual(result['run_id'], evidence.load_current(project, 'qa')['run_id'])
+        for original, evaluated in zip(imported['cases'], result['cases']):
+            self.assertEqual(evaluated['source_locator'], original['source_locator'])
+            self.assertEqual(evaluated['case_sha256'], original['case_sha256'])
+            self.assertEqual(evaluated['expected'], original['fields']['expected'])
+            self.assertEqual(evaluated['status'], 'PASS')
+            ref = evaluated['verification_evidence'][0]
+            self.assertEqual(ref['expected'], 'PASS')
+            self.assertEqual(ref['observed'], 'PASS')
+            self.assertEqual(ref['status'], 'PASS')
+            self.assertEqual(ref['reference']['run_id'], result['run_id'])
+            self.assertEqual(ref['reference']['subject_sha256'], result['subject_sha256'])
+            self.assertTrue(ref['reference']['report_sha256'])
         (self.root/'pending.flag').touch()
         evidence.run_checks(project, 'qa')
         result = qa.evaluate(project)
+        self.assertEqual(result['case_execution'], 'BLOCKED')
+
+    def test_missing_or_ambiguous_qa_case_evidence_blocks(self):
+        project, _ = self.configure_qa()
+        run = evidence.run_checks(project, 'qa')
+
+        missing = copy.deepcopy(run)
+        missing['checks'][0]['cases'] = []
+        with patch('ads.qa.load_current', return_value=missing):
+            result = qa.evaluate(project)
+        first = result['cases'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'MISSING')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(result['case_execution'], 'BLOCKED')
+
+        ambiguous = copy.deepcopy(run)
+        ambiguous['checks'][0]['cases'].append(copy.deepcopy(ambiguous['checks'][0]['cases'][0]))
+        with patch('ads.qa.load_current', return_value=ambiguous):
+            result = qa.evaluate(project)
+        first = result['cases'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'AMBIGUOUS')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
+        self.assertIsNone(first['reference'])
+        self.assertEqual(result['case_execution'], 'BLOCKED')
+
+        failed_check = copy.deepcopy(run)
+        failed_check['checks'][0]['status'] = 'FAIL'
+        with patch('ads.qa.load_current', return_value=failed_check):
+            result = qa.evaluate(project)
+        first = result['cases'][0]['verification_evidence'][0]
+        self.assertEqual(first['observed'], 'CHECK_FAILED')
+        self.assertEqual(first['status'], 'NOT_VERIFIED')
         self.assertEqual(result['case_execution'], 'BLOCKED')
 
     def test_changed_qa_source_needs_external_review_again(self):

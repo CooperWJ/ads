@@ -160,15 +160,17 @@ class E2EAgentEvidenceTests(unittest.TestCase):
         self.assertEqual(self.evaluate(doc)['status'], 'FAIL')
 
     def test_agent_metrics_and_model_cost_fail_closed(self):
-        for mutate in ('missing_metrics', 'negative_calls', 'negative_cost'):
+        for mutate in ('missing_metrics', 'negative_calls', 'negative_cost', 'calls_mismatch'):
             doc = report()
             step = agent_step()
             if mutate == 'missing_metrics':
                 step.pop('metrics')
             elif mutate == 'negative_calls':
                 step['metrics']['modelCalls'] = -1
-            else:
+            elif mutate == 'negative_cost':
                 step['model']['estimatedCostUsd'] = -0.1
+            else:
+                step['model']['calls'] = 1
             doc['run']['results'][0]['attempts'][0]['steps'] = [step]
             with self.subTest(mutate=mutate), self.assertRaises(Blocked):
                 self.evaluate(doc)

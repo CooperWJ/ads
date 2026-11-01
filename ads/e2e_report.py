@@ -20,6 +20,9 @@ def e2e(data):
     statuses = ('passed', 'failed', 'timed-out', 'interrupted', 'flaky', 'skipped')
     selected = [r for r in results if r.get('selected') is True]
     summary = run['summary']
+    # Do not use summary.executed to upgrade a case: upstream report versions may
+    # undercount a runtime-skipped member of a serial group. Per-case PASS below
+    # requires the selected result and its actual attempt/member evidence.
     require(all(type(summary.get(k)) is int and summary[k] >= 0 for k in
                 ('discovered','selected','executed','passed','failed','interrupted','flaky','skipped')), 'e2e 计数必须为非负整数')
     require(summary.get('discovered') == len(results) and summary.get('selected') == len(selected), 'e2e 报告分母不符')

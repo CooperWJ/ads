@@ -80,7 +80,7 @@ class Project:
             require(check.get('role') in ('dev', 'qa'), '检查必须明确 dev/qa 责任')
             require(isinstance(check.get('argv'), list) and bool(check['argv'])
                     and all(isinstance(x, str) and x for x in check['argv']), '检查命令必须是参数数组')
-            require(check.get('report', {}).get('kind') in ('junit', 'playwright'), '必须使用标准测试报告')
+            require(check.get('report', {}).get('kind') in ('junit', 'playwright', 'e2e'), '必须使用标准测试报告')
             require(isinstance(check.get('timeout_seconds'), int) and 1 <= check['timeout_seconds'] <= 3600, '检查必须有有界超时')
             require(check.get('effect') in ('READ_ONLY', 'IDEMPOTENT'), '验证仅自动执行只读或幂等检查')
             path_in(self.root, check.get('cwd', '.'), exists=True)

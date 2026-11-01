@@ -8,6 +8,7 @@ import uuid
 
 from .project import Blocked, require, digest, path_in, write_json
 from .process import execute
+from .e2e_report import e2e
 
 
 def junit(data):
@@ -59,7 +60,7 @@ def playwright(data):
 
 def parse(kind, data):
     require(len(data) <= 20 * 1024 * 1024, '测试报告过大')
-    return {'junit': junit, 'playwright': playwright}[kind](data)
+    return {'junit': junit, 'playwright': playwright, 'e2e': e2e}[kind](data)
 
 
 def run_checks(project, role='dev'):

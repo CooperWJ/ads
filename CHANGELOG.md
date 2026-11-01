@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.5 — 上游 e2e 真实旅程与 OpenCode 薄接入
+
+- 固定 e2e 与 web 引擎版本，用真实浏览器覆盖虚构项目的保存、刷新、SQLite 持久化及下载内容，保留正确参考和故障变体。
+- 消费原生 report-1，保留 flaky、skipped、局部重跑遗留、串行组与清理失败；复用原有执行与证据机制，不新增审批流程。
+- `ads init --e2e` 注册已安装的官方 MCP 与技能来源，保留用户服务器、权限和 Skill Router；可与官方 Superpowers 插件合用。
+- 精简合入 Karpathy 开发原则与成果优先的输出约定，不叠加第二套开发循环或全局风格插件。
+- 浏览器、原生连接、模型开发分别记录实际结果；不把配置或参考解校准当成真实模型开发通过。
+
 ## v0.6.4 — 官方 Superpowers 原生接入
 
 - 新增 `ads init --superpowers`：用 OpenCode V2 官方插件配置接入固定上游提交；已有项目只增量配置插件，保留 Profile、用户路由、OpenSpec 入口、模型和权限。

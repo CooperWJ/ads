@@ -7,6 +7,29 @@ SUPERPOWERS_COMMIT = '2ce8aa15d05bd57213e6f746f953aafb7ded7a8b'
 SUPERPOWERS_PLUGIN = 'superpowers@git+https://github.com/obra/superpowers.git#' + SUPERPOWERS_COMMIT
 
 
+def e2e(root):
+    """只注册已安装的官方 e2e；不下载、不覆盖用户服务器或权限。"""
+    target = path_in(root, 'opencode.json')
+    require(not path_in(root, 'opencode.jsonc').exists(), '已有 JSONC，请在原配置合并 e2e MCP 和 skills 数组')
+    config = json.loads(target.read_text()) if target.exists() else {}
+    require(isinstance(config, dict) and 'plugin' not in config, '需要 OpenCode V2 配置')
+    mcp = config.setdefault('mcp', {})
+    require(isinstance(mcp, dict), 'mcp 必须为对象')
+    servers = mcp.setdefault('servers', {})
+    require(isinstance(servers, dict), 'mcp.servers 必须为对象')
+    skills = config.setdefault('skills', [])
+    require(isinstance(skills, list) and all(isinstance(s, str) for s in skills), 'V2 skills 必须为数组')
+    if 'e2e' not in servers:
+        servers['e2e'] = {'type':'local','command':['npx','--no-install','e2e','mcp'],
+                          'environment':{'E2E_TELEMETRY_DISABLED':'1'}, 'codemode':False, 'protocol':'auto'}
+    source = './node_modules/e2e/skills'
+    if source not in skills:
+        skills.append(source)
+    write_json(target, config)
+    return {'status':'CONFIGURED','configuration':'opencode.json','server':servers['e2e'],
+            'runtime':'NOT_VERIFIED','next':'在项目安装固定版本 e2e 与对应引擎，重启 OpenCode 并实际检查 MCP 和原生 skill'}
+
+
 def superpowers(root):
     target = path_in(root, 'opencode.json')
     require(not path_in(root, 'opencode.jsonc').exists(),

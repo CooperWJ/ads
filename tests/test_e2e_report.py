@@ -28,12 +28,18 @@ class E2EReportTests(unittest.TestCase):
         doc['run']['results'][0]['attempts'] = []
         self.assertEqual(self.outcome(doc)[0]['status'], 'FAIL')
 
+    def test_passed_attempt_without_step_evidence_is_rejected(self):
+        doc = report()
+        doc['run']['results'][0]['attempts'][0].pop('steps')
+        with self.assertRaises(Blocked):
+            self.outcome(doc)
+
     def test_flaky_exit_zero_does_not_become_pass(self):
         doc = report()
         run = doc['run']
         run['summary'].update(passed=0,flaky=1)
-        run['results'][0].update(status='flaky',attempts=[{'status':'failed','cleanup':'complete'},
-                                                        {'status':'passed','cleanup':'complete'}])
+        run['results'][0].update(status='flaky',attempts=[{'status':'failed','cleanup':'complete','steps':[]},
+                                                        {'status':'passed','cleanup':'complete','steps':[]}])
         self.assertEqual(self.outcome(doc)[0]['status'], 'FAIL')
 
     def test_skipped_filtered_and_interrupted_are_not_run(self):

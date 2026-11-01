@@ -60,8 +60,11 @@ class OpenSpecAdapterTests(unittest.TestCase):
         self.assertEqual(decision['verification_run_id'], run['run_id'])
         self.assertEqual(decision['verification_run_status'], 'PASS')
         self.assertEqual(len(decision['obligations']), 2)
-        for obligation in decision['obligations']:
+        for obligation, scenario in zip(decision['obligations'], openspec.scenarios(self.project)):
             self.assertEqual(obligation['status'], 'PASS')
+            self.assertEqual(obligation['requirement'], scenario['requirement'])
+            self.assertEqual(obligation['scenario'], scenario['scenario'])
+            self.assertEqual(obligation['sources'], scenario['sources'])
             self.assertEqual(len(obligation['verification_evidence']), 1)
             evidence_ref = obligation['verification_evidence'][0]
             self.assertEqual(evidence_ref['expected'], 'PASS')

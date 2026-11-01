@@ -63,4 +63,4 @@
 
 ## 上游 e2e 接入
 
-固定 e2e 0.22.0、web 0.15.4 实际运行原虚构案例的保存/刷新/DB/下载旅程，并复用 ads verify 消费原生报告；不自研另一套浏览器执行器。首次 CI 41262125347 参考通过、假保存和缺导出列失败；OpenCode 原生 MCP/技能发现与显式激活已本测。v0.6.18 增加 report-1 的低敏 Agent 行为投影，按用例区分 agent.act/assert、确定性断言、动作/模型用量与缓存重放；不泄露提示词、对话或事件详情，并拒绝失败 step 被外层 PASS 掩盖。**仅验证解析与合成夹具，真实 Agent 模型调用、缓存关闭和自主修复仍 NOT_VERIFIED。**详见 [运行说明](E2E-JOURNEY.md) 与 [结果索引](evidence/e2e-v0.6.7-first-validation.json)。这是一条已确认范围的真实旅程，不升级为所有 ADS 能力或独立 QA 验收完成。
+固定 e2e 0.22.0、web 0.15.4 实际运行原虚构案例的保存/刷新/DB/下载旅程，并复用 ads verify 消费原生报告；不自研另一套浏览器执行器。首次 CI 41262125347 参考通过、假保存和缺导出列失败；OpenCode 原生 MCP/技能发现与显式激活已本测。v0.6.18 增加 report-1 的低敏 Agent 行为投影，按用例区分 agent.act/assert、确定性断言、动作/模型用量、缓存重放和安全错误码；不泄露提示词、对话或事件详情，并拒绝失败 step 被外层 PASS 掩盖。v0.6.19 增加独立 OpenCode Console OAuth profile 和可选混合旅程，Agent 操作后由确定性 UI/刷新/DB/XLSX oracle 验证；默认 CI 不发模型请求，不做账号或模型回退。**配置与错误分类已测，真实 Agent 模型调用及自主修复仍 NOT_VERIFIED。**详见 [运行说明](E2E-JOURNEY.md) 与 [结果索引](evidence/e2e-v0.6.7-first-validation.json)。这是一条已确认范围的真实旅程，不升级为所有 ADS 能力或独立 QA 验收完成。

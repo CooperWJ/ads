@@ -115,13 +115,14 @@ def _agent_evidence(result, attempts):
         'output_tokens': output_tokens,
         'estimated_cost_usd': sum(costs) if costs and missing_cost_steps == 0 and missing_model_steps == 0 else None,
         'models': [{'provider': provider, 'model': model} for provider, model in sorted(models)],
-        'model_provenance': 'OBSERVED' if models else ('NOT_REPORTED' if model_calls else 'NO_MODEL_CALLS'),
+        'model_provenance': ('PARTIAL' if missing_model_steps else 'OBSERVED') if models else
+                            ('NOT_REPORTED' if model_calls else 'NO_MODEL_CALLS'),
         'model_usage_status': 'NO_MODEL_CALLS' if not model_calls else
                               ('NOT_REPORTED' if not model_steps else
                                ('PARTIAL' if missing_model_steps else 'OBSERVED')),
         'model_cost_status': 'NO_MODEL_CALLS' if not model_calls else
-                             ('NOT_REPORTED' if not model_steps or missing_cost_steps == model_steps else
-                              ('PARTIAL' if missing_cost_steps else 'OBSERVED')),
+                             ('NOT_REPORTED' if not model_steps or (missing_cost_steps and not costs) else
+                              ('PARTIAL' if missing_cost_steps or missing_model_steps else 'OBSERVED')),
         'cache_modes': cache_modes,
     }
 

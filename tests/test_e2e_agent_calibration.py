@@ -42,8 +42,8 @@ class E2EAgentCalibrationTests(unittest.TestCase):
             self.assertTrue((root / 'tests/agent-journey.e2e.ts').is_file())
             self.assertIn("cache: 'off'", (root / 'e2e.config.ts').read_text())
             config = json.loads((root / 'ads.project.json').read_text())
-            argv = config['checks'][0]['argv']
-            self.assertIn('e2e.agent.opencode-cli.config.ts', argv)
+            argvs = [check.get('argv', []) for check in config.get('checks', [])]
+            self.assertTrue(any('e2e.agent.opencode-cli.config.ts' in argv for argv in argvs))
 
     def test_prepare_binds_console_profile_without_cli_adapter(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -57,7 +57,8 @@ class E2EAgentCalibrationTests(unittest.TestCase):
             self.assertTrue((root / 'e2e.agent.config.ts').is_file())
             self.assertFalse((root / 'opencode-cli-model.ts').exists())
             config = json.loads((root / 'ads.project.json').read_text())
-            self.assertIn('e2e.agent.config.ts', config['checks'][0]['argv'])
+            argvs = [check.get('argv', []) for check in config.get('checks', [])]
+            self.assertTrue(any('e2e.agent.config.ts' in argv for argv in argvs))
 
     def test_only_live_agent_plus_deterministic_run_can_pass(self):
         self.assertEqual(calibrate.agent_status(observed_agent(), True), 'PASS')

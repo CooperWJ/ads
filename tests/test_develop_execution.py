@@ -51,6 +51,16 @@ print(json.dumps({'type': 'step_finish', 'sessionID': 'synthetic-session'}))
         self.assertEqual(len(summaries), 1)
         self.assertEqual(json.loads(summaries[0].read_text()), report)
 
+    def test_behavior_evidence_is_projected_into_run_summary(self):
+        project = self.configure('''import json
+print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
+ 'type':'tool','tool':'skill','state':{'status':'completed','input':{'name':'systematic-debugging'},'metadata':{'exit':0}}}}))
+''')
+        result = engineering.develop(project, 'synthetic/model', execute=True)
+        self.assertEqual(result['behavior_evidence']['systematic_debugging_invoked'], 'OBSERVED')
+        evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
+        self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
+
     def test_native_failure_is_recorded_and_blocked(self):
         project = self.configure('import sys\nsys.exit(7)\n')
         result = engineering.develop(project, 'synthetic/model', execute=True)

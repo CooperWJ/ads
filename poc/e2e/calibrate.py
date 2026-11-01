@@ -151,9 +151,13 @@ def collect(project, run, expected, out, agent=False):
         if repair_ledger_path.is_file():
             try:
                 repair_ledger = json.loads(repair_ledger_path.read_text())
-                observations = repair_ledger.get('observations', [])
-                first = observations[0] if len(observations) > 0 else {}
-                final = observations[-1] if len(observations) > 1 else {}
+                if not isinstance(repair_ledger, dict):
+                    raise ValueError('repair ledger must be an object')
+                observations = repair_ledger.get('observations')
+                if not isinstance(observations, list):
+                    raise ValueError('repair ledger observations must be a list')
+                first = observations[0] if len(observations) > 0 and isinstance(observations[0], dict) else {}
+                final = observations[-1] if len(observations) > 1 and isinstance(observations[-1], dict) else {}
                 repair_ledger_valid = (
                     repair_ledger.get('schema') == 'ads-agent-repair-ledger/v1'
                     and repair_ledger.get('test_id') == 'agent-bounded-repair-save-refresh-export'

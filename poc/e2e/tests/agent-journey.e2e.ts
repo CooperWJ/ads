@@ -129,5 +129,5 @@ test('agent-bounded-repair-save-refresh-export', async ({ app, agent, screen, br
     export_attempts: exportAttempts(),
     final_persisted: observed.persisted,
     final_exported: observed.exported,
-  }, null, 2) + '\\n');
+  }, null, 2));
 });

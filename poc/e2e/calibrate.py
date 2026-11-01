@@ -109,7 +109,8 @@ def collect(project, run, expected, out, agent=False):
         agent_observed = (agent_evidence or {}).get('status') == 'OBSERVED'
         model_calls = (agent_evidence or {}).get('model_calls', 0)
         if (not agent_observed or model_calls == 0 or cache_modes.get('self-finalized', 0) > 0
-                or (agent_evidence or {}).get('model_provenance') != 'OBSERVED'):
+                or (agent_evidence or {}).get('model_provenance') != 'OBSERVED'
+                or (agent_evidence or {}).get('status') == 'BLOCKED'):
             state = 'BLOCKED'
         elif (agent_evidence.get('mode') != 'AGENT_PLUS_DETERMINISTIC'
               or agent_evidence.get('act_steps', 0) == 0

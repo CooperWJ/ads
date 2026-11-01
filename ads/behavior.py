@@ -83,7 +83,9 @@ def inspect_stream(data):
         for o in test_runs
     )
     skills = sorted({o["skill"] for o in observations if o["skill"]})
-    terminal_event = bool(events) and events[-1].get("type") == "step_finish" and (events[-1].get("part") or {}).get("reason") == "stop"
+    final_part = events[-1].get("part") if events else None
+    terminal_event = (bool(events) and events[-1].get("type") == "step_finish"
+                      and isinstance(final_part, dict) and final_part.get("reason") == "stop")
     if malformed:
         stream_status = "PARTIAL"
     elif not data.strip():

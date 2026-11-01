@@ -3,7 +3,7 @@
 ## v0.6.8 — OpenCode 行为证据投影
 
 - 从 OpenCode `run --format json` 原生事件流投影低敏行为事实：工具调用、Superpowers Skill 调用、测试命令与直接编辑工具的可观察顺序。
-- 记录可观察的 test-before-edit 与 fail/edit/pass 顺序，但不把启发式证据认定为 TDD 合规或业务正确性。
+- 记录可观察的 test-before-edit 与 fail/edit/pass 顺序；只有解析无损且收到最终 stop 事件才给出顺序结论，不把启发式证据认定为 TDD 合规或业务正确性。
 - 将行为摘要与单次原生开发运行绑定；原始事件和 stderr 仍留在本地私有运行目录，摘要不复制提示词、命令、源代码或工具输出。
 - 修正原生 OpenCode error event 使用 `error.name` 时被误归类为通用错误的问题。
 - 增加确定性事件夹具回归；模型调用与真实 Agent 行为改善仍须在可用模型额度下实测。

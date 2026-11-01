@@ -88,7 +88,7 @@ def inspect_stream(data):
     elif not data.strip():
         stream_status = "EMPTY"
     else:
-        stream_status = "COMPLETE"
+        stream_status = "PARSE_CLEAN"
 
     def observed(value):
         return "OBSERVED" if value else "NOT_OBSERVED"

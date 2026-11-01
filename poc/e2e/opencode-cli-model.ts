@@ -490,7 +490,7 @@ async function generate(
           sessionDigest: exportDigest,
           providerId,
           modelId,
-          costUsd: assistant.cost,
+          ...(assistant.cost !== undefined ? { costUsd: assistant.cost } : {}),
           sessionDeleted: true,
         },
       },

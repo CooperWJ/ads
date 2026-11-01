@@ -61,6 +61,15 @@ print(json.dumps({'type':'tool_use','sessionID':'ses_synthetic','part':{
         evidence = next((self.root / '.ads/development').glob('*/behavior.json'))
         self.assertEqual(json.loads(evidence.read_text()), result['behavior_evidence'])
 
+    @unittest.skipUnless(os.name == 'posix', 'POSIX permissions only')
+    def test_raw_native_evidence_is_private_to_current_user(self):
+        project = self.configure("print('{}')\\n")
+        engineering.develop(project, 'synthetic/model', execute=True)
+        directory = next((self.root / '.ads/development').iterdir())
+        self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+        self.assertEqual((directory / 'native-private.jsonl').stat().st_mode & 0o777, 0o600)
+        self.assertEqual((directory / 'stderr-private.log').stat().st_mode & 0o777, 0o600)
+
     def test_native_failure_is_recorded_and_blocked(self):
         project = self.configure('import sys\nsys.exit(7)\n')
         result = engineering.develop(project, 'synthetic/model', execute=True)

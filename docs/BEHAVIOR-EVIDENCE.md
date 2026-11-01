@@ -48,3 +48,7 @@ OpenCode 原生 error event 会投影有限的结构化字段：错误类型、H
 ## 原生 Session 续接确认
 
 当调用方显式提供 `--session` 时，ADS 不仅记录传入参数，还核对 OpenCode JSONL 事件中的原生 `sessionID`：出现目标 ID 才标记 `CONFIRMED`；出现其他 ID 标记 `MISMATCH` 并阻断；没有可观察 ID 标记 `NOT_OBSERVED` 并阻断。未请求续接时标记 `NOT_REQUESTED`。这可防止 CLI 忽略或未能确认续接时，ADS 仍将本轮报告为已续接。该确认依赖原生事件流，不能证明远程副作用恰好一次。
+
+## 开发变更范围
+
+每次开发摘要从执行前后的 Git 仓库快照计算 `change_set`，仅记录 Git 跟踪及未被忽略的文件中的新增、修改、删除路径及计数，不复制文件内容；忽略文件不在此清单的覆盖范围内。覆盖范围标记为 `git-tracked-and-unignored-files`。快照不可读取时标记 `UNKNOWN` / `UNAVAILABLE`，不把空集合冒充无变更。该清单是实际改动事实，不自动判定改动是否超出需求；开发摘要哈希被验证绑定后，`ads verify` 记录也会携带同一份 `change_set`，便于把变更范围与任务、需求义务和测试覆盖一起审查。

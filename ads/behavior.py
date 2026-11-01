@@ -104,6 +104,7 @@ def inspect_stream(data):
         },
         "skills_invoked": skills,
         "systematic_debugging_invoked": observed("systematic-debugging" in skills),
+        "test_driven_development_invoked": observed("test-driven-development" in skills),
         "verification_before_completion_invoked": observed("verification-before-completion" in skills),
         "test_commands_observed": len(test_runs),
         "direct_edit_tools_observed": len(edits),

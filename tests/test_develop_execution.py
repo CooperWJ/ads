@@ -86,7 +86,7 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(json.loads(output.getvalue())['development_binding']['status'], 'MATCHED')
 
     def test_verification_marks_development_stale_when_code_changed_after_run(self):
-        project = self.configure("pass\\n")
+        project = self.configure("pass" + chr(10))
         development = engineering.develop(project, 'synthetic/model', execute=True)
         with (self.root / 'app.py').open('a') as source:
             source.write(chr(10) + '# changed after native development' + chr(10))
@@ -96,7 +96,7 @@ print(json.dumps({'type':'step_finish','part':{'reason':'stop'}}))
         self.assertEqual(run['development_binding']['run_id'], development['run_id'])
 
     def test_tampered_behavior_artifact_invalidates_bound_verification(self):
-        project = self.configure("pass\\n")
+        project = self.configure("pass" + chr(10))
         engineering.develop(project, 'synthetic/model', execute=True)
         run = test_ads_core.evidence.run_checks(project)
         behavior = self.root / '.ads' / 'development' / run['development_binding']['run_id'] / 'behavior.json'

@@ -48,8 +48,8 @@ def _agent_evidence(result, attempts):
                         require(type(model[key]) is int and model[key] >= 0, 'Agent token/call 计数无效')
                 if 'estimatedCostUsd' in model:
                     cost = model['estimatedCostUsd']
-                    require(type(cost) in (int, float) and math.isfinite(cost) and cost >= 0,
-                            'Agent 模型成本无效')
+                    require(type(cost) in (int, float) and cost >= 0
+                            and (type(cost) is int or math.isfinite(cost)), 'Agent 模型成本无效')
             agent_steps.append((step, metrics, cache, model))
 
     if not agent_steps:
@@ -162,7 +162,7 @@ def e2e(data):
                  and all(a.get('status') == 'passed' and a.get('cleanup') == 'complete'
                          and not a.get('error') and not a.get('secondaryErrors')
                          and all(s.get('status') == 'passed' and not s.get('error') for s in a.get('steps', []))
-                         for a in attempts if 'members' not in a))
+                         for a in attempts))
         state = 'PASS' if clean else ('NOT_RUN' if not result['selected'] or result['status'] in ('skipped', 'interrupted') else 'FAIL')
         cases.append({'id': ident, 'status': state, 'agent_evidence': agent_evidence})
     return cases

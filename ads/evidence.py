@@ -259,6 +259,9 @@ def decide(project):
             })
         obligations.append({
             'id': obligation['id'],
+            'requirement': obligation.get('requirement'),
+            'scenario': obligation.get('scenario'),
+            'sources': obligation.get('sources', []),
             'status': 'PASS' if outcomes and all(outcomes) else 'NOT_VERIFIED',
             'verification_evidence': evidence_refs,
         })

@@ -141,6 +141,19 @@ test('model identity mismatch fails closed and still deletes the OpenCode sessio
   }
 });
 
+test('provider identity mismatch fails closed and still deletes the OpenCode session', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_PROVIDER = 'another-provider';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /model identity did not match/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
 test('session export id mismatch fails closed and still deletes the created session', async () => {
   const env = await setup();
   try {

@@ -79,7 +79,7 @@ def change_set(before, after):
     """Summarize repository path changes without copying file contents."""
     if not isinstance(after, dict):
         return {'status': 'UNKNOWN', 'coverage': 'UNAVAILABLE', 'added': [], 'modified': [], 'deleted': [],
-                'counts': {'added': 0, 'modified': 0, 'deleted': 0}}
+                'counts': {'added': None, 'modified': None, 'deleted': None}}
     old_repos = {item['name']: item.get('files', {}) for item in before.get('repositories', [])}
     new_repos = {item['name']: item.get('files', {}) for item in after.get('repositories', [])}
     added, modified, deleted = [], [], []

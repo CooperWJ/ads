@@ -2,6 +2,16 @@
   "name": "ads-e2e-journey",
   "private": true,
   "type": "module",
-  "scripts": {"test": "e2e run"},
-  "devDependencies": {"e2e": "0.22.0", "@e2e-dev/web": "0.15.4"}
+  "scripts": {
+    "test": "e2e run --config e2e.config.ts",
+    "test:agent": "e2e run --config e2e.agent.config.ts",
+    "test:agent-config": "node --test tests/agent-config.test.mjs",
+    "login:agent": "e2e login opencode-console",
+    "models:agent": "e2e models opencode-console"
+  },
+  "devDependencies": {
+    "e2e": "0.22.0",
+    "@e2e-dev/web": "0.15.4",
+    "@ai-sdk/openai-compatible": "3.0.82"
+  }
 }

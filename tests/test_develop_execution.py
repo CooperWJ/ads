@@ -203,6 +203,8 @@ print(json.dumps({'type':'text','part':{'type':'text','text':'synthetic'}}))
         self.assertEqual(result['error_type'], 'CONTEXT_UNREADABLE')
         self.assertIsNone(result['output_subject'])
         self.assertFalse(result['authority_unchanged'])
+        self.assertEqual(result['change_set']['status'], 'UNKNOWN')
+        self.assertEqual(result['change_set']['counts'], {'added': None, 'modified': None, 'deleted': None})
 
     def test_non_object_native_error_is_not_lost(self):
         project = self.configure('print(\'{"type":"error","error":"synthetic failure"}\')\n')

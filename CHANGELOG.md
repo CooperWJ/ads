@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.6.19 — OpenCode Console Agent 验证配置
+
+- 增加独立、显式启用的 e2e Agent profile，直接使用 e2e 0.22.0 官方 OpenCode Console OAuth provider；不自建模型协议、不复制 OpenCode 凭证。
+- 新增混合旅程：Agent 仅负责通过 UI 编辑并保存，后续 UI、刷新持久化、数据库和 XLSX 导出由确定性断言及独立 oracle 验证。
+- Agent profile 继承 `cache: 'off'`，并限制 steps、model calls 和输入 token；默认 CI profile 仍只运行确定性旅程，不调用模型。
+- `calibrate.py --agent` 仅在显式配置模型与完成 OAuth 登录后运行；不自动切换模型或账号。
+- 投影 e2e Agent 的安全错误代码，区分凭证/模型不可达等 BLOCKED 与模型输出无效、定位/动作失败等 FAILED；不复制错误原文。
+- CI 只验证配置与错误分类，不声称真实模型执行已通过。OpenCode Console 可用模型需以实际模型列表为准。
+
 ## v0.6.18 — e2e Agent 行为证据投影
 
 - 从原生 report-1 按用例投影 Agent 操作/判断、确定性断言、动作数、模型调用/token/成本和缓存模式；仅输出低敏计数及安全模型标识，不复制指令、对话、事件详情或屏幕内容。

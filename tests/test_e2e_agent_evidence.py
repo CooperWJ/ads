@@ -175,6 +175,42 @@ class E2EAgentEvidenceTests(unittest.TestCase):
             with self.subTest(mutate=mutate), self.assertRaises(Blocked):
                 self.evaluate(doc)
 
+    def test_provider_unreachable_error_is_projected_as_blocked_without_message(self):
+        doc = report()
+        step = agent_step()
+        step['status'] = 'failed'
+        step['error'] = {
+            'code': 'MODEL_PROVIDER_FAILED',
+            'category': 'infrastructure',
+            'blocked': False,
+            'message': 'PRIVATE PROVIDER RESPONSE',
+        }
+        doc['run']['results'][0]['attempts'][0]['steps'] = [step]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['status'], 'BLOCKED')
+        self.assertEqual(evidence['error_codes'], ['MODEL_PROVIDER_FAILED'])
+        self.assertEqual(evidence['blocked_error_codes'], ['MODEL_PROVIDER_FAILED'])
+        self.assertNotIn('PRIVATE PROVIDER RESPONSE', json.dumps(evidence))
+
+    def test_model_output_failure_is_not_misclassified_as_infrastructure_block(self):
+        doc = report()
+        step = agent_step()
+        step['status'] = 'failed'
+        step['error'] = {'code': 'MODEL_OUTPUT_INVALID', 'message': 'PRIVATE INVALID OUTPUT'}
+        doc['run']['results'][0]['attempts'][0]['steps'] = [step]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['status'], 'FAILED')
+        self.assertEqual(evidence['error_codes'], ['MODEL_OUTPUT_INVALID'])
+
+    def test_unknown_agent_error_code_is_rejected(self):
+        doc = report()
+        step = agent_step()
+        step['status'] = 'failed'
+        step['error'] = {'code': 'UNKNOWN_PROVIDER_SECRET', 'message': 'PRIVATE'}
+        doc['run']['results'][0]['attempts'][0]['steps'] = [step]
+        with self.assertRaises(Blocked):
+            self.evaluate(doc)
+
     def test_partial_model_metadata_never_reports_a_complete_cost(self):
         doc = report()
         first = agent_step()

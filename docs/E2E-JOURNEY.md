@@ -80,7 +80,7 @@ python3 poc/e2e/native_probe.py --executable /绝对路径/opencode --out /tmp/a
 
 ### Local OpenCode CLI（默认优先）
 
-使用用户本机已登录的 OpenCode CLI，不复制 API Key，也不需要再登录 e2e OAuth：
+使用用户本机已登录的 OpenCode CLI，不复制 API Key，也不需要再登录 e2e OAuth。适配器要求 OpenCode CLI **v2.2.3 或更新版本**，并在模型调用前检查版本：
 
 ```bash
 cd poc/e2e

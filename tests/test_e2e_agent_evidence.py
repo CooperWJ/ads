@@ -1,0 +1,197 @@
+import json
+import unittest
+
+from ads.e2e_report import e2e
+from ads.project import Blocked
+
+
+def report():
+    return {
+        'schemaVersion': 'report-1',
+        'run': {
+            'specVersion': '0.1',
+            'runner': {'name': 'e2e', 'version': '0.22.0'},
+            'status': 'passed',
+            'exitCode': 0,
+            'errors': [],
+            'serialGroups': [],
+            'summary': {
+                'discovered': 1, 'selected': 1, 'executed': 1, 'passed': 1,
+                'failed': 0, 'interrupted': 0, 'flaky': 0, 'skipped': 0,
+            },
+            'results': [{
+                'testId': 'tests/agent-flow.e2e.ts::save-refresh',
+                'targetId': 'chromium',
+                'agent': 'default',
+                'repeat': 0,
+                'selected': True,
+                'status': 'passed',
+                'attempts': [{
+                    'status': 'passed',
+                    'cleanup': 'complete',
+                    'secondaryErrors': [],
+                    'steps': [],
+                }],
+            }],
+        },
+    }
+
+
+def agent_step(api='agent.act', model_calls=2, cache_mode='missed'):
+    cache = {
+        'mode': cache_mode,
+        'replayedActions': 0 if cache_mode == 'missed' else 3,
+        'totalActions': 3,
+    }
+    if cache_mode != 'self-finalized':
+        cache['reason'] = 'no-entry' if cache_mode == 'missed' else 'end-mismatch'
+    step = {
+        'kind': 'agent',
+        'api': api,
+        'status': 'passed',
+        'label': 'PRIVATE INSTRUCTION MUST NOT BE PROJECTED',
+        'metrics': {
+            'modelCalls': model_calls,
+            'actionSteps': 3,
+            'observationBytes': 1200,
+            'contextBytes': 2400,
+            'ledgerBytes': 300,
+        },
+        'cache': cache,
+        'events': [{'kind': 'model', 'status': 'passed', 'detail': 'PRIVATE MODEL TRACE'}],
+        'turns': [{'index': 1, 'calls': ['private.tool'], 'outcome': 'PRIVATE MODEL OUTPUT'}],
+    }
+    if model_calls:
+        step['model'] = {
+            'provider': 'deepseek',
+            'model': 'deepseek-v4.1-flash-free',
+            'endpoint': 'provider-default',
+            'adapterVersion': 'test-adapter',
+            'policyVersion': 'test-policy',
+            'calls': model_calls,
+            'tokenAccounting': 'provider',
+            'peakTokensPerCall': 800,
+            'inputTokens': 1200,
+            'outputTokens': 220,
+            'estimatedCostUsd': 0.002,
+        }
+    return step
+
+
+def deterministic_assertion():
+    return {
+        'kind': 'assertion',
+        'api': 'expect.toHaveText',
+        'status': 'passed',
+        'label': 'getByRole("status")',
+    }
+
+
+class E2EAgentEvidenceTests(unittest.TestCase):
+    def evaluate(self, document):
+        return e2e(json.dumps(document).encode())[0]
+
+    def test_agent_act_and_deterministic_assertion_are_projected_and_model_usage_bound(self):
+        doc = report()
+        doc['run']['results'][0]['attempts'][0]['steps'] = [
+            agent_step(), deterministic_assertion(),
+        ]
+        result = self.evaluate(doc)
+        evidence = result['agent_evidence']
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(evidence['status'], 'OBSERVED')
+        self.assertEqual(evidence['mode'], 'AGENT_PLUS_DETERMINISTIC')
+        self.assertEqual(evidence['agent_steps'], 1)
+        self.assertEqual(evidence['act_steps'], 1)
+        self.assertEqual(evidence['deterministic_assertions'], 1)
+        self.assertEqual(evidence['action_steps'], 3)
+        self.assertEqual(evidence['model_calls'], 2)
+        self.assertEqual(evidence['input_tokens'], 1200)
+        self.assertEqual(evidence['output_tokens'], 220)
+        self.assertAlmostEqual(evidence['estimated_cost_usd'], 0.002)
+        self.assertEqual(evidence['models'], [{
+            'provider': 'deepseek', 'model': 'deepseek-v4.1-flash-free',
+        }])
+        self.assertEqual(evidence['model_provenance'], 'OBSERVED')
+        self.assertEqual(evidence['cache_modes']['missed'], 1)
+
+    def test_projection_never_copies_agent_instruction_turn_or_event_detail(self):
+        doc = report()
+        doc['run']['results'][0]['attempts'][0]['steps'] = [
+            agent_step(), deterministic_assertion(),
+        ]
+        result = self.evaluate(doc)
+        serialized = json.dumps(result)
+        self.assertNotIn('PRIVATE INSTRUCTION', serialized)
+        self.assertNotIn('PRIVATE MODEL TRACE', serialized)
+        self.assertNotIn('PRIVATE MODEL OUTPUT', serialized)
+        self.assertNotIn('label', result['agent_evidence'])
+        self.assertNotIn('turns', result['agent_evidence'])
+
+    def test_replayed_agent_step_does_not_claim_live_model_usage(self):
+        doc = report()
+        doc['run']['results'][0]['attempts'][0]['steps'] = [
+            agent_step(model_calls=0, cache_mode='self-finalized'),
+            deterministic_assertion(),
+        ]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['mode'], 'AGENT_PLUS_DETERMINISTIC')
+        self.assertEqual(evidence['model_calls'], 0)
+        self.assertEqual(evidence['model_provenance'], 'NO_MODEL_CALLS')
+        self.assertEqual(evidence['cache_modes']['self-finalized'], 1)
+
+    def test_agent_without_deterministic_assertion_is_explicitly_distinguished(self):
+        doc = report()
+        doc['run']['results'][0]['attempts'][0]['steps'] = [agent_step()]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['mode'], 'AGENT_WITHOUT_DETERMINISTIC_ASSERTION')
+        self.assertEqual(evidence['deterministic_assertions'], 0)
+
+    def test_agent_step_failure_cannot_hide_inside_passed_attempt(self):
+        doc = report()
+        failed = agent_step()
+        failed['status'] = 'failed'
+        doc['run']['results'][0]['attempts'][0]['steps'] = [failed]
+        self.assertEqual(self.evaluate(doc)['status'], 'FAIL')
+
+    def test_agent_metrics_and_model_cost_fail_closed(self):
+        for mutate in ('missing_metrics', 'negative_calls', 'negative_cost'):
+            doc = report()
+            step = agent_step()
+            if mutate == 'missing_metrics':
+                step.pop('metrics')
+            elif mutate == 'negative_calls':
+                step['metrics']['modelCalls'] = -1
+            else:
+                step['model']['estimatedCostUsd'] = -0.1
+            doc['run']['results'][0]['attempts'][0]['steps'] = [step]
+            with self.subTest(mutate=mutate), self.assertRaises(Blocked):
+                self.evaluate(doc)
+
+    def test_serial_group_agent_evidence_uses_the_exact_member_steps(self):
+        doc = report()
+        result = doc['run']['results'][0]
+        result['serialGroupId'] = 'group-1'
+        result['attempts'] = []
+        doc['run']['serialGroups'] = [{
+            'id': 'group-1',
+            'status': 'passed',
+            'attempts': [{
+                'status': 'passed',
+                'cleanup': 'complete',
+                'secondaryErrors': [],
+                'members': [{
+                    'testId': result['testId'],
+                    'status': 'passed',
+                    'steps': [agent_step(), deterministic_assertion()],
+                    'secondaryErrors': [],
+                }],
+            }],
+        }]
+        evidence = self.evaluate(doc)['agent_evidence']
+        self.assertEqual(evidence['mode'], 'AGENT_PLUS_DETERMINISTIC')
+        self.assertEqual(evidence['model_calls'], 2)
+
+
+if __name__ == '__main__':
+    unittest.main()

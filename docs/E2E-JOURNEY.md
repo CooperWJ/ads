@@ -99,7 +99,7 @@ python3 calibrate.py --agent --agent-backend opencode-cli --out /tmp/ads-e2e-age
 - 导出 session 验证实际 Provider、model ID、Token 和成本；随后删除 session 和临时目录。
 - 模型身份不匹配、session 无法导出或清理失败，均不接受该次结果。
 
-模型额度耗尽、例如 Provider 返回 `free-limit` 时，结果保持 BLOCKED。不会换模型、换账号、重试其他 Provider 或绕过额度限制。
+模型额度耗尽、例如 Provider 返回 `free-limit` 时，结果保持 BLOCKED。不会换模型、换账号、重试其他 Provider 或绕过额度限制。 这些隔离设置只作用于临时 e2e 项目，不修改用户主项目的 OpenCode 配置或 Skills；仅复用本机认证和显式选择的模型。
 
 ### OpenCode Console OAuth（可选）
 

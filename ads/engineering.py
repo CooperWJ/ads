@@ -27,7 +27,7 @@ def route(description):
 
 
 def context(project, freeze=False):
-    current = project.snapshot()
+    current = project.snapshot(development=True)
     target = path_in(project.root, '.ads/context.json')
     if freeze:
         write_json(target, current)
@@ -57,7 +57,7 @@ def develop(project, model, execute=False):
     require(context_report['status'] == 'CURRENT', '上下文漂移，不能使用旧快照实施')
     timeout = config.get('timeout_seconds', 600)
     require(type(timeout) is int and 1 <= timeout <= 1800, '开发调用必须有界')
-    before = project.snapshot()
+    before = project.snapshot(development=True)
     directory = path_in(project.root, '.ads/development/' + uuid.uuid4().hex)
     directory.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
@@ -82,7 +82,7 @@ def develop(project, model, execute=False):
             if isinstance(part, dict) and part.get('type') == 'tool':
                 tools += 1
             types.append(event.get('type'))
-    after = project.snapshot()
+    after = project.snapshot(development=True)
     authority_unchanged = before['files'] == after['files']
     report = {**plan, 'status': 'EXECUTED_UNVERIFIED' if code == 0 and not error and authority_unchanged else 'BLOCKED',
               'exit_code': code, 'error_type': error, 'duration_seconds': time.monotonic()-started,

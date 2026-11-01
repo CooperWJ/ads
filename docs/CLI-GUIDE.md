@@ -14,7 +14,7 @@ python3 -m venv /tmp/ads-env
 
 需要 Superpowers 时运行 `ads init --superpowers`。新项目同时初始化；已有 Profile 时只增量接入官方插件，保留已有命令和路由。OpenCode V2 重启后通过原生 `skill` 工具使用技能，不复制 `.opencode/skills`。配置与实际运行范围见 [Superpowers 接入](SUPERPOWERS.md)。
 
-空 Profile 不放行。指定原始资料目录、已有审批系统派生的只读契约和测试命令。契约是外部权威的机器投影，ADS 不提供“填写姓名即可批准”接口，也不维护第二套业务审批状态。
+初始化后可先从原始资料启动探索和开发，无需先填写契约或评审表。`TASK.md` 是可编辑任务入口；已有任务不覆盖。正式验收时再指定已确认要求派生的只读契约和项目测试命令；空配置不能证明交付通过。契约是外部权威的机器投影，ADS 不提供“填写姓名即可批准”接口，也不维护第二套业务审批状态。
 
 ## 项目 Profile
 
@@ -43,6 +43,8 @@ python3 -m venv /tmp/ads-env
 本机能核对引用及哈希，不能验证填写者的独立身份，因此本机结果不会自动变成受信 QA 或发布授权。
 
 ## 日常路径
+
+新项目先 `ads init --superpowers`，将原始资料放入 `docs/project/sources/` 并编辑 `TASK.md`。已有 Git 基线后，即可进行下面的发现、上下文加载和原生开发调用。契约、规格或评审材料尚未提供时，开发快照明确记录缺失；新增这些材料会触发重新加载上下文。`ads verify` 与 QA 仍需要确认要求，不能凭开发执行记录验收。
 
 ```bash
 ads discover

@@ -205,6 +205,9 @@ async function capture(
     let stdout = '';
     let stderr = '';
     let spawnError: Error | undefined;
+    let outputLimitExceeded = false;
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
     let child;
     try {
       child = spawn(binary, args, { cwd, env, signal, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -212,11 +215,34 @@ async function capture(
       resolve({ stdout, stderr, code: null, signal: null, error: error as Error });
       return;
     }
-    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    const appendBounded = (stream: 'stdout' | 'stderr', chunk: Buffer) => {
+      const used = stream === 'stdout' ? stdoutBytes : stderrBytes;
+      const remaining = MAX_CAPTURE_BYTES - used;
+      if (remaining > 0) {
+        const accepted = chunk.subarray(0, remaining).toString();
+        if (stream === 'stdout') stdout += accepted;
+        else stderr += accepted;
+      }
+      if (stream === 'stdout') stdoutBytes += chunk.length;
+      else stderrBytes += chunk.length;
+      if ((stream === 'stdout' ? stdoutBytes : stderrBytes) > MAX_CAPTURE_BYTES && !outputLimitExceeded) {
+        outputLimitExceeded = true;
+        child.kill('SIGKILL');
+      }
+    };
+    child.stdout.on('data', (chunk: Buffer) => appendBounded('stdout', chunk));
+    child.stderr.on('data', (chunk: Buffer) => appendBounded('stderr', chunk));
     child.on('error', (error) => { spawnError = error; });
     child.on('close', (code, closeSignal) => {
-      resolve({ stdout, stderr, code, signal: closeSignal, error: spawnError });
+      resolve({
+        stdout,
+        stderr,
+        code,
+        signal: closeSignal,
+        error: outputLimitExceeded
+          ? new Error('OpenCode CLI output exceeded the 8 MiB per-stream limit.')
+          : spawnError,
+      });
     });
   });
 }

@@ -577,6 +577,9 @@ async function generate(
       'Read the attached conversation transcript. Follow the agent instructions and return the required response only.',
     ];
     const runtimeConfig = await capture(binary, ['debug', 'config'], directory, { ...process.env });
+    if (runtimeConfig.error?.message.includes('8 MiB per-stream limit')) {
+      throw runtimeConfig.error;
+    }
     if (runtimeConfig.error || runtimeConfig.code !== 0) {
       throw new Error('OpenCode effective configuration could not be inspected; isolation is NOT_VERIFIED.');
     }

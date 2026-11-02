@@ -237,6 +237,13 @@ def probe(executable, out):
                     raw = response.read()
                     return json.loads(raw) if raw else None
             session = request('/api/session',{'title':'ADS upstream e2e no-model smoke','location':{'directory':str(workspace)}})['data']
+            db_path = Path(env['OPENCODE_DB'])
+            for _ in range(20):
+                if db_path.exists():
+                    break
+                time.sleep(.1)
+            else:
+                raise ValueError('OpenCode CLI did not honor the isolated OPENCODE_DB path')
             servers, skills = [], []
             for _ in range(160):
                 servers = request('/api/mcp')['data']

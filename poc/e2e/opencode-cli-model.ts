@@ -598,6 +598,7 @@ async function generate(
     sessionId = sessionIdFrom(events);
 
     if (!sessionId) {
+      if (run.error?.message.includes('8 MiB per-stream limit')) throw run.error;
       const reason = run.error ? 'OpenCode CLI could not be started.'
         : run.code !== 0 ? 'OpenCode CLI exited before creating a session.'
         : 'OpenCode CLI did not report a session id.';
@@ -605,6 +606,7 @@ async function generate(
     }
 
     const exportedRun = await capture(binary, ['session', 'export', sessionId], directory, runtimeEnv);
+    if (exportedRun.error?.message.includes('8 MiB per-stream limit')) throw exportedRun.error;
     if (exportedRun.error || exportedRun.code !== 0) {
       throw new Error('OpenCode session export failed; model execution cannot be verified.');
     }

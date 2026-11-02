@@ -52,7 +52,7 @@ Return plain text. Do not call tools.
 """
     (workspace / '.opencode' / 'agents' / 'ads-e2e-model.md').write_text(agent)
     result = subprocess.run(
-        [executable, '--pure', 'debug', 'config'],
+        [executable, 'debug', 'config'],
         cwd=workspace, env=env, capture_output=True, text=True, timeout=45,
     )
     if result.returncode != 0:

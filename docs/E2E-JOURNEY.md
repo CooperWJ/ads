@@ -53,7 +53,7 @@ python3 poc/e2e/calibrate.py --out /tmp/ads-e2e-run
 
 CLI 模型适配器只承担 e2e 模型推理；所有浏览器工具仍由 e2e runner 执行。每次调用使用临时项目与 `opencode --standalone --pure run`，不复用用户共享 OpenCode server，并使用 `--pure` 禁用外部插件。调用前运行 `opencode debug config`，读取实际解析配置；若插件/MCP 非空，或工具、MCP、Skill、Plugin 的最终策略不是 deny，则在模型调用前阻断。Provider 仍须是显式指定的精确 ID；用户/组织策略拒绝该 Provider 时不得回退。
 
-该 preflight 是运行时配置自检，不是操作系统沙箱，也不能覆盖设备管理员施加的 managed policy。Fake CLI 只验证解析与拒绝逻辑，不能证明真实 OpenCode 运行时已隔离。真实主机验证必须使用 OpenCode v2.2.3+，执行无模型配置检查并记录 effective config 结果；未完成时隔离状态保持 NOT_VERIFIED。不得将本地认证存在、配置文件写入成功或 fake CLI PASS 解释为真实隔离 PASS。
+该 preflight 是运行时配置自检，不是操作系统沙箱，也不能覆盖设备管理员施加的 managed policy。Fake CLI 只验证解析与拒绝逻辑，不能证明真实 OpenCode 运行时已隔离。CI 现使用真实 OpenCode v2.2.3，在私有 XDG 配置/数据目录和隔离临时项目中执行无模型 `--standalone --pure debug config`，检查插件/MCP 与最终 deny 策略。此项验证真实 CLI 的配置解析和启动参数，但不读取用户配置/凭据，也不覆盖用户主机的全局/managed policy。真实主机验证仍需在实际用户环境执行；未完成时隔离状态保持 NOT_VERIFIED。不得将本地认证存在、配置文件写入成功或 fake CLI PASS 解释为真实隔离 PASS。
 
 适配器对每个 stdout/stderr 流限制 8 MiB，并要求单一完整 step、单一 assistant 响应和精确 session/model 身份。达到输出上限、事件缺失/重复、工具调用不符合约束或 session 清理失败均阻断结果。
 

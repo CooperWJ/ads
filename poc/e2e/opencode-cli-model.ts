@@ -427,7 +427,15 @@ function assertRuntimeIsolation(config: JsonRecord): void {
   if (!Array.isArray(config.instructions) || config.instructions.length !== 0) {
     throw new Error('OpenCode effective config contains additional instructions; isolated model execution is blocked.');
   }
-  if (typeof config.mcp !== 'object' || config.mcp === null || Object.keys(config.mcp).length !== 0) {
+  if (typeof config.mcp !== 'object' || config.mcp === null || Array.isArray(config.mcp)) {
+    throw new Error('OpenCode effective MCP configuration is unavailable.');
+  }
+  const mcp = config.mcp as JsonRecord;
+  const servers = mcp.servers && typeof mcp.servers === 'object' && !Array.isArray(mcp.servers)
+    ? mcp.servers as JsonRecord
+    : mcp;
+  if (Object.keys(servers).length !== 0
+      || Object.keys(mcp).some((key) => key !== 'servers' && key !== 'timeout')) {
     throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
   }
   const policies = Array.isArray(config.policies) ? config.policies as JsonRecord[] : [];

@@ -37,7 +37,7 @@ def runtime_isolation_probe(executable, out, env):
             {'action': 'provider.use', 'resource': 'opencode', 'effect': 'allow'},
         ],
     }
-    (workspace / 'opencode.json').write_text(json.dumps(config, indent=2) + '\\n')
+    (workspace / 'opencode.json').write_text(json.dumps(config, indent=2) + '\n')
     agent = """---
 description: Model-only isolation preflight
 mode: primary

@@ -51,7 +51,7 @@ python3 poc/e2e/calibrate.py --out /tmp/ads-e2e-run
 
 ## 本机 OpenCode CLI 模型适配器
 
-CLI 模型适配器只承担 e2e 模型推理；所有浏览器工具仍由 e2e runner 执行。每次调用使用临时项目与 `opencode --standalone run`，不复用用户共享 OpenCode server。调用前运行 `opencode debug config`，读取实际解析配置；若插件/MCP 非空，或工具、MCP、Skill、Plugin 的最终策略不是 deny，则在模型调用前阻断。Provider 仍须是显式指定的精确 ID；用户/组织策略拒绝该 Provider 时不得回退。
+CLI 模型适配器只承担 e2e 模型推理；所有浏览器工具仍由 e2e runner 执行。每次调用使用临时项目与 `opencode --standalone --pure run`，不复用用户共享 OpenCode server，并使用 `--pure` 禁用外部插件。调用前运行 `opencode debug config`，读取实际解析配置；若插件/MCP 非空，或工具、MCP、Skill、Plugin 的最终策略不是 deny，则在模型调用前阻断。Provider 仍须是显式指定的精确 ID；用户/组织策略拒绝该 Provider 时不得回退。
 
 该 preflight 是运行时配置自检，不是操作系统沙箱，也不能覆盖设备管理员施加的 managed policy。Fake CLI 只验证解析与拒绝逻辑，不能证明真实 OpenCode 运行时已隔离。真实主机验证必须使用 OpenCode v2.2.3+，执行无模型配置检查并记录 effective config 结果；未完成时隔离状态保持 NOT_VERIFIED。不得将本地认证存在、配置文件写入成功或 fake CLI PASS 解释为真实隔离 PASS。
 

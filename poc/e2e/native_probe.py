@@ -153,11 +153,12 @@ Return plain text. Do not call tools.
     if not isinstance(resolved, dict):
         raise ValueError('OpenCode resolved config has an invalid shape')
     mcp = resolved.get('mcp')
-    if not isinstance(mcp, dict):
-        raise ValueError('OpenCode effective MCP configuration is unavailable')
-    servers = mcp.get('servers', mcp)
-    if not isinstance(servers, dict) or servers or set(mcp) - {'servers', 'timeout'}:
-        raise ValueError('OpenCode effective config contains MCP servers')
+    if mcp is not None:
+        if not isinstance(mcp, dict):
+            raise ValueError('OpenCode effective MCP configuration has an invalid shape')
+        servers = mcp.get('servers', mcp)
+        if not isinstance(servers, dict) or servers or set(mcp) - {'servers', 'timeout'}:
+            raise ValueError('OpenCode effective config contains MCP servers')
     if resolved.get('instructions') != []:
         raise ValueError('OpenCode effective config contains inherited instructions')
     policies = resolved.get('policies')

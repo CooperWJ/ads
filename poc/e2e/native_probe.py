@@ -152,7 +152,11 @@ Return plain text. Do not call tools.
         raise ValueError('OpenCode debug config returned invalid JSON') from exc
     if not isinstance(resolved, dict):
         raise ValueError('OpenCode resolved config has an invalid shape')
-    if resolved.get('mcp') != {}:
+    mcp = resolved.get('mcp')
+    if not isinstance(mcp, dict):
+        raise ValueError('OpenCode effective MCP configuration is unavailable')
+    servers = mcp.get('servers', mcp)
+    if not isinstance(servers, dict) or servers or set(mcp) - {'servers', 'timeout'}:
         raise ValueError('OpenCode effective config contains MCP servers')
     if resolved.get('instructions') != []:
         raise ValueError('OpenCode effective config contains inherited instructions')

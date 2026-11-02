@@ -415,6 +415,24 @@ function assistantResult(
   };
 }
 
+function assertRuntimeIsolation(config: JsonRecord): void {
+  if (!Array.isArray(config.plugins) || config.plugins.length !== 0) {
+    throw new Error('OpenCode effective config contains plugins; isolated model execution is blocked.');
+  }
+  if (typeof config.mcp !== 'object' || config.mcp === null || Object.keys(config.mcp).length !== 0) {
+    throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
+  }
+  const policies = Array.isArray(config.policies) ? config.policies as JsonRecord[] : [];
+  for (const action of ['tool.use', 'mcp.use', 'skill.use', 'plugin.use']) {
+    const denyIndex = policies.reduce((last, policy, index) =>
+      policy.action === action && policy.resource === '*' && policy.effect === 'deny' ? index : last, -1);
+    if (denyIndex < 0 || policies.slice(denyIndex + 1).some((policy) =>
+      policy.action === action && policy.effect === 'allow')) {
+      throw new Error(`OpenCode effective policy does not enforce a final deny for ${action}.`);
+    }
+  }
+}
+
 function numeric(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
@@ -556,6 +574,12 @@ async function generate(
       ...attachments.flatMap((attachment) => ['--file', attachment.path]),
       'Read the attached conversation transcript. Follow the agent instructions and return the required response only.',
     ];
+    const runtimeConfig = await capture(binary, ['debug', 'config'], directory, { ...process.env });
+    if (runtimeConfig.error || runtimeConfig.code !== 0) {
+      throw new Error('OpenCode effective configuration could not be inspected; isolation is NOT_VERIFIED.');
+    }
+    assertRuntimeIsolation(parseJsonOutput(runtimeConfig.stdout));
+
     const run = await capture(binary, args, directory, { ...process.env }, options.abortSignal);
     const events = jsonLines(run.stdout);
     sessionId = sessionIdFrom(events);

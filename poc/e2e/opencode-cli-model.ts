@@ -68,9 +68,10 @@ async function assertNoAmbientAgentSources(): Promise<void> {
   }
 }
 
-function isolatedOpenCodeEnv(): NodeJS.ProcessEnv {
+function isolatedOpenCodeEnv(directory: string): NodeJS.ProcessEnv {
   return {
     ...process.env,
+    OPENCODE_DB: join(directory, 'opencode-session.db'),
     OPENCODE_PURE: '1',
     OPENCODE_DISABLE_CLAUDE_CODE: '1',
     OPENCODE_DISABLE_EXTERNAL_SKILLS: '1',
@@ -581,7 +582,7 @@ async function generate(
 ): Promise<LanguageModelV4GenerateResult> {
   const { providerId, modelId } = modelParts(fullModelId);
   const binary = process.env.ADS_E2E_OPENCODE_BIN ?? 'opencode';
-  const runtimeEnv = isolatedOpenCodeEnv();
+  const runtimeEnv = isolatedOpenCodeEnv(directory);
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-'));
   let sessionId: string | undefined;
   let result: LanguageModelV4GenerateResult | undefined;

@@ -211,6 +211,7 @@ def probe(executable, out):
     private_home = out / 'private-home'
     private_home.mkdir(parents=True, exist_ok=True)
     env['HOME'] = str(private_home)
+    env['OPENCODE_DB'] = str(out / 'native-opencode.db')
     env['OPENCODE_PURE'] = '1'
     env['OPENCODE_DISABLE_CLAUDE_CODE'] = '1'
     env['OPENCODE_DISABLE_EXTERNAL_SKILLS'] = '1'

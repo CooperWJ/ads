@@ -125,7 +125,8 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     assert.ok(run.args.includes('--standalone'));
     assert.ok(run.args.includes('opencode/deepseek-v4.1-flash-free'));
     assert.ok(run.args.includes('ads-e2e-model'));
-    assert.equal(calls.filter((call) => call.command === 'debug-config').length, 1);\n    assert.equal(calls.filter((call) => call.command === 'version').length, 1);
+    assert.equal(calls.filter((call) => call.command === 'debug-config').length, 1);
+    assert.equal(calls.filter((call) => call.command === 'version').length, 1);
     assert.equal(calls.filter((call) => call.command === 'export').length, 1);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
     await assert.rejects(access(run.directory));
@@ -134,7 +135,16 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
   }
 });
 
-test('effective global allow policy fails closed before model execution', async () => {\n  const env = await setup();\n  try {\n    process.env.ADS_E2E_TEST_GLOBAL_ALLOW = '1';\n    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');\n    await assert.rejects(model.doGenerate(options()), /does not enforce a final deny for mcp.use/);\n    const calls = await records(env.log);\n    assert.equal(calls.filter((call) => call.command === 'run').length, 0);\n  } finally {\n    await env.close();\n  }\n});\n\ntest('model identity mismatch fails closed and still deletes the OpenCode session', async () => {
+test('effective global allow policy fails closed before model execution', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_GLOBAL_ALLOW = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');\n    await assert.rejects(model.doGenerate(options()), /does not enforce a final deny for mcp.use/);
+    const calls = await records(env.log);\n    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
+  } finally {
+    await env.close();
+  }
+});\n\ntest('model identity mismatch fails closed and still deletes the OpenCode session', async () => {
   const env = await setup();
   try {
     process.env.ADS_E2E_TEST_MODEL = 'unexpected-model';

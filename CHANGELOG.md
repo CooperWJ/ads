@@ -3,9 +3,10 @@
 ## v0.6.20 — OpenCode CLI 原生模型接入
 
 - 增加本机 OpenCode CLI 的 LanguageModelV4 适配器，复用用户已有 CLI 登录与模型配置；不复制凭证、不另建认证协议。
-- 每次模型调用在临时项目中启动独立 `opencode run`；要求 CLI v2.2.3+，硬性禁止 OpenCode 工具/MCP/插件执行，只允许显式指定的 Provider。
-- 通过 session export 校验真实 Provider/model ID、Token 和成本；摘要只保留 session 哈希与低敏用量，随后删除 session 和临时目录。
-- 增加 fake CLI 回归，覆盖工具隔离、图像附件、身份错配、导出失败、非零退出、session 缺失、清理失败及非法工具调用。
+- 每次模型调用在临时项目中启动 `opencode --standalone run`，避免复用用户共享服务；要求 CLI v2.2.3+。
+- 模型调用前执行 `opencode debug config`，检查实际解析配置中的插件/MCP 为空，且工具、MCP、Skill、Plugin 策略最终保持 deny；无法读取或无法证明时阻断。该检查不能覆盖系统管理员策略，也不声称替代真实主机验证。
+- 限制 CLI stdout/stderr 各 8 MiB；严格绑定单一 step、单一 assistant 响应、session、Provider/model ID；指定工具调用必须恰好一次。通过 session export 校验 Token 和成本，随后删除 session 与临时目录。
+- 增加 fake CLI 回归，覆盖 effective-config 检查路径、全局策略 allow 冲突、工具调用边界、图像附件、身份错配、导出失败、非零退出、session 缺失及清理失败。Fake CLI 通过不代表真实 OpenCode 主机隔离已通过。
 - `calibrate.py --agent` 默认使用本机 OpenCode CLI；官方 OpenCode Console OAuth 保留为可选后端。两条路径均无模型/账号自动回退。
 - CI 只执行 fake CLI 与配置测试；真实模型执行仍需用户本机可用模型额度，额度错误保持 BLOCKED。
 

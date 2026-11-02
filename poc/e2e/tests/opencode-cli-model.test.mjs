@@ -102,7 +102,8 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
     const run = calls.find((call) => call.command === 'run');
     assert.ok(run);
     assert.equal(Object.keys(run.config.mcp).length, 0);
-    assert.deepEqual(run.config.plugins, []);
+    assert.deepEqual(run.config.plugin, []);
+    assert.equal(Object.hasOwn(run.config, 'plugins'), false);
     assert.deepEqual(run.config.instructions, []);
     assert.deepEqual(run.config.skills, []);
     assert.deepEqual(run.config.references, {});
@@ -245,6 +246,24 @@ test('missing session id is rejected and no unbound session is accepted', async 
     await assert.rejects(model.doGenerate(options()), /did not report a session id/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'delete').length, 0);
+  } finally {
+    await env.close();
+  }
+});
+
+test('tool-choice by name rejects multiple calls even when every name is allowed', async () => {
+  const env = await setup();
+  try {
+    const reply = JSON.stringify({ tool_calls: [
+      { name: 'browser.click', input: { selector: '#save' } },
+      { name: 'browser.click', input: { selector: '#delete' } },
+    ] });
+    const request = options(reply);
+    request.toolChoice = { type: 'tool', toolName: 'browser.click' };
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    const result = await model.doGenerate(request);
+    assert.equal(result.content[0].type, 'text');
+    assert.match(result.content[0].text, /invalid or unsupported tool call/);
   } finally {
     await env.close();
   }

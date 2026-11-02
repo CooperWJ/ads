@@ -582,8 +582,8 @@ async function generate(
 ): Promise<LanguageModelV4GenerateResult> {
   const { providerId, modelId } = modelParts(fullModelId);
   const binary = process.env.ADS_E2E_OPENCODE_BIN ?? 'opencode';
-  const runtimeEnv = isolatedOpenCodeEnv(directory);
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-'));
+  const runtimeEnv = isolatedOpenCodeEnv(directory);
   let sessionId: string | undefined;
   let result: LanguageModelV4GenerateResult | undefined;
   let failure: Error | undefined;

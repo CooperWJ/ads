@@ -1,11 +1,19 @@
 # Changelog
 
+## v0.6.21 — OpenCode CLI 运行时隔离加固
+
+- 使用 `opencode run --standalone`，避免复用用户共享服务；通过 `OPENCODE_PURE=1` 禁用外部插件，不主动禁用内置 Provider/OAuth 插件。禁用 `.claude` 与 `.agents` 指令/Skill 来源，但不设置会破坏 OAuth 的 `OPENCODE_DISABLE_DEFAULT_PLUGINS`。
+- 模型调用前读取 `opencode debug config` 的实际解析结果；继承 instructions 非空、`mcp.servers` 非空（未配置时允许 CLI 省略空的 `mcp` 字段）、存在全局/托管 `AGENTS.md` 或同名 Agent 覆盖、或工具/MCP/Skill/Plugin 最终策略未被 deny 时 fail-closed。
+- stdout/stderr 分别限制 8 MiB；严格限制单一完整 step、单一 assistant 响应、Session 身份和指定工具调用次数。
+- 增加全局策略放宽、超限输出和重复 step 的回归夹具；CI 另用真实 OpenCode v2.2.3、私有 XDG 目录验证 `OPENCODE_PURE`：本地探针插件在 pure 模式不加载、移除 pure 后正向对照加载，并检查配置解析、无继承指令、MCP 为空和 deny 策略。
+- CI 的真实 CLI 检查不读取用户配置/凭据，也不运行模型；真实用户主机的全局/managed policy 与模型旅程仍为 NOT_VERIFIED。Fake CLI 通过不代表真实运行时安全。
+
 ## v0.6.20 — OpenCode CLI 原生模型接入
 
 - 增加本机 OpenCode CLI 的 LanguageModelV4 适配器，复用用户已有 CLI 登录与模型配置；不复制凭证、不另建认证协议。
-- 每次模型调用在临时项目中启动独立 `opencode run`；要求 CLI v2.2.3+，硬性禁止 OpenCode 工具/MCP/插件执行，只允许显式指定的 Provider。
+- 在临时项目中运行显式指定的 provider/model；要求 CLI v2.2.3+，配置工具/MCP/插件/Skill deny 策略，并只允许显式指定的 Provider。
 - 通过 session export 校验真实 Provider/model ID、Token 和成本；摘要只保留 session 哈希与低敏用量，随后删除 session 和临时目录。
-- 增加 fake CLI 回归，覆盖工具隔离、图像附件、身份错配、导出失败、非零退出、session 缺失、清理失败及非法工具调用。
+- 增加 fake CLI 回归，覆盖图像附件、身份错配、导出失败、非零退出、session 缺失、清理失败及非法工具调用。
 - `calibrate.py --agent` 默认使用本机 OpenCode CLI；官方 OpenCode Console OAuth 保留为可选后端。两条路径均无模型/账号自动回退。
 - CI 只执行 fake CLI 与配置测试；真实模型执行仍需用户本机可用模型额度，额度错误保持 BLOCKED。
 

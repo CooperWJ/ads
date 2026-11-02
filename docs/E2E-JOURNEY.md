@@ -49,6 +49,14 @@ python3 poc/e2e/calibrate.py --out /tmp/ads-e2e-run
 
 `--reports-only` 只验证上游报告语义，不计浏览器通过。原始报告、日志、截图、下载和 Trace 留在输出目录的各例 `evidence/`。CI 上传同一批真实产物。案例只运行已知虚构变体，不接收任意不可信补丁；它不是 OS 沙箱或独立 QA 身份证明。原有容器外验收继续承担其已验证范围，当前不迁移或删除它。
 
+## 本机 OpenCode CLI 模型适配器
+
+CLI 模型适配器只承担 e2e 模型推理；所有浏览器工具仍由 e2e runner 执行。每次调用使用临时项目与 `opencode run --standalone`，不复用用户共享 OpenCode server，并通过 `OPENCODE_PURE=1` 禁用外部插件加载，不主动禁用内置 Provider/OAuth 插件；`plugin.use` deny 仍作为第二道策略门禁。设置 `OPENCODE_DISABLE_CLAUDE_CODE=1` 与 `OPENCODE_DISABLE_EXTERNAL_SKILLS=1`，避免注入 `.claude`/`.agents` 指令和 Skill。不要设置 `OPENCODE_DISABLE_DEFAULT_PLUGINS`，它会关闭内置 OAuth Provider 插件。调用前运行 `opencode debug config`，读取实际解析配置；若继承 instructions 非空、`mcp.servers` 非空（未配置时允许 CLI 省略空的 `mcp` 字段）、发现全局/托管 `AGENTS.md` 或同名 Agent 覆盖，或工具、MCP、Skill、Plugin 的最终策略不是 deny，则在模型调用前阻断。Provider 仍须是显式指定的精确 ID；用户/组织策略拒绝该 Provider 时不得回退。用户原有 Provider 配置文件和 XDG 数据目录中的认证不复制、不清空；模型会话数据库单独写入临时目录。
+
+该 preflight 是运行时配置自检，不是操作系统沙箱，也不能覆盖设备管理员施加的 managed policy。Fake CLI 只验证解析与拒绝逻辑，不能证明真实 OpenCode 运行时已隔离。CI 现使用真实 OpenCode v2.2.3，在私有 XDG 配置/数据目录和隔离临时项目中执行无模型 `opencode debug config`，检查 instructions、MCP 与最终 deny 策略；另通过真实本地插件正向对照验证 `OPENCODE_PURE=1` 会阻止外部插件加载，而不关闭内置 Provider/OAuth 插件。此项验证真实 CLI 的配置解析、插件隔离与启动参数，但不读取用户配置/凭据，也不覆盖用户主机的全局/managed policy。真实主机验证仍需在实际用户环境执行；未完成时隔离状态保持 NOT_VERIFIED。不得将本地认证存在、配置文件写入成功或 fake CLI PASS 解释为真实隔离 PASS。
+
+适配器对每个 stdout/stderr 流限制 8 MiB，并要求单一完整 step、单一 assistant 响应和精确 session/model 身份。达到输出上限、事件缺失/重复、工具调用不符合约束或 session 清理失败均阻断结果。
+
 ## 实际来源与采用范围
 
 - [e2e 官方仓库](https://github.com/tester-army/e2e)：采用已发布 CLI、web 引擎、MCP、原始报告和技能。Apache-2.0；依赖固定在 package-lock，不复制实现。

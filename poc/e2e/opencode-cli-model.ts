@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { access, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 
 import type {
@@ -29,6 +29,55 @@ type TranscriptFile = {
 };
 
 const CLI_VERSION_CHECKS = new Map<string, Promise<void>>();
+async function assertNoAmbientAgentSources(): Promise<void> {
+  const home = process.env.HOME ?? homedir();
+  const configHome = process.env.XDG_CONFIG_HOME ?? join(home, '.config');
+  const candidates = new Set([
+    join(configHome, 'opencode', 'AGENTS.md'),
+    join(home, '.config', 'opencode', 'AGENTS.md'),
+    join(configHome, 'opencode', 'agents', 'ads-e2e-model.md'),
+    join(configHome, 'opencode', 'agent', 'ads-e2e-model.md'),
+    join(home, '.config', 'opencode', 'agents', 'ads-e2e-model.md'),
+    join(home, '.config', 'opencode', 'agent', 'ads-e2e-model.md'),
+    '/etc/opencode/AGENTS.md',
+    '/etc/opencode/agents/ads-e2e-model.md',
+    '/Library/Application Support/opencode/AGENTS.md',
+    '/Library/Application Support/opencode/agents/ads-e2e-model.md',
+  ]);
+  const programData = process.env.ProgramData;
+  if (programData) {
+    candidates.add(join(programData, 'opencode', 'AGENTS.md'));
+    candidates.add(join(programData, 'opencode', 'agents', 'ads-e2e-model.md'));
+  }
+  const customDirectory = process.env.OPENCODE_CONFIG_DIR;
+  if (customDirectory) {
+    candidates.add(join(customDirectory, 'AGENTS.md'));
+    candidates.add(join(customDirectory, 'agents', 'ads-e2e-model.md'));
+  }
+  const found: string[] = [];
+  for (const path of candidates) {
+    try {
+      await access(path);
+      found.push(path);
+    } catch {
+      // Missing ambient instruction/agent files are safe.
+    }
+  }
+  if (found.length > 0) {
+    throw new Error(`Ambient OpenCode instruction/agent sources prevent isolated model execution: ${found.join(', ')}`);
+  }
+}
+
+function isolatedOpenCodeEnv(directory: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    OPENCODE_DB: join(directory, 'opencode-session.db'),
+    OPENCODE_PURE: '1',
+    OPENCODE_DISABLE_CLAUDE_CODE: '1',
+    OPENCODE_DISABLE_EXTERNAL_SKILLS: '1',
+  };
+}
+const MAX_CAPTURE_BYTES = 8 * 1024 * 1024;
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/png': '.png',
@@ -204,6 +253,9 @@ async function capture(
     let stdout = '';
     let stderr = '';
     let spawnError: Error | undefined;
+    let outputLimitExceeded = false;
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
     let child;
     try {
       child = spawn(binary, args, { cwd, env, signal, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -211,11 +263,34 @@ async function capture(
       resolve({ stdout, stderr, code: null, signal: null, error: error as Error });
       return;
     }
-    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    const appendBounded = (stream: 'stdout' | 'stderr', chunk: Buffer) => {
+      const used = stream === 'stdout' ? stdoutBytes : stderrBytes;
+      const remaining = MAX_CAPTURE_BYTES - used;
+      if (remaining > 0) {
+        const accepted = chunk.subarray(0, remaining).toString();
+        if (stream === 'stdout') stdout += accepted;
+        else stderr += accepted;
+      }
+      if (stream === 'stdout') stdoutBytes += chunk.length;
+      else stderrBytes += chunk.length;
+      if ((stream === 'stdout' ? stdoutBytes : stderrBytes) > MAX_CAPTURE_BYTES && !outputLimitExceeded) {
+        outputLimitExceeded = true;
+        child.kill('SIGKILL');
+      }
+    };
+    child.stdout.on('data', (chunk: Buffer) => appendBounded('stdout', chunk));
+    child.stderr.on('data', (chunk: Buffer) => appendBounded('stderr', chunk));
     child.on('error', (error) => { spawnError = error; });
     child.on('close', (code, closeSignal) => {
-      resolve({ stdout, stderr, code, signal: closeSignal, error: spawnError });
+      resolve({
+        stdout,
+        stderr,
+        code,
+        signal: closeSignal,
+        error: outputLimitExceeded
+          ? new Error('OpenCode CLI output exceeded the 8 MiB per-stream limit.')
+          : spawnError,
+      });
     });
   });
 }
@@ -331,7 +406,7 @@ function assistantResult(
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
     return info.type === 'assistant' || info.role === 'assistant';
   });
-  if (assistants.length === 0) throw new Error('OpenCode session contains no assistant model response.');
+  if (assistants.length !== 1) throw new Error('OpenCode session must contain exactly one assistant model response.');
 
   const parsed = assistants.map((message) => {
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
@@ -388,6 +463,41 @@ function assistantResult(
   };
 }
 
+function assertRuntimeIsolation(config: JsonRecord): void {
+  if (!Array.isArray(config.instructions) || config.instructions.length !== 0) {
+    throw new Error('OpenCode effective config contains additional instructions; isolated model execution is blocked.');
+  }
+  const mcpValue = config.mcp;
+  if (mcpValue !== undefined && mcpValue !== null
+      && (typeof mcpValue !== 'object' || Array.isArray(mcpValue))) {
+    throw new Error('OpenCode effective MCP configuration has an invalid shape.');
+  }
+  if (mcpValue && typeof mcpValue === 'object') {
+    const mcp = mcpValue as JsonRecord;
+    const servers = mcp.servers && typeof mcp.servers === 'object' && !Array.isArray(mcp.servers)
+      ? mcp.servers as JsonRecord
+      : mcp;
+    if (Object.keys(servers).length !== 0
+        || Object.keys(mcp).some((key) => key !== 'servers' && key !== 'timeout')) {
+      throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
+    }
+  }
+  const configuredAgents = config.agents && typeof config.agents === 'object' ? config.agents as JsonRecord
+    : config.agent && typeof config.agent === 'object' ? config.agent as JsonRecord : {};
+  if (Object.prototype.hasOwnProperty.call(configuredAgents, 'ads-e2e-model')) {
+    throw new Error('OpenCode effective config overrides the isolated ads-e2e-model agent.');
+  }
+  const policies = Array.isArray(config.policies) ? config.policies as JsonRecord[] : [];
+  for (const action of ['tool.use', 'mcp.use', 'skill.use', 'plugin.use']) {
+    const denyIndex = policies.reduce((last, policy, index) =>
+      policy.action === action && policy.resource === '*' && policy.effect === 'deny' ? index : last, -1);
+    if (denyIndex < 0 || policies.slice(denyIndex + 1).some((policy) =>
+      policy.action === action && policy.effect === 'allow')) {
+      throw new Error(`OpenCode effective policy does not enforce a final deny for ${action}.`);
+    }
+  }
+}
+
 function numeric(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
@@ -442,7 +552,7 @@ function replyContent(text: string, options: LanguageModelV4CallOptions): Langua
         const name = call.name;
         const input = call.input;
         if (typeof name !== 'string' || !allowed.has(name)
-            || (choice.type === 'tool' && name !== choice.toolName)
+            || (choice.type === 'tool' && (name !== choice.toolName || named.length !== 1))
             || typeof input !== 'object' || input === null || Array.isArray(input)) return null;
         return {
           type: 'tool-call' as const,
@@ -473,6 +583,7 @@ async function generate(
   const { providerId, modelId } = modelParts(fullModelId);
   const binary = process.env.ADS_E2E_OPENCODE_BIN ?? 'opencode';
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-'));
+  const runtimeEnv = isolatedOpenCodeEnv(directory);
   let sessionId: string | undefined;
   let result: LanguageModelV4GenerateResult | undefined;
   let failure: Error | undefined;
@@ -480,7 +591,8 @@ async function generate(
   try {
     await mkdir(join(directory, '.opencode', 'agents'), { recursive: true });
     const { system, transcriptPath, attachments } = await writeTranscript(options.prompt, directory);
-    await assertCliVersion(binary, directory, { ...process.env });
+    await assertCliVersion(binary, directory, runtimeEnv);
+    await assertNoAmbientAgentSources();
     const rules = replyRules(options);
     const agentBody = [system, rules].filter(Boolean).join('\n\n');
     const agentFile = [
@@ -521,6 +633,7 @@ async function generate(
 
     const args = [
       'run',
+      '--standalone',
       '--format', 'json',
       '--model', fullModelId,
       '--agent', 'ads-e2e-model',
@@ -529,26 +642,43 @@ async function generate(
       ...attachments.flatMap((attachment) => ['--file', attachment.path]),
       'Read the attached conversation transcript. Follow the agent instructions and return the required response only.',
     ];
-    const run = await capture(binary, args, directory, { ...process.env }, options.abortSignal);
+    const runtimeConfig = await capture(binary, ['debug', 'config'], directory, runtimeEnv);
+    if (runtimeConfig.error?.message.includes('8 MiB per-stream limit')) {
+      throw runtimeConfig.error;
+    }
+    if (runtimeConfig.error || runtimeConfig.code !== 0) {
+      throw new Error('OpenCode effective configuration could not be inspected; isolation is NOT_VERIFIED.');
+    }
+    assertRuntimeIsolation(parseJsonOutput(runtimeConfig.stdout));
+
+    const run = await capture(binary, args, directory, runtimeEnv, options.abortSignal);
     const events = jsonLines(run.stdout);
     sessionId = sessionIdFrom(events);
 
     if (!sessionId) {
+      if (run.error?.message.includes('8 MiB per-stream limit')) throw run.error;
       const reason = run.error ? 'OpenCode CLI could not be started.'
         : run.code !== 0 ? 'OpenCode CLI exited before creating a session.'
         : 'OpenCode CLI did not report a session id.';
       throw new Error(reason);
     }
 
-    const exportedRun = await capture(binary, ['session', 'export', sessionId], directory, { ...process.env });
+    const exportedRun = await capture(binary, ['session', 'export', sessionId], directory, runtimeEnv);
+    if (exportedRun.error?.message.includes('8 MiB per-stream limit')) throw exportedRun.error;
     if (exportedRun.error || exportedRun.code !== 0) {
       throw new Error('OpenCode session export failed; model execution cannot be verified.');
     }
     const exported = parseJsonOutput(exportedRun.stdout);
     const stepStarts = events.filter((event) => event.type === 'step_start');
     const stepFinishes = events.filter((event) => event.type === 'step_finish');
-    if (stepStarts.length > 1 || stepFinishes.length > 1) {
-      throw new Error('OpenCode CLI exceeded the one-step model-call boundary.');
+    if (stepStarts.length !== 1 || stepFinishes.length !== 1) {
+      throw new Error('OpenCode CLI did not produce exactly one complete model step.');
+    }
+    if (events.some((event) => {
+      const eventSession = event.sessionID ?? event.sessionId;
+      return typeof eventSession === 'string' && eventSession !== sessionId;
+    })) {
+      throw new Error('OpenCode CLI emitted an event for an unexpected session.');
     }
     const stepFinish = stepFinishes[0];
     const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId, 'ads-e2e-model');
@@ -586,7 +716,7 @@ async function generate(
     failure = error as Error;
   } finally {
     if (sessionId) {
-      const deleted = await capture(binary, ['session', 'delete', sessionId], directory, { ...process.env });
+      const deleted = await capture(binary, ['session', 'delete', sessionId], directory, runtimeEnv);
       if (deleted.error || deleted.code !== 0) {
         failure = new Error(`OpenCode session cleanup failed for ${sessionId}; manually run: opencode session delete ${sessionId}`);
         result = undefined;

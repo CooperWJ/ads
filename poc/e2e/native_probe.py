@@ -64,14 +64,14 @@ def verify_pure_plugin_suppression(executable, out, env):
         'update': 'disable',
         'plugins': [],
         'mcp': {},
-    }, indent=2) + '\\n')
+    }, indent=2) + '\n')
     (workspace / '.opencode' / 'plugins' / 'ads-pure-probe.ts').write_text(
-        "export default {\\n"
-        "  id: 'ads.pure.probe',\\n"
-        "  async setup() {\\n"
-        "    await Bun.write(process.env.ADS_PURE_PROBE_MARKER, 'loaded')\\n"
-        "  },\\n"
-        "}\\n"
+        "export default {\n"
+        "  id: 'ads.pure.probe',\n"
+        "  async setup() {\n"
+        "    await Bun.write(process.env.ADS_PURE_PROBE_MARKER, 'loaded')\n"
+        "  },\n"
+        "}\n"
     )
     subprocess.run(['git', 'init', '-q', str(workspace)], check=True, capture_output=True)
 

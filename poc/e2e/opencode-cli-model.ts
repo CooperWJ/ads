@@ -565,9 +565,9 @@ async function generate(
     await writeFile(join(directory, 'opencode.json'), JSON.stringify(config, null, 2), 'utf8');
 
     const args = [
+      '--pure',
       'run',
       '--standalone',
-      '--pure',
       '--format', 'json',
       '--model', fullModelId,
       '--agent', 'ads-e2e-model',

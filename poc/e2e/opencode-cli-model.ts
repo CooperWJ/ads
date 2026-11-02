@@ -36,7 +36,13 @@ async function assertNoAmbientAgentSources(): Promise<void> {
     join(configHome, 'opencode', 'AGENTS.md'),
     join(home, '.config', 'opencode', 'AGENTS.md'),
     join(configHome, 'opencode', 'agents', 'ads-e2e-model.md'),
+    join(configHome, 'opencode', 'agent', 'ads-e2e-model.md'),
     join(home, '.config', 'opencode', 'agents', 'ads-e2e-model.md'),
+    join(home, '.config', 'opencode', 'agent', 'ads-e2e-model.md'),
+    '/etc/opencode/AGENTS.md',
+    '/etc/opencode/agents/ads-e2e-model.md',
+    '/Library/Application Support/opencode/AGENTS.md',
+    '/Library/Application Support/opencode/agents/ads-e2e-model.md',
   ]);
   const customDirectory = process.env.OPENCODE_CONFIG_DIR;
   if (customDirectory) {

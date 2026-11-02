@@ -208,6 +208,9 @@ def probe(executable, out):
     env = {k:v for k,v in os.environ.items() if k in ('PATH','LANG','HTTP_PROXY','HTTPS_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy')}
     for key, name in (('XDG_CONFIG_HOME','config'),('XDG_DATA_HOME','data'),('XDG_CACHE_HOME','cache'),('XDG_STATE_HOME','state')):
         env[key] = str(out / 'private' / name)
+    private_home = out / 'private-home'
+    private_home.mkdir(parents=True, exist_ok=True)
+    env['HOME'] = str(private_home)
     env['OPENCODE_PURE'] = '1'
     env['OPENCODE_DISABLE_CLAUDE_CODE'] = '1'
     env['OPENCODE_DISABLE_EXTERNAL_SKILLS'] = '1'

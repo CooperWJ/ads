@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { access, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 
 import type {
@@ -29,6 +29,34 @@ type TranscriptFile = {
 };
 
 const CLI_VERSION_CHECKS = new Map<string, Promise<void>>();
+async function assertNoAmbientAgentSources(): Promise<void> {
+  const home = process.env.HOME ?? homedir();
+  const configHome = process.env.XDG_CONFIG_HOME ?? join(home, '.config');
+  const candidates = new Set([
+    join(configHome, 'opencode', 'AGENTS.md'),
+    join(home, '.config', 'opencode', 'AGENTS.md'),
+    join(configHome, 'opencode', 'agents', 'ads-e2e-model.md'),
+    join(home, '.config', 'opencode', 'agents', 'ads-e2e-model.md'),
+  ]);
+  const customDirectory = process.env.OPENCODE_CONFIG_DIR;
+  if (customDirectory) {
+    candidates.add(join(customDirectory, 'AGENTS.md'));
+    candidates.add(join(customDirectory, 'agents', 'ads-e2e-model.md'));
+  }
+  const found: string[] = [];
+  for (const path of candidates) {
+    try {
+      await access(path);
+      found.push(path);
+    } catch {
+      // Missing ambient instruction/agent files are safe.
+    }
+  }
+  if (found.length > 0) {
+    throw new Error(`Ambient OpenCode instruction/agent sources prevent isolated model execution: ${found.join(', ')}`);
+  }
+}
+
 function isolatedOpenCodeEnv(): NodeJS.ProcessEnv {
   return {
     ...process.env,
@@ -442,6 +470,11 @@ function assertRuntimeIsolation(config: JsonRecord): void {
       throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
     }
   }
+  const configuredAgents = config.agents && typeof config.agents === 'object' ? config.agents as JsonRecord
+    : config.agent && typeof config.agent === 'object' ? config.agent as JsonRecord : {};
+  if (Object.prototype.hasOwnProperty.call(configuredAgents, 'ads-e2e-model')) {
+    throw new Error('OpenCode effective config overrides the isolated ads-e2e-model agent.');
+  }
   const policies = Array.isArray(config.policies) ? config.policies as JsonRecord[] : [];
   for (const action of ['tool.use', 'mcp.use', 'skill.use', 'plugin.use']) {
     const denyIndex = policies.reduce((last, policy, index) =>
@@ -547,6 +580,7 @@ async function generate(
     await mkdir(join(directory, '.opencode', 'agents'), { recursive: true });
     const { system, transcriptPath, attachments } = await writeTranscript(options.prompt, directory);
     await assertCliVersion(binary, directory, runtimeEnv);
+    await assertNoAmbientAgentSources();
     const rules = replyRules(options);
     const agentBody = [system, rules].filter(Boolean).join('\n\n');
     const agentFile = [

@@ -136,7 +136,20 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
   }
 });
 
-test('duplicate model steps are rejected and the created session is cleaned up', async () => {\n  const env = await setup();\n  try {\n    process.env.ADS_E2E_TEST_DUPLICATE_STEP = '1';\n    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');\n    await assert.rejects(model.doGenerate(options()), /exactly one complete model step/);\n    const calls = await records(env.log);\n    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);\n  } finally {\n    await env.close();\n  }\n});\n\ntest('OpenCode CLI output above the per-stream limit is killed and rejected', async () => {
+test('duplicate model steps are rejected and the created session is cleaned up', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_DUPLICATE_STEP = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /exactly one complete model step/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'delete').length, 1);
+  } finally {
+    await env.close();
+  }
+});
+
+test('OpenCode CLI output above the per-stream limit is killed and rejected', async () => {
   const env = await setup();
   try {
     process.env.ADS_E2E_TEST_OUTPUT_OVERFLOW = '1';

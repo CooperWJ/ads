@@ -44,6 +44,11 @@ async function assertNoAmbientAgentSources(): Promise<void> {
     '/Library/Application Support/opencode/AGENTS.md',
     '/Library/Application Support/opencode/agents/ads-e2e-model.md',
   ]);
+  const programData = process.env.ProgramData;
+  if (programData) {
+    candidates.add(join(programData, 'opencode', 'AGENTS.md'));
+    candidates.add(join(programData, 'opencode', 'agents', 'ads-e2e-model.md'));
+  }
   const customDirectory = process.env.OPENCODE_CONFIG_DIR;
   if (customDirectory) {
     candidates.add(join(customDirectory, 'AGENTS.md'));

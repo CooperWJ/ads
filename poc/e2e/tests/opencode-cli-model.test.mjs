@@ -23,7 +23,7 @@ async function setup() {
     'ADS_E2E_TEST_REPLY', 'ADS_E2E_TEST_MODEL', 'ADS_E2E_TEST_PROVIDER',
     'ADS_E2E_TEST_SESSION_ID', 'ADS_E2E_TEST_AGENT', 'ADS_E2E_TEST_RETRY',
     'ADS_E2E_TEST_NATIVE_TOOL', 'ADS_E2E_TEST_EXPORT_FAIL', 'ADS_E2E_TEST_DELETE_FAIL',
-    'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL', 'ADS_E2E_TEST_CLI_VERSION', 'ADS_E2E_TEST_GLOBAL_ALLOW', 'ADS_E2E_TEST_OUTPUT_OVERFLOW', 'ADS_E2E_TEST_DUPLICATE_STEP',
+    'ADS_E2E_TEST_NO_SESSION', 'ADS_E2E_TEST_RUN_FAIL', 'ADS_E2E_TEST_CLI_VERSION', 'ADS_E2E_TEST_GLOBAL_ALLOW', 'ADS_E2E_TEST_GLOBAL_INSTRUCTIONS', 'ADS_E2E_TEST_OUTPUT_OVERFLOW', 'ADS_E2E_TEST_DUPLICATE_STEP',
   ];
   const previous = {};
   for (const key of resetKeys) {
@@ -159,6 +159,19 @@ test('OpenCode CLI output above the per-stream limit is killed and rejected', as
     process.env.ADS_E2E_TEST_OUTPUT_OVERFLOW = '1';
     const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
     await assert.rejects(model.doGenerate(options()), /output exceeded the 8 MiB per-stream limit/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
+  } finally {
+    await env.close();
+  }
+});
+
+test('inherited global instructions fail closed before model execution', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_GLOBAL_INSTRUCTIONS = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /contains additional instructions/);
     const calls = await records(env.log);
     assert.equal(calls.filter((call) => call.command === 'run').length, 0);
   } finally {

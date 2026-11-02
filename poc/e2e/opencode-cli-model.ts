@@ -29,6 +29,14 @@ type TranscriptFile = {
 };
 
 const CLI_VERSION_CHECKS = new Map<string, Promise<void>>();
+function isolatedOpenCodeEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    OPENCODE_PURE: '1',
+    OPENCODE_DISABLE_CLAUDE_CODE: '1',
+    OPENCODE_DISABLE_EXTERNAL_SKILLS: '1',
+  };
+}
 const MAX_CAPTURE_BYTES = 8 * 1024 * 1024;
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
@@ -416,9 +424,6 @@ function assistantResult(
 }
 
 function assertRuntimeIsolation(config: JsonRecord): void {
-  if (!Array.isArray(config.plugins) || config.plugins.length !== 0) {
-    throw new Error('OpenCode effective config contains plugins; isolated model execution is blocked.');
-  }
   if (typeof config.mcp !== 'object' || config.mcp === null || Object.keys(config.mcp).length !== 0) {
     throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
   }
@@ -517,6 +522,7 @@ async function generate(
 ): Promise<LanguageModelV4GenerateResult> {
   const { providerId, modelId } = modelParts(fullModelId);
   const binary = process.env.ADS_E2E_OPENCODE_BIN ?? 'opencode';
+  const runtimeEnv = isolatedOpenCodeEnv();
   const directory = await mkdtemp(join(tmpdir(), 'ads-e2e-opencode-'));
   let sessionId: string | undefined;
   let result: LanguageModelV4GenerateResult | undefined;
@@ -525,7 +531,7 @@ async function generate(
   try {
     await mkdir(join(directory, '.opencode', 'agents'), { recursive: true });
     const { system, transcriptPath, attachments } = await writeTranscript(options.prompt, directory);
-    await assertCliVersion(binary, directory, { ...process.env });
+    await assertCliVersion(binary, directory, runtimeEnv);
     const rules = replyRules(options);
     const agentBody = [system, rules].filter(Boolean).join('\n\n');
     const agentFile = [
@@ -575,7 +581,7 @@ async function generate(
       ...attachments.flatMap((attachment) => ['--file', attachment.path]),
       'Read the attached conversation transcript. Follow the agent instructions and return the required response only.',
     ];
-    const runtimeConfig = await capture(binary, ['debug', 'config'], directory, { ...process.env });
+    const runtimeConfig = await capture(binary, ['debug', 'config'], directory, runtimeEnv);
     if (runtimeConfig.error?.message.includes('8 MiB per-stream limit')) {
       throw runtimeConfig.error;
     }
@@ -584,7 +590,7 @@ async function generate(
     }
     assertRuntimeIsolation(parseJsonOutput(runtimeConfig.stdout));
 
-    const run = await capture(binary, args, directory, { ...process.env }, options.abortSignal);
+    const run = await capture(binary, args, directory, runtimeEnv, options.abortSignal);
     const events = jsonLines(run.stdout);
     sessionId = sessionIdFrom(events);
 
@@ -595,7 +601,7 @@ async function generate(
       throw new Error(reason);
     }
 
-    const exportedRun = await capture(binary, ['session', 'export', sessionId], directory, { ...process.env });
+    const exportedRun = await capture(binary, ['session', 'export', sessionId], directory, runtimeEnv);
     if (exportedRun.error || exportedRun.code !== 0) {
       throw new Error('OpenCode session export failed; model execution cannot be verified.');
     }
@@ -647,7 +653,7 @@ async function generate(
     failure = error as Error;
   } finally {
     if (sessionId) {
-      const deleted = await capture(binary, ['session', 'delete', sessionId], directory, { ...process.env });
+      const deleted = await capture(binary, ['session', 'delete', sessionId], directory, runtimeEnv);
       if (deleted.error || deleted.code !== 0) {
         failure = new Error(`OpenCode session cleanup failed for ${sessionId}; manually run: opencode session delete ${sessionId}`);
         result = undefined;

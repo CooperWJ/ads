@@ -2,10 +2,10 @@
 
 ## v0.6.21 — OpenCode CLI 运行时隔离加固
 
-- 使用 `opencode --standalone --pure run`，避免复用用户共享服务并禁用外部插件。
+- 使用 `opencode run --standalone --pure`，避免复用用户共享服务并禁用外部插件。
 - 模型调用前读取 `opencode debug config` 的实际解析结果；插件/MCP 非空或工具、MCP、Skill、Plugin 最终策略未被 deny 时 fail-closed。
 - stdout/stderr 分别限制 8 MiB；严格限制单一完整 step、单一 assistant 响应、Session 身份和指定工具调用次数。
-- 增加全局策略放宽、超限输出和重复 step 的回归夹具；CI 另用真实 OpenCode v2.2.3、私有 XDG 目录执行无模型 `--standalone --pure debug config`，验证配置解析和 deny 策略。
+- 增加全局策略放宽、超限输出和重复 step 的回归夹具；CI 另用真实 OpenCode v2.2.3、私有 XDG 目录执行无模型 `opencode --pure debug config`，验证配置解析和 deny 策略。
 - CI 的真实 CLI 检查不读取用户配置/凭据，也不运行模型；真实用户主机的全局/managed policy 与模型旅程仍为 NOT_VERIFIED。Fake CLI 通过不代表真实运行时安全。
 
 ## v0.6.20 — OpenCode CLI 原生模型接入

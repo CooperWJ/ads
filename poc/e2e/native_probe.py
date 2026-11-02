@@ -159,8 +159,11 @@ Return plain text. Do not call tools.
         servers = mcp.get('servers', mcp)
         if not isinstance(servers, dict) or servers or set(mcp) - {'servers', 'timeout'}:
             raise ValueError('OpenCode effective config contains MCP servers')
-    if resolved.get('instructions') != []:
-        raise ValueError('OpenCode effective config contains inherited instructions')
+    instructions = resolved.get('instructions', [])
+    if instructions != []:
+        detail = [str(item).replace(str(workspace), '<isolated-workspace>')[:120]
+                  for item in instructions[:5]] if isinstance(instructions, list) else [type(instructions).__name__]
+        raise ValueError(f'OpenCode effective config contains inherited instructions: {detail}')
     policies = resolved.get('policies')
     if not isinstance(policies, list):
         raise ValueError('OpenCode effective policies are unavailable')

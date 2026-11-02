@@ -566,6 +566,7 @@ async function generate(
 
     const args = [
       '--standalone',
+      '--pure',
       'run',
       '--format', 'json',
       '--model', fullModelId,

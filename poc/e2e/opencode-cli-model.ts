@@ -424,6 +424,9 @@ function assistantResult(
 }
 
 function assertRuntimeIsolation(config: JsonRecord): void {
+  if (!Array.isArray(config.instructions) || config.instructions.length !== 0) {
+    throw new Error('OpenCode effective config contains additional instructions; isolated model execution is blocked.');
+  }
   if (typeof config.mcp !== 'object' || config.mcp === null || Object.keys(config.mcp).length !== 0) {
     throw new Error('OpenCode effective config contains MCP servers; isolated model execution is blocked.');
   }

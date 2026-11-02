@@ -576,7 +576,7 @@ async function generate(
       ...attachments.flatMap((attachment) => ['--file', attachment.path]),
       'Read the attached conversation transcript. Follow the agent instructions and return the required response only.',
     ];
-    const runtimeConfig = await capture(binary, ['debug', 'config'], directory, { ...process.env });
+    const runtimeConfig = await capture(binary, ['--pure', 'debug', 'config'], directory, { ...process.env });
     if (runtimeConfig.error?.message.includes('8 MiB per-stream limit')) {
       throw runtimeConfig.error;
     }

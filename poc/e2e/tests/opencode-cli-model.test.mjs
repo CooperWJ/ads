@@ -139,12 +139,16 @@ test('effective global allow policy fails closed before model execution', async 
   const env = await setup();
   try {
     process.env.ADS_E2E_TEST_GLOBAL_ALLOW = '1';
-    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');\n    await assert.rejects(model.doGenerate(options()), /does not enforce a final deny for mcp.use/);
-    const calls = await records(env.log);\n    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /does not enforce a final deny for mcp.use/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
   } finally {
     await env.close();
   }
-});\n\ntest('model identity mismatch fails closed and still deletes the OpenCode session', async () => {
+});
+
+test('model identity mismatch fails closed and still deletes the OpenCode session', async () => {
   const env = await setup();
   try {
     process.env.ADS_E2E_TEST_MODEL = 'unexpected-model';

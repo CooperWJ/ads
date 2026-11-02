@@ -16,6 +16,83 @@ from ads.integrations import e2e
 from ads.project import write_json
 
 
+def runtime_isolation_probe(executable, out, env):
+    workspace = out / 'isolation-workspace'
+    (workspace / '.opencode' / 'agents').mkdir(parents=True)
+    config = {
+        '$schema': 'https://opencode.ai/config.json',
+        'update': 'disable',
+        'plugins': [],
+        'mcp': {},
+        'instructions': [],
+        'skills': [],
+        'references': {},
+        'permissions': [{'action': '*', 'resource': '*', 'effect': 'deny'}],
+        'policies': [
+            {'action': 'tool.use', 'resource': '*', 'effect': 'deny'},
+            {'action': 'mcp.use', 'resource': '*', 'effect': 'deny'},
+            {'action': 'skill.use', 'resource': '*', 'effect': 'deny'},
+            {'action': 'plugin.use', 'resource': '*', 'effect': 'deny'},
+            {'action': 'provider.use', 'resource': '*', 'effect': 'deny'},
+            {'action': 'provider.use', 'resource': 'opencode', 'effect': 'allow'},
+        ],
+    }
+    (workspace / 'opencode.json').write_text(json.dumps(config, indent=2) + '\\n')
+    agent = """---
+description: Model-only isolation preflight
+mode: primary
+hidden: true
+steps: 1
+permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+---
+Return plain text. Do not call tools.
+"""
+    (workspace / '.opencode' / 'agents' / 'ads-e2e-model.md').write_text(agent)
+    result = subprocess.run(
+        [executable, '--standalone', '--pure', 'debug', 'config'],
+        cwd=workspace, env=env, capture_output=True, text=True, timeout=45,
+    )
+    if result.returncode != 0:
+        raise ValueError('OpenCode real CLI could not resolve isolated runtime config')
+    start = result.stdout.find('{')
+    if start < 0:
+        raise ValueError('OpenCode debug config did not return JSON')
+    try:
+        resolved, _ = json.JSONDecoder().raw_decode(result.stdout[start:])
+    except json.JSONDecodeError as exc:
+        raise ValueError('OpenCode debug config returned invalid JSON') from exc
+    if not isinstance(resolved, dict):
+        raise ValueError('OpenCode resolved config has an invalid shape')
+    if resolved.get('plugins') != []:
+        raise ValueError('OpenCode effective config contains external plugins')
+    if resolved.get('mcp') != {}:
+        raise ValueError('OpenCode effective config contains MCP servers')
+    policies = resolved.get('policies')
+    if not isinstance(policies, list):
+        raise ValueError('OpenCode effective policies are unavailable')
+    actions = ('tool.use', 'mcp.use', 'skill.use', 'plugin.use')
+    for action in actions:
+        deny_index = max((i for i, rule in enumerate(policies)
+                          if rule.get('action') == action and rule.get('resource') == '*'
+                          and rule.get('effect') == 'deny'), default=-1)
+        if deny_index < 0 or any(rule.get('action') == action and rule.get('effect') == 'allow'
+                                 for rule in policies[deny_index + 1:]):
+            raise ValueError(f'OpenCode effective policy does not enforce final deny for {action}')
+    return {
+        'status': 'PASS',
+        'plugins': 'EMPTY',
+        'mcp': 'EMPTY',
+        'tool_policies': 'FINAL_DENY',
+        'skill_policies': 'FINAL_DENY',
+        'plugin_policies': 'FINAL_DENY',
+        'mode': 'STANDALONE_PURE',
+        'model_execution': 'NOT_RUN',
+    }
+
+
 def probe(executable, out):
     out.mkdir(parents=True, exist_ok=False)
     workspace = out / 'workspace'
@@ -34,6 +111,7 @@ def probe(executable, out):
     env = {k:v for k,v in os.environ.items() if k in ('PATH','LANG','HTTP_PROXY','HTTPS_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy')}
     for key, name in (('XDG_CONFIG_HOME','config'),('XDG_DATA_HOME','data'),('XDG_CACHE_HOME','cache'),('XDG_STATE_HOME','state')):
         env[key] = str(out / 'private' / name)
+    runtime_isolation = runtime_isolation_probe(executable, out, env)
     log = out / 'native-private.log'
     with log.open('w') as stream:
         process = subprocess.Popen([executable,'serve','--hostname','127.0.0.1','--port',str(port)],
@@ -70,7 +148,7 @@ def probe(executable, out):
             if not messages:
                 raise ValueError('技能未实际激活')
             version = subprocess.check_output([executable,'--version'],env=env).decode().strip()
-            return {'status':'PASS','opencode_version':version,'mcp':'CONNECTED',
+            return {'status':'PASS','opencode_version':version,'runtime_isolation':runtime_isolation,'mcp':'CONNECTED',
                     'skill':'e2e','activation':'OBSERVED','activation_message_count':len(messages),
                     'model_execution':'NOT_RUN','scope':'native transport and explicit skill activation; not autonomous model use'}
         finally:

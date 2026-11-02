@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -171,10 +171,10 @@ test('ambient global AGENTS.md blocks model execution', async () => {
   const previousHome = process.env.HOME;
   const previousXdg = process.env.XDG_CONFIG_HOME;
   try {
-    const home = path.join(env.directory, 'isolated-home');
+    const home = join(env.directory, 'isolated-home');
     const xdg = path.join(env.directory, 'isolated-xdg');
     const globalConfig = path.join(xdg, 'opencode');
-    await fs.mkdir(globalConfig, { recursive: true });
+    await mkdir(globalConfig, { recursive: true });
     await fs.writeFile(path.join(globalConfig, 'AGENTS.md'), 'Injected global instruction probe');
     process.env.HOME = home;
     process.env.XDG_CONFIG_HOME = xdg;

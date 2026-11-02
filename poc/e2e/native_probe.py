@@ -56,7 +56,10 @@ Return plain text. Do not call tools.
         cwd=workspace, env=env, capture_output=True, text=True, timeout=45,
     )
     if result.returncode != 0:
-        raise ValueError('OpenCode real CLI could not resolve isolated runtime config')
+        lines = (result.stderr or result.stdout).strip().splitlines()
+        detail = lines[-1][:180] if lines else 'no CLI diagnostic'
+        detail = detail.replace(str(workspace), '<isolated-workspace>')
+        raise ValueError(f'OpenCode real CLI config preflight failed (exit={result.returncode}; {detail})')
     start = result.stdout.find('{')
     if start < 0:
         raise ValueError('OpenCode debug config did not return JSON')

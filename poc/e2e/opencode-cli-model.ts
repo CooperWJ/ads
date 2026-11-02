@@ -529,7 +529,7 @@ async function generate(
     const config = {
       '$schema': 'https://opencode.ai/config.json',
       update: 'disable',
-      plugin: [],
+      plugins: [],
       mcp: {},
       instructions: [],
       skills: [],

@@ -180,7 +180,7 @@ Return plain text. Do not call tools.
         'status': 'PASS',
         'plugin_suppression': plugin_probe,
         'external_plugins': 'DISABLED_BY_OPENCODE_PURE',
-        'default_auth_plugins': 'PRESERVED',
+        'default_auth_plugins': 'NOT_DISABLED_BY_ADAPTER',
         'mcp': 'EMPTY',
         'tool_policies': 'FINAL_DENY',
         'skill_policies': 'FINAL_DENY',

@@ -136,7 +136,20 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
   }
 });
 
-test('OpenCode CLI output above the per-stream limit is killed and rejected', async () => {\n  const env = await setup();\n  try {\n    process.env.ADS_E2E_TEST_OUTPUT_OVERFLOW = '1';\n    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');\n    await assert.rejects(model.doGenerate(options()), /output exceeded the 8 MiB per-stream limit/);\n    const calls = await records(env.log);\n    assert.equal(calls.filter((call) => call.command === 'run').length, 0);\n  } finally {\n    await env.close();\n  }\n});\n\ntest('effective global allow policy fails closed before model execution', async () => {
+test('OpenCode CLI output above the per-stream limit is killed and rejected', async () => {
+  const env = await setup();
+  try {
+    process.env.ADS_E2E_TEST_OUTPUT_OVERFLOW = '1';
+    const model = opencodeCli('opencode/deepseek-v4.1-flash-free');
+    await assert.rejects(model.doGenerate(options()), /output exceeded the 8 MiB per-stream limit/);
+    const calls = await records(env.log);
+    assert.equal(calls.filter((call) => call.command === 'run').length, 0);
+  } finally {
+    await env.close();
+  }
+});
+
+test('effective global allow policy fails closed before model execution', async () => {
   const env = await setup();
   try {
     process.env.ADS_E2E_TEST_GLOBAL_ALLOW = '1';

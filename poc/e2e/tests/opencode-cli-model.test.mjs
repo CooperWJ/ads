@@ -123,6 +123,7 @@ test('OpenCode CLI adapter isolates tools, binds model identity, captures usage,
       && file.content.includes('Click the save button')));
     assert.ok(run.attachments.some((file) => file.name === 'image-001.png' && file.bytes > 0));
     assert.ok(run.args.includes('--standalone'));
+    assert.ok(run.args.includes('--pure'));
     assert.ok(run.args.includes('opencode/deepseek-v4.1-flash-free'));
     assert.ok(run.args.includes('ads-e2e-model'));
     assert.equal(calls.filter((call) => call.command === 'debug-config').length, 1);

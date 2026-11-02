@@ -16,6 +16,89 @@ from ads.integrations import e2e
 from ads.project import write_json
 
 
+def start_server(executable, workspace, env, log_path):
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+    with log_path.open('w') as stream:
+        process = subprocess.Popen(
+            [executable, 'serve', '--hostname', '127.0.0.1', '--port', str(port)],
+            cwd=workspace, env=env, stdout=stream, stderr=stream,
+        )
+    try:
+        for _ in range(200):
+            lines = log_path.read_text(errors='replace').splitlines() if log_path.exists() else []
+            password = next((line.removeprefix('server password ') for line in lines
+                             if line.startswith('server password ')), None)
+            if password:
+                return process, port, password
+            if process.poll() is not None:
+                raise ValueError('OpenCode server exited before becoming ready')
+            time.sleep(.1)
+        raise ValueError('OpenCode server did not become ready')
+    except Exception:
+        process.terminate()
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+        raise
+
+
+def stop_server(process):
+    process.terminate()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+
+
+def verify_pure_plugin_suppression(executable, out, env):
+    workspace = out / 'plugin-isolation-workspace'
+    plugin_dir = workspace / '.opencode' / 'plugins'
+    plugin_dir.mkdir(parents=True)
+    (workspace / 'opencode.json').write_text(json.dumps({
+        '$schema': 'https://opencode.ai/config.json',
+        'update': 'disable',
+        'plugins': [],
+        'mcp': {},
+    }, indent=2) + '\\n')
+    (workspace / '.opencode' / 'plugins' / 'ads-pure-probe.ts').write_text(
+        "export default {\\n"
+        "  id: 'ads.pure.probe',\\n"
+        "  async setup() {\\n"
+        "    await Bun.write(process.env.ADS_PURE_PROBE_MARKER, 'loaded')\\n"
+        "  },\\n"
+        "}\\n"
+    )
+    subprocess.run(['git', 'init', '-q', str(workspace)], check=True, capture_output=True)
+
+    pure_marker = out / 'pure-plugin-marker'
+    pure_env = env.copy()
+    pure_env['OPENCODE_PURE'] = '1'
+    pure_env['ADS_PURE_PROBE_MARKER'] = str(pure_marker)
+    pure_process, _, _ = start_server(executable, workspace, pure_env, out / 'pure-plugin-server.log')
+    try:
+        if pure_marker.exists():
+            raise ValueError('OPENCODE_PURE did not suppress the external plugin')
+    finally:
+        stop_server(pure_process)
+
+    control_marker = out / 'plugin-control-marker'
+    control_env = env.copy()
+    control_env.pop('OPENCODE_PURE', None)
+    control_env['ADS_PURE_PROBE_MARKER'] = str(control_marker)
+    control_process, _, _ = start_server(executable, workspace, control_env, out / 'plugin-control-server.log')
+    try:
+        if not control_marker.is_file():
+            raise ValueError('External plugin positive control did not load without OPENCODE_PURE')
+    finally:
+        stop_server(control_process)
+    return {'pure_mode': 'PLUGIN_NOT_LOADED', 'positive_control': 'PLUGIN_LOADED'}
+
+
 def runtime_isolation_probe(executable, out, env):
     workspace = out / 'isolation-workspace'
     (workspace / '.opencode' / 'agents').mkdir(parents=True)
@@ -69,13 +152,12 @@ Return plain text. Do not call tools.
         raise ValueError('OpenCode debug config returned invalid JSON') from exc
     if not isinstance(resolved, dict):
         raise ValueError('OpenCode resolved config has an invalid shape')
-    if resolved.get('plugins') != []:
-        raise ValueError('OpenCode effective config contains external plugins')
     if resolved.get('mcp') != {}:
         raise ValueError('OpenCode effective config contains MCP servers')
     policies = resolved.get('policies')
     if not isinstance(policies, list):
         raise ValueError('OpenCode effective policies are unavailable')
+    plugin_probe = verify_pure_plugin_suppression(executable, out, env)
     actions = ('tool.use', 'mcp.use', 'skill.use', 'plugin.use')
     for action in actions:
         deny_index = max((i for i, rule in enumerate(policies)
@@ -86,12 +168,14 @@ Return plain text. Do not call tools.
             raise ValueError(f'OpenCode effective policy does not enforce final deny for {action}')
     return {
         'status': 'PASS',
-        'plugins': 'EMPTY',
+        'plugin_suppression': plugin_probe,
+        'external_plugins': 'DISABLED_BY_OPENCODE_PURE',
+        'default_auth_plugins': 'PRESERVED',
         'mcp': 'EMPTY',
         'tool_policies': 'FINAL_DENY',
         'skill_policies': 'FINAL_DENY',
         'plugin_policies': 'FINAL_DENY',
-        'mode': 'STANDALONE_PURE',
+        'mode': 'OPENCODE_PURE_ENV',
         'model_execution': 'NOT_RUN',
     }
 
@@ -114,6 +198,9 @@ def probe(executable, out):
     env = {k:v for k,v in os.environ.items() if k in ('PATH','LANG','HTTP_PROXY','HTTPS_PROXY','NO_PROXY','http_proxy','https_proxy','no_proxy')}
     for key, name in (('XDG_CONFIG_HOME','config'),('XDG_DATA_HOME','data'),('XDG_CACHE_HOME','cache'),('XDG_STATE_HOME','state')):
         env[key] = str(out / 'private' / name)
+    env['OPENCODE_PURE'] = '1'
+    env['OPENCODE_DISABLE_CLAUDE_CODE'] = '1'
+    env['OPENCODE_DISABLE_EXTERNAL_SKILLS'] = '1'
     runtime_isolation = runtime_isolation_probe(executable, out, env)
     log = out / 'native-private.log'
     with log.open('w') as stream:

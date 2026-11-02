@@ -29,6 +29,7 @@ type TranscriptFile = {
 };
 
 const CLI_VERSION_CHECKS = new Map<string, Promise<void>>();
+const MAX_CAPTURE_BYTES = 8 * 1024 * 1024;
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/png': '.png',
@@ -331,7 +332,7 @@ function assistantResult(
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
     return info.type === 'assistant' || info.role === 'assistant';
   });
-  if (assistants.length === 0) throw new Error('OpenCode session contains no assistant model response.');
+  if (assistants.length !== 1) throw new Error('OpenCode session must contain exactly one assistant model response.');
 
   const parsed = assistants.map((message) => {
     const info = (message.info && typeof message.info === 'object' ? message.info : message) as JsonRecord;
@@ -442,7 +443,7 @@ function replyContent(text: string, options: LanguageModelV4CallOptions): Langua
         const name = call.name;
         const input = call.input;
         if (typeof name !== 'string' || !allowed.has(name)
-            || (choice.type === 'tool' && name !== choice.toolName)
+            || (choice.type === 'tool' && (name !== choice.toolName || named.length !== 1))
             || typeof input !== 'object' || input === null || Array.isArray(input)) return null;
         return {
           type: 'tool-call' as const,
@@ -502,7 +503,7 @@ async function generate(
     const config = {
       '$schema': 'https://opencode.ai/config.json',
       update: 'disable',
-      plugins: [],
+      plugin: [],
       mcp: {},
       instructions: [],
       skills: [],
@@ -547,8 +548,14 @@ async function generate(
     const exported = parseJsonOutput(exportedRun.stdout);
     const stepStarts = events.filter((event) => event.type === 'step_start');
     const stepFinishes = events.filter((event) => event.type === 'step_finish');
-    if (stepStarts.length > 1 || stepFinishes.length > 1) {
-      throw new Error('OpenCode CLI exceeded the one-step model-call boundary.');
+    if (stepStarts.length !== 1 || stepFinishes.length !== 1) {
+      throw new Error('OpenCode CLI did not produce exactly one complete model step.');
+    }
+    if (events.some((event) => {
+      const eventSession = event.sessionID ?? event.sessionId;
+      return typeof eventSession === 'string' && eventSession !== sessionId;
+    })) {
+      throw new Error('OpenCode CLI emitted an event for an unexpected session.');
     }
     const stepFinish = stepFinishes[0];
     const assistant = assistantResult(exported, stepFinish, sessionId, providerId, modelId, 'ads-e2e-model');
